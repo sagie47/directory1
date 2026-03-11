@@ -1,0 +1,169 @@
+import { useMemo, useState } from 'react';
+import { useParams, Link, Navigate } from 'react-router-dom';
+import { MapPin, ArrowRight, Search } from 'lucide-react';
+import * as Icons from 'lucide-react';
+import BusinessCard from '../components/BusinessCard';
+import Breadcrumbs from '../components/Breadcrumbs';
+import { motion } from 'motion/react';
+import { Business } from '../business';
+import { getCategoryHeroImage } from '../category-hero-images';
+import { useDirectoryData } from '../directory-data';
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 15 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } }
+};
+
+export default function CategoryPage() {
+  const { cityId, categoryId } = useParams<{ cityId: string, categoryId: string }>();
+  const { cities, categories, businesses } = useDirectoryData();
+  const [sortBy, setSortBy] = useState('Highest Rated');
+  
+  const city = cities.find(c => c.id === cityId);
+  const category = categories.find(c => c.id === categoryId);
+
+  if (!city || !category) {
+    return <Navigate to="/" replace />;
+  }
+
+  const categoryBusinesses = useMemo(() => {
+    const filtered = businesses.filter(b => b.cityId === cityId && b.categoryId === categoryId) as Business[];
+
+    return [...filtered].sort((left, right) => {
+      if (sortBy === 'Most Reviewed') {
+        return (right.reviewCount ?? 0) - (left.reviewCount ?? 0);
+      }
+
+      if (sortBy === 'A-Z') {
+        return left.name.localeCompare(right.name);
+      }
+
+      return (right.rating ?? 0) - (left.rating ?? 0) || (right.reviewCount ?? 0) - (left.reviewCount ?? 0);
+    });
+  }, [categoryId, cityId, sortBy]);
+
+  const IconComponent = (Icons as any)[category.icon] || Icons.Wrench;
+  const heroImage = getCategoryHeroImage({
+    categoryId: category.id,
+    groupId: category.groupId,
+    cityId: city.id,
+    businesses,
+  });
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.5 }}
+      className="bg-[#FAFAFA] min-h-screen text-zinc-900 font-sans"
+    >
+      <Breadcrumbs
+        items={[
+          { label: 'Home', to: '/' },
+          { label: city.name, to: `/${city.id}` },
+          { label: category.name },
+        ]}
+      />
+
+      {/* Category Hero */}
+      <section className={`relative border-b-2 border-zinc-900 overflow-hidden py-16 md:py-24 ${heroImage ? 'bg-zinc-900 text-white' : 'bg-white text-zinc-900'}`}>
+        {heroImage ? (
+          <div className="absolute inset-0 z-0">
+            <motion.img 
+              initial={{ scale: 1.1, opacity: 0 }}
+              animate={{ scale: 1, opacity: 0.8 }}
+              transition={{ duration: 1.5, ease: "easeOut" }}
+              src={heroImage}
+              alt={city.name}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/70 via-zinc-900/20 to-transparent z-10"></div>
+          </div>
+        ) : (
+          <div className="absolute inset-0 z-0 opacity-50" style={{ backgroundImage: 'linear-gradient(to right, #f4f4f5 1px, transparent 1px), linear-gradient(to bottom, #f4f4f5 1px, transparent 1px)', backgroundSize: '4rem 4rem' }}></div>
+        )}
+
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row gap-8 items-start md:items-end justify-between">
+            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }} className="max-w-3xl">
+              <div className={`inline-flex items-center gap-2 border px-3 py-1.5 font-mono text-[10px] tracking-[0.15em] mb-8 uppercase rounded-sm shadow-sm backdrop-blur-sm ${heroImage ? 'border-white/20 bg-black/20 text-white' : 'border-zinc-200 bg-white text-zinc-600'}`}>
+                <IconComponent className={`h-3.5 w-3.5 ${heroImage ? 'text-white' : 'text-zinc-400'}`} strokeWidth={1.5} /> {category.name}
+              </div>
+              <h1 className={`text-5xl md:text-7xl font-medium tracking-tight mb-4 leading-[1.05] ${heroImage ? 'text-white' : 'text-zinc-900'}`}>
+                {category.name}
+              </h1>
+              <div className={`text-lg font-mono tracking-[0.15em] uppercase flex items-center gap-2 ${heroImage ? 'text-zinc-300' : 'text-zinc-500'}`}>
+                <MapPin className="h-4 w-4" strokeWidth={1.5} /> IN {city.name}
+              </div>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }} className="shrink-0 flex flex-col items-start md:items-end gap-4">
+              <Link to="/signup" className={`inline-flex items-center justify-center gap-2 px-6 py-3 font-sans text-sm font-medium transition-colors rounded-sm shadow-sm group ${heroImage ? 'bg-white text-zinc-900 hover:bg-zinc-100' : 'bg-zinc-900 text-white hover:bg-zinc-800'}`}>
+                List Your Business <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" strokeWidth={1.5} />
+              </Link>
+              <p className={`text-sm font-sans max-w-[220px] text-left md:text-right leading-relaxed ${heroImage ? 'text-zinc-300' : 'text-zinc-500'}`}>
+                Are you a verified {category.name.toLowerCase()} professional? Join the directory.
+              </p>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Business Listings */}
+      <section className="py-16 bg-[#FAFAFA]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-12 gap-4 border-b border-zinc-200 pb-6">
+            <div className="font-mono text-[10px] tracking-[0.15em] text-zinc-500 uppercase">
+              Results: {categoryBusinesses.length}
+            </div>
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <span className="text-[10px] font-mono tracking-[0.15em] text-zinc-400 uppercase">Sort:</span>
+              <select value={sortBy} onChange={(event) => setSortBy(event.target.value)} className="flex-1 sm:flex-none border border-zinc-200 bg-white px-4 py-2 text-sm font-sans text-zinc-900 outline-none focus:border-zinc-400 cursor-pointer transition-colors rounded-sm shadow-sm">
+                <option>Highest Rated</option>
+                <option>Most Reviewed</option>
+                <option>A-Z</option>
+              </select>
+            </div>
+          </div>
+
+          {categoryBusinesses.length === 0 ? (
+            <div className="bg-white border border-zinc-200 p-16 text-center rounded-sm shadow-sm">
+              <div className="w-12 h-12 border border-zinc-200 bg-[#FAFAFA] flex items-center justify-center mx-auto mb-6 rounded-sm">
+                <Search className="h-5 w-5 text-zinc-400" strokeWidth={1.5} />
+              </div>
+              <h3 className="text-xl font-medium tracking-tight text-zinc-900 mb-4">No Data Found</h3>
+              <p className="text-zinc-500 font-sans text-sm mb-8 max-w-md mx-auto leading-relaxed">We couldn't locate any {category.name.toLowerCase()} in {city.name} matching your criteria.</p>
+              <Link to={`/${city.id}`} className="inline-flex items-center justify-center gap-2 bg-zinc-100 text-zinc-900 px-6 py-3 font-sans text-sm font-medium hover:bg-zinc-200 transition-colors rounded-sm shadow-sm">
+                <ArrowRight className="h-4 w-4 rotate-180" strokeWidth={1.5} /> Return to {city.name}
+              </Link>
+            </div>
+          ) : (
+            <motion.div 
+              variants={containerVariants}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true, margin: "-50px" }}
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8"
+            >
+              {categoryBusinesses.map((business) => (
+                <motion.div key={business.id} variants={itemVariants} className="h-full">
+                  <BusinessCard business={business} />
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+        </div>
+      </section>
+    </motion.div>
+  );
+}
