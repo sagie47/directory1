@@ -138,13 +138,14 @@ export default function ClaimBusinessPage() {
 
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
             {whyClaimItems.map((item, index) => (
-              <FeatureCard
-                key={item.title}
-                icon={item.icon}
-                title={item.title}
-                description={item.description}
-                index={index}
-              />
+              <div key={item.title}>
+                <FeatureCard
+                  icon={item.icon}
+                  title={item.title}
+                  description={item.description}
+                  index={index}
+                />
+              </div>
             ))}
           </div>
         </div>

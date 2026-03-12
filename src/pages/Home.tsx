@@ -1,11 +1,11 @@
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, MapPin, ArrowRight, ChevronRight, LayoutGrid, Zap, Star } from 'lucide-react';
+import { Search, MapPin, ArrowRight, ChevronRight, LayoutGrid, SlidersHorizontal, X, Zap, Star } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import BusinessCard from '../components/BusinessCard';
 import FeatureCard from '../components/FeatureCard';
 import SectionEyebrow from '../components/SectionEyebrow';
-import { motion } from 'motion/react';
+import { AnimatePresence, LayoutGroup, motion } from 'motion/react';
 import heroImage from '../photos/2024_active_transportation_construction_hintringer_63.jpg';
 import businessBg from '../photos/job-construction-scaled.jpg';
 import { useDirectoryData } from '../directory-data';
@@ -47,6 +47,8 @@ export default function Home() {
   const { cities, categories, businesses } = useDirectoryData();
   const [query, setQuery] = useState('');
   const [cityId, setCityId] = useState('');
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const [showCompactSearch, setShowCompactSearch] = useState(false);
   const featuredBusinesses = useMemo(
     () => [...businesses].sort((left, right) => (right.rating ?? 0) - (left.rating ?? 0) || (right.reviewCount ?? 0) - (left.reviewCount ?? 0)).slice(0, 3),
     [businesses],
@@ -70,8 +72,33 @@ export default function Home() {
       params.set('city', cityId);
     }
 
+    setIsMobileSearchOpen(false);
     navigate(`/search${params.size > 0 ? `?${params.toString()}` : ''}`);
   }
+
+  useEffect(() => {
+    function handleScroll() {
+      setShowCompactSearch(window.scrollY > 80);
+    }
+
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
+  useEffect(() => {
+    document.body.style.overflow = isMobileSearchOpen ? 'hidden' : '';
+
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isMobileSearchOpen]);
+
+  const selectedCityName = cities.find((city) => city.id === cityId)?.name ?? 'All Okanagan';
+  const compactSearchLabel = query.trim() ? query.trim() : 'Search trades';
 
   return (
     <motion.div 
@@ -81,47 +108,195 @@ export default function Home() {
       transition={{ duration: 0.5 }}
       className="bg-[#FAFAFA] min-h-screen text-zinc-900 font-sans selection:bg-indigo-200 selection:text-indigo-900"
     >
+      <LayoutGroup id="mobile-search-surface">
+        <AnimatePresence mode="popLayout">
+          {(showCompactSearch || isMobileSearchOpen) ? (
+            <motion.button
+              type="button"
+              layoutId="mobile-search-trigger"
+              initial={{ opacity: 0, y: -12, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -12, scale: 0.97 }}
+              transition={{ duration: 0.26, ease: [0.16, 1, 0.3, 1] }}
+              className="fixed inset-x-0 top-[4.9rem] z-40 flex items-center justify-between gap-3 border-y-2 border-zinc-900 bg-white/95 px-4 py-3 text-left shadow-[0_18px_26px_rgba(24,24,27,0.17)] backdrop-blur-sm md:hidden sm:inset-x-4 sm:border-2"
+              onClick={() => setIsMobileSearchOpen(true)}
+              aria-label="Open compact mobile search"
+            >
+              <div className="min-w-0">
+                <p className="truncate font-sans text-sm font-semibold text-zinc-900">{compactSearchLabel}</p>
+                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-zinc-500">{selectedCityName}</p>
+              </div>
+              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center border-2 border-zinc-900 bg-zinc-900 text-white">
+                <SlidersHorizontal className="h-4 w-4" strokeWidth={2.2} />
+              </span>
+            </motion.button>
+          ) : null}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {isMobileSearchOpen ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.24 }}
+              className="fixed inset-0 z-50 bg-zinc-950/50 px-4 pb-4 pt-[5.3rem] md:hidden"
+            >
+              <motion.div
+                initial={{ opacity: 0, y: 18, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 18, scale: 0.98 }}
+                transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
+                className="mx-auto flex h-full w-full max-w-xl flex-col overflow-hidden border-2 border-zinc-900 bg-zinc-100 shadow-[0_24px_52px_rgba(24,24,27,0.32)]"
+              >
+                <div className="flex items-center justify-between border-b border-zinc-300 bg-white px-5 py-4">
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-zinc-600">Search Directory</p>
+                  <button
+                    type="button"
+                    onClick={() => setIsMobileSearchOpen(false)}
+                    className="inline-flex h-10 w-10 items-center justify-center border-2 border-zinc-900 bg-white text-zinc-900 transition-colors hover:bg-zinc-900 hover:text-white"
+                    aria-label="Close mobile search"
+                  >
+                    <X className="h-[18px] w-[18px]" strokeWidth={2.4} />
+                  </button>
+                </div>
+
+                <form onSubmit={handleSearch} className="flex h-full flex-col">
+                  <div className="space-y-3 overflow-y-auto bg-zinc-100 px-4 py-4">
+                    <div className="border-2 border-zinc-900 bg-white p-4 shadow-[0_6px_0px_0px_rgba(24,24,27,0.08)]">
+                      <label className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Trade / Service</label>
+                      <div className="flex items-center gap-3 border border-zinc-300 px-3 py-3">
+                        <Search className="h-[18px] w-[18px] text-zinc-500" strokeWidth={2} />
+                        <input
+                          type="text"
+                          placeholder="Plumber, Roofer, Electrician"
+                          value={query}
+                          onChange={(event) => setQuery(event.target.value)}
+                          className="w-full border-none bg-transparent font-sans text-base text-zinc-900 outline-none placeholder:text-zinc-400"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="border border-zinc-300 bg-white p-4">
+                      <label className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Region</label>
+                      <div className="flex items-center gap-3 border border-zinc-300 px-3 py-3">
+                        <MapPin className="h-[18px] w-[18px] text-zinc-500" strokeWidth={2} />
+                        <select
+                          value={cityId}
+                          onChange={(event) => setCityId(event.target.value)}
+                          className="w-full appearance-none border-none bg-transparent font-sans text-base text-zinc-900 outline-none"
+                        >
+                          <option value="">All Okanagan</option>
+                          {cities.map((city) => (
+                            <option key={city.id} value={city.id}>{city.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="border border-zinc-300 bg-white p-4">
+                      <p className="mb-3 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Suggested searches</p>
+                      <div className="grid grid-cols-1 gap-2">
+                        {['Emergency plumber', 'HVAC repair', 'Roof inspection'].map((suggestion) => (
+                          <button
+                            key={suggestion}
+                            type="button"
+                            className="flex items-center justify-between border border-zinc-200 px-3 py-2 text-left font-sans text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100"
+                            onClick={() => setQuery(suggestion)}
+                          >
+                            <span>{suggestion}</span>
+                            <ArrowRight className="h-4 w-4" strokeWidth={2} />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-auto flex items-center justify-between border-t border-zinc-300 bg-white px-4 py-4">
+                    <button
+                      type="button"
+                      className="font-sans text-sm font-semibold text-zinc-700 underline underline-offset-2"
+                      onClick={() => {
+                        setQuery('');
+                        setCityId('');
+                      }}
+                    >
+                      Clear
+                    </button>
+                    <button
+                      type="submit"
+                      className="inline-flex min-h-11 items-center justify-center border-2 border-zinc-900 bg-zinc-900 px-6 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white shadow-[3px_3px_0px_0px_rgba(24,24,27,1)] transition-all hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none"
+                    >
+                      Search
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+      </LayoutGroup>
+
       {/* Dramatic Hero Section */}
-      <section className="relative flex min-h-[100svh] items-end overflow-hidden bg-zinc-900 px-0 pt-24 pb-14 text-white sm:pt-28 sm:pb-18 lg:pt-44 lg:pb-24">
+      <section className="relative flex min-h-[70svh] items-end overflow-hidden bg-zinc-900 px-0 pb-10 pt-20 text-white sm:min-h-[82svh] sm:pb-14 sm:pt-24 lg:min-h-[100svh] lg:pb-24 lg:pt-44">
         {/* Full-width Background Image with subtle darkening for contrast */}
         <div className="absolute inset-0 z-0">
           <motion.img 
             initial={{ scale: 1.1, opacity: 0 }}
-            animate={{ scale: 1, opacity: 0.6 }}
-            transition={{ duration: 2, ease: "easeOut" }}
+            animate={{ scale: 1, opacity: 0.58 }}
+            transition={{ duration: 1.6, ease: 'easeOut' }}
             src={heroImage}
             alt="Okanagan Valley Architecture" 
             className="w-full h-full object-cover"
           />
           {/* Gradient from left to right so text is readable but image is visible */}
-          <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/90 via-zinc-900/50 to-transparent z-10"></div>
+          <div className="absolute inset-0 z-10 bg-gradient-to-r from-zinc-950/92 via-zinc-900/68 to-zinc-900/30"></div>
           {/* Subtle bottom gradient to blend with the overlapping grid */}
-          <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent z-10"></div>
+          <div className="absolute inset-0 z-10 bg-gradient-to-t from-zinc-950/88 via-zinc-900/30 to-zinc-900/10"></div>
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-20 mix-blend-overlay z-10"></div>
         </div>
         
-        <div className="relative z-20 mx-auto w-full max-w-[96rem] px-4 sm:px-6 lg:px-10">
-          <motion.div variants={heroVariants} initial="hidden" animate="show" className="flex max-w-4xl flex-col items-start text-left">
+        <div className="relative z-20 mx-auto w-full max-w-[96rem] px-5 sm:px-6 lg:px-10">
+          <motion.div variants={heroVariants} initial="hidden" animate="show" className="flex max-w-md flex-col items-start text-left sm:max-w-2xl lg:max-w-4xl">
             <motion.div variants={heroItemVariants}>
               <SectionEyebrow
                 icon={LayoutGrid}
-                className="mb-8 inline-flex items-center gap-2 rounded-sm border border-white/20 bg-white/10 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-100 shadow-sm backdrop-blur-md"
+                className="mb-5 inline-flex items-center gap-2 rounded-sm border border-white/20 bg-white/10 px-3 py-2 font-mono text-[11px] uppercase tracking-[0.24em] text-zinc-100 shadow-sm backdrop-blur-md sm:mb-8 sm:px-4 sm:tracking-[0.3em]"
                 iconClassName="h-3.5 w-3.5 text-zinc-300"
               >
                 Verified Contractor Database
               </SectionEyebrow>
             </motion.div>
             
-            <motion.h1 variants={heroItemVariants} className="mb-6 text-4xl font-medium tracking-tighter leading-[1.02] text-white text-balance drop-shadow-2xl sm:text-5xl md:text-7xl lg:mb-8 lg:text-[7rem]">
+            <motion.h1 variants={heroItemVariants} className="mb-4 text-4xl font-medium leading-[0.96] tracking-tight text-balance text-white drop-shadow-2xl sm:mb-6 sm:text-5xl md:text-6xl lg:mb-8 lg:text-[7rem]">
               Build with <span className="font-serif italic font-light text-zinc-200">Confidence.</span>
             </motion.h1>
             
-            <motion.p variants={heroItemVariants} className="mb-10 max-w-2xl text-lg leading-relaxed text-balance text-zinc-300 drop-shadow-md sm:mb-12 sm:text-xl md:text-2xl lg:mb-16">
-              A refined network of top-rated trades and contractors across the Okanagan Valley. Precision, reliability, and scale.
+            <motion.p variants={heroItemVariants} className="mb-8 max-w-sm text-base leading-7 text-zinc-200 drop-shadow-md sm:mb-12 sm:max-w-xl sm:text-lg md:text-xl lg:mb-16">
+              Find trusted contractors across the Okanagan for design, build, repair, and maintenance.
             </motion.p>
             
+            {!showCompactSearch && !isMobileSearchOpen ? (
+              <motion.button
+                variants={heroItemVariants}
+                layoutId="mobile-search-trigger"
+                type="button"
+                className="group relative flex w-full items-center justify-between gap-3 border-2 border-white/30 bg-white/10 px-4 py-3 text-left backdrop-blur-sm md:hidden"
+                transition={{ type: 'spring', stiffness: 260, damping: 28 }}
+                onClick={() => setIsMobileSearchOpen(true)}
+              >
+              <div>
+                <p className="font-sans text-sm font-semibold text-white">{compactSearchLabel}</p>
+                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-300">{selectedCityName}</p>
+              </div>
+              <span className="inline-flex h-9 w-9 items-center justify-center border border-white/35 bg-zinc-950/50 text-white">
+                <Search className="h-4 w-4" strokeWidth={2.2} />
+              </span>
+              </motion.button>
+            ) : null}
+
             {/* Massive Search Bar */}
-            <motion.form variants={heroItemVariants} onSubmit={handleSearch} className="group/search relative flex w-full max-w-5xl flex-col gap-2 rounded-lg border border-white/20 bg-white/10 p-2 shadow-[0_30px_60px_rgba(0,0,0,0.4)] backdrop-blur-2xl md:flex-row">
+            <motion.form variants={heroItemVariants} onSubmit={handleSearch} className="group/search relative hidden w-full max-w-5xl flex-col gap-2 rounded-lg border border-white/20 bg-white/10 p-2 shadow-[0_20px_40px_rgba(0,0,0,0.35)] backdrop-blur-2xl md:flex md:flex-row">
               <div className="flex-1 relative bg-white/10 border border-white/5 hover:bg-white/20 focus-within:bg-white/20 focus-within:border-indigo-400/50 transition-all duration-300 rounded-md">
                 <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
                   <Search className="h-5 w-5 text-zinc-400 group-focus-within/search:text-indigo-400 transition-colors" strokeWidth={1.5} />
@@ -160,8 +335,8 @@ export default function Home() {
       </section>
 
       {/* Popular Categories Grid - Overlapping the Hero */}
-      <section className="relative z-20 mb-20 px-4 pt-6 sm:px-6 lg:mb-24 lg:px-10 lg:pt-10">
-        <div className="mx-auto max-w-[96rem] overflow-hidden rounded-xl border-2 border-zinc-900 bg-white shadow-2xl">
+      <section className="relative z-20 mb-8 px-0 pt-4 sm:mb-12 sm:px-6 sm:pt-6 lg:mb-16 lg:px-10 lg:pt-10">
+        <div className="mx-auto w-full max-w-[96rem] overflow-hidden border-y-2 border-zinc-900 bg-white shadow-2xl sm:rounded-xl sm:border-2">
           <div className="flex flex-col md:flex-row">
             <div className="relative flex w-full flex-col justify-center overflow-hidden border-b-2 border-zinc-900 bg-zinc-50 p-6 sm:p-8 md:w-72 md:border-b-0 md:border-r-2 lg:p-12 group/core">
               <div className="absolute top-0 left-0 w-full h-2 bg-zinc-900"></div>
@@ -212,9 +387,9 @@ export default function Home() {
       </section>
 
       {/* Featured Businesses Section */}
-      <section className="relative z-10 py-24 bg-zinc-50 text-zinc-900 border-b-2 border-zinc-900">
+      <section className="relative z-10 border-b-2 border-zinc-900 bg-zinc-50 py-12 text-zinc-900 sm:py-16 lg:py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="mb-12 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+          <div className="mb-8 flex flex-col justify-between gap-6 sm:mb-12 sm:flex-row sm:items-end">
             <div>
               <SectionEyebrow
                 icon={Star}

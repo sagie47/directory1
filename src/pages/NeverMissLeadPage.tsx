@@ -204,13 +204,14 @@ export default function NeverMissLeadPage() {
 
           <div className="grid gap-4 sm:gap-6 md:grid-cols-3 md:gap-8">
             {features.map((feature, index) => (
-              <FeatureCard
-                key={feature.title}
-                icon={feature.icon}
-                title={feature.title}
-                description={feature.description}
-                index={index}
-              />
+              <div key={feature.title}>
+                <FeatureCard
+                  icon={feature.icon}
+                  title={feature.title}
+                  description={feature.description}
+                  index={index}
+                />
+              </div>
             ))}
           </div>
         </div>
