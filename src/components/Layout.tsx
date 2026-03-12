@@ -1,7 +1,7 @@
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { LayoutGrid, Menu, X } from 'lucide-react';
 import { motion } from 'motion/react';
-import { useState, ReactNode } from 'react';
+import { useEffect, useState, ReactNode } from 'react';
 
 import UserMenu from './UserMenu';
 import { useDirectoryData } from '../directory-data';
@@ -15,11 +15,16 @@ const primaryLinks = [
 
 export default function Layout({ children }: { children: ReactNode }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const location = useLocation();
   const { source, businesses, cities, isLoading, error } = useDirectoryData();
+
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [location.pathname]);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FAFAFA] font-sans text-zinc-900 selection:bg-zinc-200 selection:text-zinc-900">
-      <header className="sticky top-0 z-50 border-b-2 border-zinc-900 bg-[#FAFAFA]">
+      <header className="relative sticky top-0 z-50 border-b-2 border-zinc-900 bg-[#FAFAFA]">
         <div className="border-b border-zinc-900/10 bg-white">
           <div className="mx-auto flex max-w-[96rem] flex-wrap items-center justify-between gap-2 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500 sm:px-6 lg:px-10">
             <span className="sm:hidden">Okanagan Trades</span>
@@ -86,6 +91,8 @@ export default function Layout({ children }: { children: ReactNode }) {
               <button
                 onClick={() => setIsMenuOpen((current) => !current)}
                 aria-label={isMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+                aria-expanded={isMenuOpen}
+                aria-controls="mobile-site-navigation"
                 className="flex h-11 w-11 items-center justify-center border-2 border-zinc-900 bg-white text-zinc-900 transition-all hover:bg-zinc-900 hover:text-white active:scale-95 lg:hidden"
               >
                 {isMenuOpen ? <X className="h-5 w-5" strokeWidth={2.2} /> : <Menu className="h-5 w-5" strokeWidth={2.2} />}
@@ -95,47 +102,59 @@ export default function Layout({ children }: { children: ReactNode }) {
         </div>
 
         {isMenuOpen && (
-          <div className="border-t-2 border-zinc-900 bg-white lg:hidden">
-            <div className="mx-auto flex max-w-7xl flex-col gap-8 px-4 py-6 sm:px-6">
-              <div className="grid gap-2">
-                {primaryLinks.map((link) => (
-                  <NavLink
-                    key={link.to}
-                    to={link.to}
-                    end={link.end}
-                    className={({ isActive }) =>
-                      `flex min-h-12 items-center justify-between border-2 px-4 py-4 font-sans text-base font-bold uppercase tracking-[0.12em] transition-colors ${
-                        isActive ? 'border-zinc-900 bg-zinc-900 text-white' : 'border-zinc-200 text-zinc-700'
-                      }`
-                    }
+          <>
+            <button
+              type="button"
+              aria-label="Close navigation menu"
+              className="fixed inset-0 z-40 bg-zinc-900/30 lg:hidden"
+              onClick={() => setIsMenuOpen(false)}
+            />
+            <div
+              id="mobile-site-navigation"
+              className="absolute inset-x-0 top-full z-50 border-y-2 border-zinc-900 bg-white shadow-[0_14px_30px_rgba(24,24,27,0.18)] lg:hidden"
+            >
+              <div className="mx-auto flex max-h-[calc(100dvh-8.5rem)] max-w-7xl flex-col gap-8 overflow-y-auto px-4 py-6 sm:px-6">
+                <div className="grid gap-2">
+                  {primaryLinks.map((link) => (
+                    <NavLink
+                      key={link.to}
+                      to={link.to}
+                      end={link.end}
+                      className={({ isActive }) =>
+                        `flex min-h-12 items-center justify-between border-2 px-4 py-4 font-sans text-base font-bold uppercase tracking-[0.12em] transition-colors ${
+                          isActive ? 'border-zinc-900 bg-zinc-900 text-white' : 'border-zinc-200 text-zinc-700'
+                        }`
+                      }
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      {link.label}
+                      <span className="font-mono text-[10px] uppercase tracking-[0.18em] opacity-70">Open</span>
+                    </NavLink>
+                  ))}
+                </div>
+
+                <div className="flex flex-col gap-4 border-t border-zinc-200 pt-5">
+                  <Link
+                    to="/claim-business"
+                    className="inline-flex min-h-12 items-center justify-center border-2 border-zinc-900 bg-zinc-900 px-4 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white shadow-[4px_4px_0px_0px_rgba(24,24,27,1)] transition-all hover:border-orange-500 hover:bg-orange-500 hover:shadow-none"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    {link.label}
-                    <span className="font-mono text-[10px] uppercase tracking-[0.18em] opacity-70">Open</span>
-                  </NavLink>
-                ))}
-              </div>
-
-              <div className="flex flex-col gap-4 border-t border-zinc-200 pt-5">
-                <Link
-                  to="/claim-business"
-                  className="inline-flex min-h-12 items-center justify-center border-2 border-zinc-900 bg-zinc-900 px-4 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white shadow-[4px_4px_0px_0px_rgba(24,24,27,1)] transition-all hover:border-orange-500 hover:bg-orange-500 hover:shadow-none"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Claim Business
-                </Link>
-                <Link
-                  to="/for-business"
-                  className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-600"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  For Business Owners
-                </Link>
-                <UserMenu />
+                    Claim Business
+                  </Link>
+                  <Link
+                    to="/for-business"
+                    className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-600"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    For Business Owners
+                  </Link>
+                  <UserMenu />
+                </div>
               </div>
             </div>
-          </div>
+          </>
         )}
+
       </header>
 
       {import.meta.env.DEV ? (

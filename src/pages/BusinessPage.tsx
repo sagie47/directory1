@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { MapPin, Star, Phone, Globe, Mail, Clock, Check, ArrowRight, ShieldCheck, AlertCircle, Image as ImageIcon, Navigation } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -17,6 +18,9 @@ import {
 import Breadcrumbs from '../components/Breadcrumbs';
 import GalleryLightbox from '../components/GalleryLightbox';
 import { useDirectoryData } from '../directory-data';
+
+const INITIAL_MOBILE_REVIEW_COUNT = 1;
+const MOBILE_REVIEW_BATCH_SIZE = 2;
 
 export default function BusinessPage() {
   const { cityId, categoryId, businessId } = useParams<{ cityId: string, categoryId: string, businessId: string }>();
@@ -65,7 +69,19 @@ export default function BusinessPage() {
   const serviceAreas = getBusinessServiceAreas(business, city.name);
   const rating = business.rating ?? 0;
   const reviewCount = business.reviewCount ?? 0;
-  
+  const [visibleMobileReviewCount, setVisibleMobileReviewCount] = useState(INITIAL_MOBILE_REVIEW_COUNT);
+
+  useEffect(() => {
+    setVisibleMobileReviewCount(INITIAL_MOBILE_REVIEW_COUNT);
+  }, [business.id]);
+
+  const visibleMobileReviews = reviews.slice(0, visibleMobileReviewCount);
+  const hasMoreMobileReviews = visibleMobileReviewCount < reviews.length;
+
+  const showMoreMobileReviews = () => {
+    setVisibleMobileReviewCount((previous) => Math.min(previous + MOBILE_REVIEW_BATCH_SIZE, reviews.length));
+  };
+
   const heroImageSrc = photos[0];
 
   return (
@@ -86,7 +102,7 @@ export default function BusinessPage() {
           />
 
       {/* Hero Header Section */}
-      <div className="relative pt-12 pb-16 lg:pt-20 lg:pb-24 overflow-hidden border-b border-zinc-200 bg-white">
+      <div className="relative overflow-hidden border-b border-zinc-200 bg-white pt-8 pb-10 sm:pt-10 sm:pb-12 lg:pt-20 lg:pb-24">
         <div className="absolute inset-0 z-0 bg-white">
           {heroImageSrc && (
             <img 
@@ -99,8 +115,8 @@ export default function BusinessPage() {
           <div className="absolute inset-0 bg-gradient-to-b from-white/40 to-white/95" />
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8">
-          <div className="flex flex-col lg:flex-row justify-between items-start gap-12">
+        <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col items-start justify-between gap-8 sm:gap-10 lg:flex-row lg:gap-12">
             <div className="max-w-3xl">
               <div className="flex flex-wrap items-center gap-3 mb-6">
                 <span className="px-3 py-1.5 bg-zinc-900 text-white text-[10px] font-mono font-bold uppercase tracking-widest shadow-sm rounded-sm">
@@ -153,11 +169,11 @@ export default function BusinessPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 py-16 lg:py-24">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8 lg:py-24">
+        <div className="grid grid-cols-1 items-start gap-10 sm:gap-12 lg:grid-cols-12 lg:gap-16">
           
           {/* Main Content */}
-          <div className="lg:col-span-8 space-y-16 lg:space-y-24">
+          <div className="space-y-10 sm:space-y-12 lg:col-span-8 lg:space-y-24">
             
             {/* Gallery Section */}
             {photos.length > 0 ? (
@@ -209,36 +225,70 @@ export default function BusinessPage() {
 
             {reviews.length > 0 && (
               <section>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8">
-                  <h2 className="text-xl font-black uppercase tracking-tight text-zinc-900 flex items-center gap-4">
-                    <span className="w-8 h-[2px] bg-zinc-900"></span>
+                <div className="mb-8 flex flex-col justify-between gap-6 sm:flex-row sm:items-center">
+                  <h2 className="flex items-center gap-4 text-xl font-black uppercase tracking-tight text-zinc-900">
+                    <span className="h-[2px] w-8 bg-zinc-900"></span>
                     Verified Feedback
                   </h2>
                   {mapsHref && (
-                    <a href={mapsHref} target="_blank" rel="noopener noreferrer" className="text-[10px] font-bold font-mono uppercase tracking-widest text-zinc-500 hover:text-orange-600 transition-colors flex items-center gap-2">
-                      View Source <ArrowRight className="w-3 h-3" />
+                    <a href={mapsHref} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[10px] font-bold font-mono uppercase tracking-widest text-zinc-500 transition-colors hover:text-orange-600">
+                      View Source <ArrowRight className="h-3 w-3" />
                     </a>
                   )}
                 </div>
-                
-                <div className="space-y-16">
+
+                <div className="lg:hidden">
+                  <div className="space-y-5">
+                    {visibleMobileReviews.map((review, idx) => (
+                      <article key={`${review.author}-${idx}`} className="rounded-sm border border-zinc-200 bg-white p-5 shadow-sm">
+                        <div className="mb-4 flex items-center justify-between gap-4">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-900 text-sm font-mono font-bold text-white">
+                              {review.author.charAt(0)}
+                            </div>
+                            <span className="text-sm font-bold uppercase tracking-wide text-zinc-900">{review.author}</span>
+                          </div>
+                          <div className="flex gap-1 rounded-full bg-zinc-50 px-3 py-1.5">
+                            {[...Array(5)].map((_, i) => (
+                              <Star key={i} className={`h-3 w-3 ${i < review.rating ? 'fill-orange-500 text-orange-500' : 'fill-zinc-300 text-zinc-300'}`} strokeWidth={1} />
+                            ))}
+                          </div>
+                        </div>
+                        <p className="text-base leading-relaxed text-zinc-700">{review.text}</p>
+                      </article>
+                    ))}
+
+                    {hasMoreMobileReviews && (
+                      <button
+                        type="button"
+                        onClick={showMoreMobileReviews}
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-sm border border-zinc-300 bg-white px-4 py-3 text-[11px] font-mono font-bold uppercase tracking-[0.12em] text-zinc-700 transition-colors hover:border-zinc-900 hover:text-zinc-900"
+                      >
+                        Show More Reviews
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="hidden space-y-16 lg:block">
                   {reviews.map((review, idx) => (
-                    <div key={idx} className={`relative ${idx !== reviews.length - 1 ? 'pb-16 border-b border-zinc-200/60' : ''}`}>
-                      <div className="absolute -left-4 -top-6 text-[8rem] leading-none font-serif text-zinc-100 select-none opacity-40">"</div>
-                      <div className="relative z-10 pl-6 lg:pl-10 border-l-2 border-orange-500">
-                        <p className="text-xl lg:text-2xl text-zinc-800 leading-[1.5] tracking-tight mb-8 text-pretty">
+                    <div key={idx} className={`relative ${idx !== reviews.length - 1 ? 'border-b border-zinc-200/60 pb-16' : ''}`}>
+                      <div className="absolute -left-4 -top-6 select-none font-serif text-[8rem] leading-none text-zinc-100 opacity-40">"</div>
+                      <div className="relative z-10 border-l-2 border-orange-500 pl-6 lg:pl-10">
+                        <p className="mb-8 text-xl leading-[1.5] tracking-tight text-zinc-800 text-pretty lg:text-2xl">
                           {review.text}
                         </p>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-full bg-zinc-900 text-white flex items-center justify-center text-sm font-mono font-bold">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-900 text-sm font-mono font-bold text-white">
                               {review.author.charAt(0)}
                             </div>
-                            <span className="font-sans font-bold text-zinc-900 uppercase tracking-wide text-sm">{review.author}</span>
+                            <span className="text-sm font-bold uppercase tracking-wide text-zinc-900">{review.author}</span>
                           </div>
-                          <div className="flex gap-1 bg-zinc-50 px-3 py-1.5 rounded-full">
+                          <div className="flex gap-1 rounded-full bg-zinc-50 px-3 py-1.5">
                             {[...Array(5)].map((_, i) => (
-                              <Star key={i} className={`w-3 h-3 ${i < review.rating ? 'fill-orange-500 text-orange-500' : 'fill-zinc-300 text-zinc-300'}`} strokeWidth={1} />
+                              <Star key={i} className={`h-3 w-3 ${i < review.rating ? 'fill-orange-500 text-orange-500' : 'fill-zinc-300 text-zinc-300'}`} strokeWidth={1} />
                             ))}
                           </div>
                         </div>
@@ -254,7 +304,7 @@ export default function BusinessPage() {
           <div className="lg:col-span-4 space-y-8 lg:sticky lg:top-24">
             
             {/* Mobile Actions */}
-            <div className="lg:hidden flex flex-col gap-4 mb-8">
+            <div className="mb-2 flex flex-col gap-3 lg:hidden">
               {phoneHref && (
                 <a href={phoneHref} className="flex items-center justify-between w-full bg-zinc-900 text-white px-6 py-4 rounded-xl leading-none font-mono text-sm font-semibold uppercase tracking-widest shadow-sm border border-zinc-900">
                   <span>Call Now</span>
