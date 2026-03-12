@@ -82,46 +82,46 @@ export default function Home() {
       className="bg-[#FAFAFA] min-h-screen text-zinc-900 font-sans selection:bg-indigo-200 selection:text-indigo-900"
     >
       {/* Dramatic Hero Section */}
-      <section className="relative flex min-h-[100svh] items-end overflow-hidden bg-zinc-900 px-0 pt-24 pb-14 text-white sm:pt-28 sm:pb-18 lg:pt-44 lg:pb-24">
+      <section className="relative flex min-h-[70svh] items-end overflow-hidden bg-zinc-900 px-0 pb-10 pt-20 text-white sm:min-h-[82svh] sm:pb-14 sm:pt-24 lg:min-h-[100svh] lg:pb-24 lg:pt-44">
         {/* Full-width Background Image with subtle darkening for contrast */}
         <div className="absolute inset-0 z-0">
           <motion.img 
             initial={{ scale: 1.1, opacity: 0 }}
-            animate={{ scale: 1, opacity: 0.6 }}
-            transition={{ duration: 2, ease: "easeOut" }}
+            animate={{ scale: 1, opacity: 0.58 }}
+            transition={{ duration: 1.6, ease: 'easeOut' }}
             src={heroImage}
             alt="Okanagan Valley Architecture" 
             className="w-full h-full object-cover"
           />
           {/* Gradient from left to right so text is readable but image is visible */}
-          <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/90 via-zinc-900/50 to-transparent z-10"></div>
+          <div className="absolute inset-0 z-10 bg-gradient-to-r from-zinc-950/92 via-zinc-900/68 to-zinc-900/30"></div>
           {/* Subtle bottom gradient to blend with the overlapping grid */}
-          <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent z-10"></div>
+          <div className="absolute inset-0 z-10 bg-gradient-to-t from-zinc-950/88 via-zinc-900/30 to-zinc-900/10"></div>
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-20 mix-blend-overlay z-10"></div>
         </div>
         
-        <div className="relative z-20 mx-auto w-full max-w-[96rem] px-4 sm:px-6 lg:px-10">
-          <motion.div variants={heroVariants} initial="hidden" animate="show" className="flex max-w-4xl flex-col items-start text-left">
+        <div className="relative z-20 mx-auto w-full max-w-[96rem] px-5 sm:px-6 lg:px-10">
+          <motion.div variants={heroVariants} initial="hidden" animate="show" className="flex max-w-md flex-col items-start text-left sm:max-w-2xl lg:max-w-4xl">
             <motion.div variants={heroItemVariants}>
               <SectionEyebrow
                 icon={LayoutGrid}
-                className="mb-8 inline-flex items-center gap-2 rounded-sm border border-white/20 bg-white/10 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-100 shadow-sm backdrop-blur-md"
+                className="mb-5 inline-flex items-center gap-2 rounded-sm border border-white/20 bg-white/10 px-3 py-2 font-mono text-[11px] uppercase tracking-[0.24em] text-zinc-100 shadow-sm backdrop-blur-md sm:mb-8 sm:px-4 sm:tracking-[0.3em]"
                 iconClassName="h-3.5 w-3.5 text-zinc-300"
               >
                 Verified Contractor Database
               </SectionEyebrow>
             </motion.div>
             
-            <motion.h1 variants={heroItemVariants} className="mb-6 text-4xl font-medium tracking-tighter leading-[1.02] text-white text-balance drop-shadow-2xl sm:text-5xl md:text-7xl lg:mb-8 lg:text-[7rem]">
+            <motion.h1 variants={heroItemVariants} className="mb-4 text-4xl font-medium leading-[0.96] tracking-tight text-balance text-white drop-shadow-2xl sm:mb-6 sm:text-5xl md:text-6xl lg:mb-8 lg:text-[7rem]">
               Build with <span className="font-serif italic font-light text-zinc-200">Confidence.</span>
             </motion.h1>
             
-            <motion.p variants={heroItemVariants} className="mb-10 max-w-2xl text-lg leading-relaxed text-balance text-zinc-300 drop-shadow-md sm:mb-12 sm:text-xl md:text-2xl lg:mb-16">
-              A refined network of top-rated trades and contractors across the Okanagan Valley. Precision, reliability, and scale.
+            <motion.p variants={heroItemVariants} className="mb-8 max-w-sm text-base leading-7 text-zinc-200 drop-shadow-md sm:mb-12 sm:max-w-xl sm:text-lg md:text-xl lg:mb-16">
+              Find trusted contractors across the Okanagan for design, build, repair, and maintenance.
             </motion.p>
             
             {/* Massive Search Bar */}
-            <motion.form variants={heroItemVariants} onSubmit={handleSearch} className="group/search relative flex w-full max-w-5xl flex-col gap-2 rounded-lg border border-white/20 bg-white/10 p-2 shadow-[0_30px_60px_rgba(0,0,0,0.4)] backdrop-blur-2xl md:flex-row">
+            <motion.form variants={heroItemVariants} onSubmit={handleSearch} className="group/search relative flex w-full max-w-5xl flex-col gap-2 rounded-lg border border-white/20 bg-white/10 p-2 shadow-[0_20px_40px_rgba(0,0,0,0.35)] backdrop-blur-2xl md:flex-row">
               <div className="flex-1 relative bg-white/10 border border-white/5 hover:bg-white/20 focus-within:bg-white/20 focus-within:border-indigo-400/50 transition-all duration-300 rounded-md">
                 <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
                   <Search className="h-5 w-5 text-zinc-400 group-focus-within/search:text-indigo-400 transition-colors" strokeWidth={1.5} />

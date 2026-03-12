@@ -25,10 +25,9 @@ export default function Layout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col bg-[#FAFAFA] font-sans text-zinc-900 selection:bg-zinc-200 selection:text-zinc-900">
       <header className="relative sticky top-0 z-50 border-b-2 border-zinc-900 bg-[#FAFAFA]">
-        <div className="border-b border-zinc-900/10 bg-white">
-          <div className="mx-auto flex max-w-[96rem] flex-wrap items-center justify-between gap-2 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500 sm:px-6 lg:px-10">
-            <span className="sm:hidden">Okanagan Trades</span>
-            <span className="hidden sm:inline">Okanagan Valley Contractor Directory</span>
+        <div className="hidden border-b border-zinc-900/10 bg-white sm:block">
+          <div className="mx-auto flex max-w-[96rem] flex-wrap items-center justify-between gap-2 px-6 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500 lg:px-10">
+            <span>Okanagan Valley Contractor Directory</span>
             <Link to="/for-business" className="hidden transition-colors hover:text-zinc-950 md:inline-flex">
               For Business Owners
             </Link>
@@ -36,14 +35,14 @@ export default function Layout({ children }: { children: ReactNode }) {
         </div>
 
         <div className="mx-auto max-w-[96rem] px-4 sm:px-6 lg:px-10">
-          <div className="grid min-h-[5.25rem] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:min-h-[6rem] sm:gap-4 lg:grid-cols-[minmax(19rem,1.1fr)_minmax(0,1fr)_auto] lg:gap-8">
-            <Link to="/" className="group flex min-w-0 items-center gap-3 py-4 sm:gap-5 sm:py-5">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center border-2 border-zinc-900 bg-zinc-900 text-white shadow-[4px_4px_0px_0px_rgba(24,24,27,1)] transition-all duration-300 group-hover:-translate-x-0.5 group-hover:-translate-y-0.5 group-hover:shadow-[6px_6px_0px_0px_rgba(24,24,27,1)] sm:h-14 sm:w-14">
-                <LayoutGrid className="h-5 w-5" strokeWidth={2.4} />
+          <div className="grid min-h-[4.75rem] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:min-h-[6rem] sm:gap-4 lg:grid-cols-[minmax(19rem,1.1fr)_minmax(0,1fr)_auto] lg:gap-8">
+            <Link to="/" className="group flex min-w-0 items-center gap-3 py-3 sm:gap-5 sm:py-5">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center border-2 border-zinc-900 bg-zinc-900 text-white shadow-[3px_3px_0px_0px_rgba(24,24,27,1)] transition-all duration-300 group-hover:-translate-x-0.5 group-hover:-translate-y-0.5 group-hover:shadow-[6px_6px_0px_0px_rgba(24,24,27,1)] sm:h-14 sm:w-14 sm:shadow-[4px_4px_0px_0px_rgba(24,24,27,1)]">
+                <LayoutGrid className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2.4} />
               </div>
               <div className="min-w-0 space-y-1">
-                <div className="font-sans text-[1.15rem] font-black uppercase tracking-[-0.04em] leading-none text-zinc-950 sm:text-[1.55rem]">Okanagan Trades</div>
-                <div className="font-mono text-[9px] font-bold uppercase tracking-[0.16em] text-zinc-400 transition-colors group-hover:text-orange-600 sm:text-[10px] sm:tracking-[0.24em]">Verified Regional Network</div>
+                <div className="truncate font-sans text-[1.02rem] font-black uppercase leading-none tracking-[-0.03em] text-zinc-950 sm:text-[1.55rem]">Okanagan Trades</div>
+                <div className="truncate font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400 transition-colors group-hover:text-orange-600 sm:text-[10px] sm:tracking-[0.24em]">Verified Regional Network</div>
               </div>
             </Link>
 
@@ -77,7 +76,7 @@ export default function Layout({ children }: { children: ReactNode }) {
               </div>
             </nav>
 
-            <div className="flex items-center justify-end gap-2 py-3 sm:gap-3 sm:py-4 lg:gap-4">
+            <div className="flex items-center justify-end gap-2 py-2 sm:gap-3 sm:py-4 lg:gap-4">
               <div className="hidden items-center gap-3 md:flex">
                 <Link
                   to="/claim-business"
@@ -93,9 +92,9 @@ export default function Layout({ children }: { children: ReactNode }) {
                 aria-label={isMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
                 aria-expanded={isMenuOpen}
                 aria-controls="mobile-site-navigation"
-                className="flex h-11 w-11 items-center justify-center border-2 border-zinc-900 bg-white text-zinc-900 transition-all hover:bg-zinc-900 hover:text-white active:scale-95 lg:hidden"
+                className="flex h-10 w-10 items-center justify-center border-2 border-zinc-900 bg-white text-zinc-900 transition-all hover:bg-zinc-900 hover:text-white active:scale-95 sm:h-11 sm:w-11 lg:hidden"
               >
-                {isMenuOpen ? <X className="h-5 w-5" strokeWidth={2.2} /> : <Menu className="h-5 w-5" strokeWidth={2.2} />}
+                {isMenuOpen ? <X className="h-[18px] w-[18px] sm:h-5 sm:w-5" strokeWidth={2.2} /> : <Menu className="h-[18px] w-[18px] sm:h-5 sm:w-5" strokeWidth={2.2} />}
               </button>
             </div>
           </div>
