@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, type TouchEvent } from 'react';
-import { X, ChevronLeft, ChevronRight, Expand, Images } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Expand } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface GalleryLightboxProps {
@@ -94,19 +94,9 @@ export default function GalleryLightbox({ images, businessName }: GalleryLightbo
 
   return (
     <>
-      <section className="overflow-hidden rounded-sm border border-zinc-200 bg-white shadow-sm">
-        <div className="flex flex-col gap-5 p-5 md:p-6">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div>
-              <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.12em] text-zinc-500">
-                <Images className="h-3.5 w-3.5" strokeWidth={1.5} />
-                Photo Gallery
-              </div>
-              <h3 className="mt-2 text-xl font-medium tracking-tight text-zinc-900">
-                Site Preview
-              </h3>
-            </div>
-
+      <section className="overflow-hidden bg-white shadow-sm md:rounded-sm md:border md:border-zinc-200">
+        <div className="flex flex-col gap-4 p-0 md:gap-5 md:p-6">
+          <div className="hidden md:flex md:flex-row md:items-center md:justify-end">
             <button
               type="button"
               onClick={() => openLightbox(currentIndex)}
@@ -118,7 +108,7 @@ export default function GalleryLightbox({ images, businessName }: GalleryLightbo
           </div>
 
           <div
-            className="relative overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100"
+            className="relative overflow-hidden bg-zinc-100 md:rounded-xl md:border md:border-zinc-200"
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
           >
@@ -145,7 +135,7 @@ export default function GalleryLightbox({ images, businessName }: GalleryLightbo
                   transition={{ duration: 0.2 }}
                   src={images[currentIndex]}
                   alt={`${businessName} image ${currentIndex + 1}`}
-                  className="h-[280px] w-full object-cover md:h-[460px]"
+                  className="h-[260px] w-full object-cover md:h-[460px]"
                   referrerPolicy="no-referrer"
                 />
               </AnimatePresence>
