@@ -7,6 +7,7 @@ import SectionEyebrow from '../components/SectionEyebrow';
 import BusinessFAQ from '../components/BusinessFAQ';
 import BusinessCTA from '../components/BusinessCTA';
 import businessHero from '../photos/businessown/thumbnail_G74A6639.jpg';
+import { createImageFallbackHandler, preferSupabaseImage } from '../supabase-images';
 
 const offerLanes = [
   {
@@ -156,6 +157,8 @@ const faqs = [
 ];
 
 export default function ForBusinessPage() {
+  const businessHeroSrc = preferSupabaseImage('thumbnail_G74A6639.jpg', businessHero);
+
   return (
     <div className="bg-[#FAFAFA] text-zinc-900 font-sans selection:bg-indigo-200 selection:text-indigo-900">
       {/* Homepage-matched Hero Section */}
@@ -165,9 +168,10 @@ export default function ForBusinessPage() {
             initial={{ scale: 1.1, opacity: 0 }}
             animate={{ scale: 1, opacity: 0.6 }}
             transition={{ duration: 1.5, ease: "easeOut" }}
-            src={businessHero}
+            src={businessHeroSrc}
             alt="Business Owner" 
             className="w-full h-full object-cover"
+            onError={createImageFallbackHandler(businessHero)}
           />
           <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/90 via-zinc-900/40 to-transparent z-10"></div>
           <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent z-10"></div>

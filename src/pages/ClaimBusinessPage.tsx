@@ -6,6 +6,7 @@ import BusinessFAQ from '../components/BusinessFAQ';
 import BusinessCTA from '../components/BusinessCTA';
 import FeatureCard from '../components/FeatureCard';
 import SectionEyebrow from '../components/SectionEyebrow';
+import { createImageFallbackHandler, preferSupabaseImage } from '../supabase-images';
 
 const whyClaimItems = [
   {
@@ -62,6 +63,8 @@ const faqs = [
 ];
 
 export default function ClaimBusinessPage() {
+  const businessBgSrc = preferSupabaseImage('job-construction-scaled.jpg', businessBg);
+
   return (
     <div className="bg-[#FAFAFA] text-zinc-900 font-sans selection:bg-indigo-200 selection:text-indigo-900">
       {/* Homepage-matched Hero Section */}
@@ -71,9 +74,10 @@ export default function ClaimBusinessPage() {
             initial={{ scale: 1.1, opacity: 0 }}
             animate={{ scale: 1, opacity: 0.6 }}
             transition={{ duration: 2, ease: "easeOut" }}
-            src={businessBg}
+            src={businessBgSrc}
             alt="Business Background" 
             className="w-full h-full object-cover"
+            onError={createImageFallbackHandler(businessBg)}
           />
           <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/90 via-zinc-900/50 to-transparent z-10"></div>
           <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent z-10"></div>

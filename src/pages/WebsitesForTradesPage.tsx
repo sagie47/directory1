@@ -6,6 +6,7 @@ import FeatureCard from '../components/FeatureCard';
 import SectionEyebrow from '../components/SectionEyebrow';
 import BusinessFAQ from '../components/BusinessFAQ';
 import websiteHero from '../photos/businessown/AA_BCConstruction.jpg';
+import { createImageFallbackHandler, preferSupabaseImage } from '../supabase-images';
 
 const whatItDoes = [
   {
@@ -66,6 +67,8 @@ const faqs = [
 ];
 
 export default function WebsitesForTradesPage() {
+  const websiteHeroSrc = preferSupabaseImage('AA_BCConstruction.jpg', websiteHero);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -81,9 +84,10 @@ export default function WebsitesForTradesPage() {
             initial={{ scale: 1.1, opacity: 0 }}
             animate={{ scale: 1, opacity: 0.5 }}
             transition={{ duration: 1.5, ease: "easeOut" }}
-            src={websiteHero}
+            src={websiteHeroSrc}
             alt="Trade Construction" 
             className="w-full h-full object-cover"
+            onError={createImageFallbackHandler(websiteHero)}
           />
           <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/90 via-zinc-900/40 to-transparent z-10"></div>
           <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent z-10"></div>

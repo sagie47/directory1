@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
-import { MapPin, Star, Phone, Globe, Mail, Clock, Check, ArrowRight, ShieldCheck, AlertCircle, Image as ImageIcon, Navigation } from 'lucide-react';
+import { MapPin, Star, Phone, Globe, Mail, Clock, Check, ArrowRight, AlertCircle, Image as ImageIcon, Navigation } from 'lucide-react';
 import { motion } from 'motion/react';
 import {
   getBusinessCapabilities,
@@ -146,9 +146,6 @@ export default function BusinessPage() {
                 <span className="rounded-sm bg-zinc-900 px-3 py-1.5 text-[10px] font-mono font-bold uppercase tracking-widest text-white shadow-sm lg:py-1">
                   {category.name}
                 </span>
-                <span className="flex items-center gap-1.5 rounded-sm bg-orange-500 px-3 py-1.5 text-[10px] font-mono font-bold uppercase tracking-widest text-white shadow-sm lg:hidden">
-                  <ShieldCheck className="w-3.5 h-3.5" /> Verified
-                </span>
               </div>
               
               <h1 className="mb-3 text-4xl font-black uppercase leading-[1.05] tracking-tighter text-zinc-900 md:text-5xl lg:text-6xl">
@@ -210,7 +207,7 @@ export default function BusinessPage() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-0 py-6 sm:px-6 sm:py-12 lg:px-8 lg:pt-6 lg:pb-10">
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-12 lg:px-8 lg:pt-6 lg:pb-10">
         <div className="grid grid-cols-1 items-start gap-8 sm:gap-12 lg:grid-cols-12 lg:gap-16">
           
           {/* Main Content */}
@@ -218,7 +215,7 @@ export default function BusinessPage() {
             
             {/* Gallery Section */}
             {photos.length > 0 ? (
-              <div className="sm:px-0 lg:rounded-sm lg:border lg:border-zinc-200 lg:bg-white lg:p-1.5 lg:shadow-sm">
+              <div className="-mx-4 sm:mx-0 lg:rounded-sm lg:border lg:border-zinc-200 lg:bg-white lg:p-1.5 lg:shadow-sm">
                 <GalleryLightbox images={photos} businessName={business.name} />
               </div>
             ) : null}

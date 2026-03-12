@@ -4,6 +4,7 @@ import { ArrowRight, MapPin, ChevronRight, LayoutGrid } from 'lucide-react';
 import Breadcrumbs from '../components/Breadcrumbs';
 import { useDirectoryData } from '../directory-data';
 import businessBg from '../photos/millwright-quesnel-2-2024.tmb-1000px.jpg';
+import { createImageFallbackHandler, preferSupabaseImage } from '../supabase-images';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -23,6 +24,7 @@ export default function RegionsPage() {
   const { categories, cities } = useDirectoryData();
   const categoryId = searchParams.get('category') ?? '';
   const category = categories.find((entry) => entry.id === categoryId);
+  const businessBgSrc = preferSupabaseImage('millwright-quesnel-2-2024.tmb-1000px.jpg', businessBg);
 
   return (
     <motion.div 
@@ -39,9 +41,10 @@ export default function RegionsPage() {
             initial={{ scale: 1.1, opacity: 0 }}
             animate={{ scale: 1, opacity: 0.6 }}
             transition={{ duration: 2, ease: "easeOut" }}
-            src={businessBg}
+            src={businessBgSrc}
             alt="Business Background" 
             className="w-full h-full object-cover"
+            onError={createImageFallbackHandler(businessBg)}
           />
           <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/90 via-zinc-900/50 to-transparent z-10"></div>
           <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent z-10"></div>
@@ -170,7 +173,7 @@ export default function RegionsPage() {
             </div>
             <div className="relative">
               <div className="relative z-10 aspect-square overflow-hidden rounded-sm border border-zinc-200 shadow-xl md:aspect-[4/3]">
-                <img src={businessBg} alt="Millwright Facility" className="w-full h-full object-cover saturate-50 hover:saturate-100 transition-all duration-700" />
+                <img src={businessBgSrc} alt="Millwright Facility" className="w-full h-full object-cover saturate-50 hover:saturate-100 transition-all duration-700" onError={createImageFallbackHandler(businessBg)} />
               </div>
               <div className="absolute -bottom-6 -left-6 w-48 h-48 bg-orange-100 rounded-full blur-3xl opacity-50 z-0"></div>
             </div>

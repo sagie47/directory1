@@ -5,8 +5,9 @@ import BusinessCard from '../components/BusinessCard';
 import Breadcrumbs from '../components/Breadcrumbs';
 import { motion } from 'motion/react';
 import { useDirectoryData } from '../directory-data';
-import { getCityHeroImage } from '../city-hero-images';
+import { getCityHeroFallbackImage, getCityHeroImage } from '../city-hero-images';
 import { businessServesCity } from '../business';
+import { createImageFallbackHandler } from '../supabase-images';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -48,6 +49,7 @@ export default function CityPage() {
   ];
 
   const heroImage = getCityHeroImage(cityId);
+  const heroImageFallback = getCityHeroFallbackImage(cityId);
 
   return (
     <motion.div 
@@ -70,6 +72,7 @@ export default function CityPage() {
               src={heroImage}
               alt={city.name}
               className="w-full h-full object-cover"
+              onError={heroImageFallback ? createImageFallbackHandler(heroImageFallback) : undefined}
             />
             <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/90 via-zinc-900/40 to-transparent z-10"></div>
             <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent z-10"></div>
@@ -167,7 +170,7 @@ export default function CityPage() {
             initial="hidden"
             whileInView="show"
             viewport={{ once: true, margin: "-50px" }}
-            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-4"
+            className="grid grid-cols-1 gap-0 sm:grid-cols-2 sm:gap-x-8 sm:gap-y-4 md:grid-cols-3 lg:grid-cols-4"
           >
             {otherCategories.map((category) => {
               const IconComponent = (Icons as any)[category.icon] || Icons.Wrench;
@@ -178,7 +181,7 @@ export default function CityPage() {
                 <motion.div key={category.id} variants={itemVariants}>
                   <Link 
                     to={`/${city.id}/${category.id}`}
-                    className="group flex items-center gap-4 py-3 px-4 bg-white border-2 border-transparent hover:border-zinc-900 transition-all duration-300 ease-[0.16,1,0.3,1] hover:shadow-[4px_4px_0px_0px_rgba(24,24,27,0.1)] hover:-translate-y-1 active:translate-y-0 active:shadow-none"
+                    className="group flex items-center gap-4 border-x-0 border-y border-zinc-200 bg-white px-4 py-3 transition-all duration-300 ease-[0.16,1,0.3,1] hover:border-zinc-900 hover:shadow-[4px_4px_0px_0px_rgba(24,24,27,0.1)] hover:-translate-y-1 active:translate-y-0 active:shadow-none sm:border-2 sm:border-transparent"
                   >
                     <div className="w-12 h-12 flex items-center justify-center shrink-0 bg-zinc-50 border-2 border-zinc-200 group-hover:bg-zinc-900 group-hover:border-zinc-900 transition-colors duration-300 text-zinc-400 group-hover:text-white">
                       <IconComponent className="h-5 w-5 group-hover:scale-110 group-hover:-rotate-6 transition-all duration-300 ease-[0.16,1,0.3,1]" strokeWidth={2.5} />

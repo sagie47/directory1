@@ -9,6 +9,7 @@ import { Business } from '../business';
 import { useDirectoryData } from '../directory-data';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import businessBg from '../photos/businessown/thumbnail_G74A6639.jpg';
+import { createImageFallbackHandler, preferSupabaseImage } from '../supabase-images';
 
 interface ClaimPageProps {
   onClaimComplete?: () => void;
@@ -33,6 +34,7 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const claimsAvailable = Boolean(supabase && isSupabaseConfigured());
+  const businessBgSrc = preferSupabaseImage('thumbnail_G74A6639.jpg', businessBg);
   const selectedBusinessId = searchParams.get('businessId');
 
   useEffect(() => {
@@ -237,9 +239,10 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
               initial={{ scale: 1.1, opacity: 0 }}
               animate={{ scale: 1, opacity: 0.6 }}
               transition={{ duration: 2, ease: "easeOut" }}
-              src={businessBg}
+              src={businessBgSrc}
               alt="Business Background" 
               className="w-full h-full object-cover"
+              onError={createImageFallbackHandler(businessBg)}
             />
             <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/90 via-zinc-900/50 to-transparent z-10"></div>
             <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent z-10"></div>

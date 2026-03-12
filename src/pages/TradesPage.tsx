@@ -4,6 +4,7 @@ import { motion } from 'motion/react';
 import { ArrowRight, LayoutGrid, ChevronRight } from 'lucide-react';
 import { useDirectoryData } from '../directory-data';
 import businessBg from '../photos/1746202255761.jpg';
+import { createImageFallbackHandler, preferSupabaseImage } from '../supabase-images';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -20,6 +21,7 @@ const itemVariants = {
 
 export default function TradesPage() {
   const { categories } = useDirectoryData();
+  const businessBgSrc = preferSupabaseImage('1746202255761.jpg', businessBg);
   
   return (
     <motion.div 
@@ -36,9 +38,10 @@ export default function TradesPage() {
             initial={{ scale: 1.1, opacity: 0 }}
             animate={{ scale: 1, opacity: 0.6 }}
             transition={{ duration: 2, ease: "easeOut" }}
-            src={businessBg}
+            src={businessBgSrc}
             alt="Business Background" 
             className="w-full h-full object-cover"
+            onError={createImageFallbackHandler(businessBg)}
           />
           <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/90 via-zinc-900/50 to-transparent z-10"></div>
           <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent z-10"></div>

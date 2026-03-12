@@ -6,6 +6,7 @@ import leadHero from '../photos/businessown/plumbing_career_social jpg.jpg';
 import BusinessFAQ from '../components/BusinessFAQ';
 import BusinessCTA from '../components/BusinessCTA';
 import FeatureCard from '../components/FeatureCard';
+import { createImageFallbackHandler, preferSupabaseImage } from '../supabase-images';
 
 const howItWorks = [
   {
@@ -63,6 +64,8 @@ const faqs = [
 ];
 
 export default function NeverMissLeadPage() {
+  const leadHeroSrc = preferSupabaseImage('plumbing_career_social jpg.jpg', leadHero);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -78,9 +81,10 @@ export default function NeverMissLeadPage() {
             initial={{ scale: 1.1, opacity: 0 }}
             animate={{ scale: 1, opacity: 0.5 }}
             transition={{ duration: 1.5, ease: "easeOut" }}
-            src={leadHero}
+            src={leadHeroSrc}
             alt="Plumbing Trade" 
             className="w-full h-full object-cover"
+            onError={createImageFallbackHandler(leadHero)}
           />
           <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/90 via-zinc-900/40 to-transparent z-10"></div>
           <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent z-10"></div>

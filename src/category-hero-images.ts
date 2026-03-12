@@ -1,11 +1,21 @@
 import type { Business } from './business';
-import { getCityHeroImage } from './city-hero-images';
+import { getCityHeroFallbackImage, getCityHeroImage } from './city-hero-images';
+import { preferSupabaseImage } from './supabase-images';
 
 import constructionHero from './photos/job-construction-scaled.jpg';
 import transitHero from './photos/2024_active_transportation_construction_hintringer_63.jpg';
 import lakeCountryHero from './photos/lake-country-header-gillian-min.jpg';
 
 const categoryFallbackImages: Record<string, string> = {
+  structural: preferSupabaseImage('job-construction-scaled.jpg', constructionHero),
+  mechanical: preferSupabaseImage('2024_active_transportation_construction_hintringer_63.jpg', transitHero),
+  interior: preferSupabaseImage('job-construction-scaled.jpg', constructionHero),
+  exterior: preferSupabaseImage('lake-country-header-gillian-min.jpg', lakeCountryHero),
+  specialty: preferSupabaseImage('2024_active_transportation_construction_hintringer_63.jpg', transitHero),
+  services: preferSupabaseImage('job-construction-scaled.jpg', constructionHero),
+};
+
+const categoryFallbackLocalImages: Record<string, string> = {
   structural: constructionHero,
   mechanical: transitHero,
   interior: constructionHero,
@@ -57,6 +67,19 @@ export function getCategoryHeroImage({ categoryId, groupId, cityId, businesses }
   const cityHero = getCityHeroImage(cityId);
   if (cityHero) {
     return cityHero;
+  }
+
+  return constructionHero;
+}
+
+export function getCategoryHeroFallbackImage({ groupId, cityId }: Pick<CategoryHeroContext, 'groupId' | 'cityId'>) {
+  if (groupId && categoryFallbackLocalImages[groupId]) {
+    return categoryFallbackLocalImages[groupId];
+  }
+
+  const cityHeroFallback = getCityHeroFallbackImage(cityId);
+  if (cityHeroFallback) {
+    return cityHeroFallback;
   }
 
   return constructionHero;

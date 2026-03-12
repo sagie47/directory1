@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, MapPin, ArrowRight, ChevronRight, LayoutGrid, SlidersHorizontal, X, Zap, Star } from 'lucide-react';
+import { Search, MapPin, ArrowRight, ChevronRight, SlidersHorizontal, X, Zap, Star } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import BusinessCard from '../components/BusinessCard';
 import FeatureCard from '../components/FeatureCard';
@@ -9,6 +9,7 @@ import { AnimatePresence, LayoutGroup, motion } from 'motion/react';
 import heroImage from '../photos/2024_active_transportation_construction_hintringer_63.jpg';
 import businessBg from '../photos/job-construction-scaled.jpg';
 import { useDirectoryData } from '../directory-data';
+import { createImageFallbackHandler, preferSupabaseImage } from '../supabase-images';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -99,6 +100,8 @@ export default function Home() {
 
   const selectedCityName = cities.find((city) => city.id === cityId)?.name ?? 'All Okanagan';
   const compactSearchLabel = query.trim() ? query.trim() : 'Search trades';
+  const heroImageSrc = preferSupabaseImage('2024_active_transportation_construction_hintringer_63.jpg', heroImage);
+  const businessBgSrc = preferSupabaseImage('job-construction-scaled.jpg', businessBg);
 
   return (
     <motion.div 
@@ -118,16 +121,20 @@ export default function Home() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -12, scale: 0.97 }}
               transition={{ duration: 0.26, ease: [0.16, 1, 0.3, 1] }}
-              className="fixed inset-x-0 top-[4.9rem] z-40 flex items-center justify-between gap-3 border-y-2 border-zinc-900 bg-white/95 px-4 py-3 text-left shadow-[0_18px_26px_rgba(24,24,27,0.17)] backdrop-blur-sm md:hidden sm:inset-x-4 sm:border-2"
+              className="fixed inset-x-4 top-[4.8rem] z-40 flex items-center gap-3 rounded-full border border-zinc-200 bg-white px-4 py-3 text-left shadow-[0_16px_36px_rgba(24,24,27,0.16)] ring-1 ring-zinc-100 md:hidden"
               onClick={() => setIsMobileSearchOpen(true)}
               aria-label="Open compact mobile search"
             >
-              <div className="min-w-0">
-                <p className="truncate font-sans text-sm font-semibold text-zinc-900">{compactSearchLabel}</p>
-                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-zinc-500">{selectedCityName}</p>
+              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-white shadow-sm">
+                <Search className="h-4 w-4" strokeWidth={2.3} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-sans text-[15px] font-semibold text-zinc-900">{compactSearchLabel}</p>
+                <p className="font-sans text-xs text-zinc-500">{selectedCityName}</p>
               </div>
-              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center border-2 border-zinc-900 bg-zinc-900 text-white">
-                <SlidersHorizontal className="h-4 w-4" strokeWidth={2.2} />
+              <span className="inline-flex shrink-0 items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-600">
+                Filter
+                <SlidersHorizontal className="h-3.5 w-3.5" strokeWidth={2.2} />
               </span>
             </motion.button>
           ) : null}
@@ -140,7 +147,7 @@ export default function Home() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.24 }}
-              className="fixed inset-0 z-50 bg-zinc-950/50 px-4 pb-4 pt-[5.3rem] md:hidden"
+              className="fixed inset-0 z-50 bg-zinc-950/50 px-4 pb-4 pt-[4.95rem] md:hidden"
             >
               <motion.div
                 initial={{ opacity: 0, y: 18, scale: 0.98 }}
@@ -245,9 +252,10 @@ export default function Home() {
             initial={{ scale: 1.1, opacity: 0 }}
             animate={{ scale: 1, opacity: 0.58 }}
             transition={{ duration: 1.6, ease: 'easeOut' }}
-            src={heroImage}
+            src={heroImageSrc}
             alt="Okanagan Valley Architecture" 
             className="w-full h-full object-cover"
+            onError={createImageFallbackHandler(heroImage)}
           />
           {/* Gradient from left to right so text is readable but image is visible */}
           <div className="absolute inset-0 z-10 bg-gradient-to-r from-zinc-950/92 via-zinc-900/68 to-zinc-900/30"></div>
@@ -258,16 +266,6 @@ export default function Home() {
         
         <div className="relative z-20 mx-auto w-full max-w-[96rem] px-5 sm:px-6 lg:px-10">
           <motion.div variants={heroVariants} initial="hidden" animate="show" className="flex max-w-md flex-col items-start text-left sm:max-w-2xl lg:max-w-4xl">
-            <motion.div variants={heroItemVariants}>
-              <SectionEyebrow
-                icon={LayoutGrid}
-                className="mb-5 inline-flex items-center gap-2 rounded-sm border border-white/20 bg-white/10 px-3 py-2 font-mono text-[11px] uppercase tracking-[0.24em] text-zinc-100 shadow-sm backdrop-blur-md sm:mb-8 sm:px-4 sm:tracking-[0.3em]"
-                iconClassName="h-3.5 w-3.5 text-zinc-300"
-              >
-                Verified Contractor Database
-              </SectionEyebrow>
-            </motion.div>
-            
             <motion.h1 variants={heroItemVariants} className="mb-4 text-4xl font-medium leading-[0.96] tracking-tight text-balance text-white drop-shadow-2xl sm:mb-6 sm:text-5xl md:text-6xl lg:mb-8 lg:text-[7rem]">
               Build with <span className="font-serif italic font-light text-zinc-200">Confidence.</span>
             </motion.h1>
@@ -281,23 +279,27 @@ export default function Home() {
                 variants={heroItemVariants}
                 layoutId="mobile-search-trigger"
                 type="button"
-                className="group relative flex w-full items-center justify-between gap-3 border-2 border-white/30 bg-white/10 px-4 py-3 text-left backdrop-blur-sm md:hidden"
+                className="group relative flex w-full items-center gap-3 rounded-full border border-white/25 bg-white px-4 py-3 text-left shadow-[0_16px_36px_rgba(0,0,0,0.18)] md:hidden"
                 transition={{ type: 'spring', stiffness: 260, damping: 28 }}
                 onClick={() => setIsMobileSearchOpen(true)}
               >
-              <div>
-                <p className="font-sans text-sm font-semibold text-white">{compactSearchLabel}</p>
-                <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-300">{selectedCityName}</p>
-              </div>
-              <span className="inline-flex h-9 w-9 items-center justify-center border border-white/35 bg-zinc-950/50 text-white">
-                <Search className="h-4 w-4" strokeWidth={2.2} />
-              </span>
+                <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-white">
+                  <Search className="h-4 w-4" strokeWidth={2.2} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-sans text-[15px] font-semibold text-zinc-900">{compactSearchLabel}</p>
+                  <p className="font-sans text-xs text-zinc-500">{selectedCityName}</p>
+                </div>
+                <span className="inline-flex shrink-0 items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-600">
+                  Search
+                  <ArrowRight className="h-3.5 w-3.5" strokeWidth={2.2} />
+                </span>
               </motion.button>
             ) : null}
 
             {/* Massive Search Bar */}
-            <motion.form variants={heroItemVariants} onSubmit={handleSearch} className="group/search relative hidden w-full max-w-5xl flex-col gap-2 rounded-lg border border-white/20 bg-white/10 p-2 shadow-[0_20px_40px_rgba(0,0,0,0.35)] backdrop-blur-2xl md:flex md:flex-row">
-              <div className="flex-1 relative bg-white/10 border border-white/5 hover:bg-white/20 focus-within:bg-white/20 focus-within:border-indigo-400/50 transition-all duration-300 rounded-md">
+            <motion.form variants={heroItemVariants} onSubmit={handleSearch} className="group/search relative hidden w-full max-w-5xl flex-col gap-3 rounded-[2rem] border border-white/20 bg-white/10 p-3 shadow-[0_20px_40px_rgba(0,0,0,0.35)] backdrop-blur-2xl md:flex md:flex-row md:items-center">
+              <div className="relative flex-1 rounded-full border border-white/10 bg-white/12 transition-all duration-300 hover:bg-white/20 focus-within:border-indigo-400/50 focus-within:bg-white/20">
                 <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
                   <Search className="h-5 w-5 text-zinc-400 group-focus-within/search:text-indigo-400 transition-colors" strokeWidth={1.5} />
                 </div>
@@ -306,18 +308,18 @@ export default function Home() {
                   placeholder="Trade / Service" 
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  className="block w-full rounded-md border-none bg-transparent py-4 pl-14 pr-4 text-base text-white outline-none transition-all duration-300 placeholder:text-zinc-500 sm:py-5 sm:pr-6 sm:text-lg"
+                  className="block w-full rounded-full border-none bg-transparent py-4 pl-14 pr-4 text-base text-white outline-none transition-all duration-300 placeholder:text-zinc-500 sm:py-5 sm:pr-6 sm:text-lg"
                 />
               </div>
               
-              <div className="flex-1 relative bg-white/10 border border-white/5 hover:bg-white/20 focus-within:bg-white/20 focus-within:border-indigo-400/50 transition-all duration-300 rounded-md">
+              <div className="relative flex-1 rounded-full border border-white/10 bg-white/12 transition-all duration-300 hover:bg-white/20 focus-within:border-indigo-400/50 focus-within:bg-white/20">
                 <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
                   <MapPin className="h-5 w-5 text-zinc-400 group-focus-within/search:text-indigo-400 transition-colors" strokeWidth={1.5} />
                 </div>
                 <select 
                   value={cityId}
                   onChange={(event) => setCityId(event.target.value)}
-                  className="block w-full appearance-none cursor-pointer rounded-md border-none bg-transparent py-4 pl-14 pr-12 text-base text-white outline-none transition-all duration-300 sm:py-5 sm:text-lg"
+                  className="block w-full appearance-none cursor-pointer rounded-full border-none bg-transparent py-4 pl-14 pr-12 text-base text-white outline-none transition-all duration-300 sm:py-5 sm:text-lg"
                 >
                   <option value="" className="text-zinc-900">All Regions</option>
                   {cities.map(city => (
@@ -326,7 +328,7 @@ export default function Home() {
                 </select>
               </div>
               
-              <button type="submit" className="flex min-h-12 shrink-0 items-center justify-center gap-3 rounded-md bg-white px-6 py-4 font-sans text-base font-semibold text-zinc-950 shadow-lg transition-all duration-200 hover:bg-indigo-50 hover:text-indigo-600 active:scale-[0.98] sm:px-10 sm:text-lg md:px-12 md:py-5 group/btn">
+              <button type="submit" className="group/btn flex min-h-12 shrink-0 items-center justify-center gap-3 rounded-full bg-white px-6 py-4 font-sans text-base font-semibold text-zinc-950 shadow-lg transition-all duration-200 hover:bg-indigo-50 hover:text-indigo-600 active:scale-[0.98] sm:px-10 sm:text-lg md:px-12 md:py-5">
                 <span className="relative z-10 flex items-center gap-2">Search <ArrowRight className="h-5 w-5 group-hover/btn:translate-x-1 transition-transform duration-300 ease-out" strokeWidth={2} /></span>
               </button>
             </motion.form>
@@ -338,10 +340,10 @@ export default function Home() {
       <section className="relative z-20 mb-8 px-0 pt-4 sm:mb-12 sm:px-6 sm:pt-6 lg:mb-16 lg:px-10 lg:pt-10">
         <div className="mx-auto w-full max-w-[96rem] overflow-hidden border-y-2 border-zinc-900 bg-white shadow-2xl sm:rounded-xl sm:border-2">
           <div className="flex flex-col md:flex-row">
-            <div className="relative flex w-full flex-col justify-center overflow-hidden border-b-2 border-zinc-900 bg-zinc-50 p-6 sm:p-8 md:w-72 md:border-b-0 md:border-r-2 lg:p-12 group/core">
+            <div className="relative flex w-full flex-col justify-center overflow-hidden border-b-2 border-zinc-900 bg-zinc-50 p-10 lg:p-12 md:w-72 md:border-b-0 md:border-r-2 group/core">
               <div className="absolute top-0 left-0 w-full h-2 bg-zinc-900"></div>
               <div className="absolute -right-10 -top-10 w-32 h-32 bg-zinc-200/50 rounded-full blur-3xl group-hover/core:bg-zinc-300/50 transition-colors duration-700"></div>
-              <h2 className="mb-2 font-sans text-2xl font-bold uppercase tracking-tight text-zinc-900 sm:text-3xl">Core Trades</h2>
+              <h2 className="mb-2 font-sans text-3xl font-bold uppercase tracking-tight text-zinc-900">Core Trades</h2>
               <p className="font-mono text-xs tracking-[0.2em] text-zinc-500 font-bold uppercase">Primary Infrastructure</p>
             </div>
             
@@ -361,21 +363,23 @@ export default function Home() {
                   <Link 
                     key={category.id}
                     to={getCategoryLink(category.id)}
-                    className={`group relative flex aspect-[1/1] flex-col justify-between overflow-hidden border-zinc-200 bg-white p-5 transition-all duration-500 ease-[0.16,1,0.3,1] hover:z-20 hover:shadow-2xl sm:p-7 lg:p-12 ${index % 2 !== 0 ? 'border-l' : ''} ${index < 2 ? 'border-b lg:border-b-0' : ''} lg:border-l`}
+                    className={`group relative flex aspect-square flex-col justify-between overflow-hidden border-zinc-200 bg-white p-10 transition-all duration-500 ease-[0.16,1,0.3,1] hover:z-20 hover:shadow-2xl lg:p-12 ${index % 2 !== 0 ? 'border-l' : ''} ${index < 2 ? 'border-b lg:border-b-0' : ''} lg:border-l`}
                   >
                     {/* Hover Gradient Background */}
                     <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500 ease-out z-0`}></div>
                     
-                    <div className="relative z-10 text-zinc-900 group-hover:text-white group-hover:scale-110 group-hover:-rotate-3 transition-all duration-500 ease-[0.16,1,0.3,1] origin-left">
+                    <div className="relative z-10 flex items-start justify-between">
+                      <div className="text-zinc-900 transition-all duration-500 ease-[0.16,1,0.3,1] origin-left group-hover:-rotate-3 group-hover:scale-110 group-hover:text-white">
                       <IconComponent className="h-10 w-10" strokeWidth={2} />
+                      </div>
+                      <span className="font-mono text-xs font-bold text-zinc-400 transition-colors duration-300 group-hover:text-white/80">[{businesses.filter((business) => business.categoryId === category.id).length}]</span>
                     </div>
                     
-                    <div className="relative z-10">
-                      <div className="mb-3 font-mono text-[10px] font-bold text-zinc-400 transition-colors duration-300 group-hover:text-white/80 sm:text-xs">0{index + 1}</div>
-                      <h3 className="font-sans text-lg font-bold text-zinc-900 transition-colors duration-300 group-hover:text-white sm:text-xl">{category.name}</h3>
+                    <div className="relative z-10 mt-8">
+                      <h3 className="font-sans text-xl font-bold text-zinc-900 transition-colors duration-300 group-hover:text-white">{category.name}</h3>
                     </div>
                     
-                    <div className="absolute right-5 top-5 z-10 opacity-0 transition-all duration-500 ease-out group-hover:translate-x-2 group-hover:-translate-y-2 group-hover:opacity-100 sm:right-7 sm:top-7 lg:right-10 lg:top-10">
+                    <div className="absolute right-10 top-10 z-10 opacity-0 transition-all duration-500 ease-out group-hover:translate-x-2 group-hover:-translate-y-2 group-hover:opacity-100">
                       <ArrowRight className="h-6 w-6 text-white" strokeWidth={3} />
                     </div>
                   </Link>
@@ -429,9 +433,10 @@ export default function Home() {
           whileInView={{ scale: 1, opacity: 1 }}
           viewport={{ once: true, margin: '-80px' }}
           transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-          src={businessBg}
-          alt="Construction site in the Okanagan"
-          className="absolute inset-0 h-full w-full object-cover"
+            src={businessBgSrc}
+            alt="Construction site in the Okanagan"
+            className="absolute inset-0 h-full w-full object-cover"
+            onError={createImageFallbackHandler(businessBg)}
         />
         <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/92 via-zinc-950/62 to-zinc-950/35"></div>
         <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/85 via-transparent to-transparent"></div>
@@ -496,7 +501,7 @@ export default function Home() {
             initial="hidden"
             whileInView="show"
             viewport={{ once: true, margin: "-50px" }}
-            className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2 lg:grid-cols-3"
+            className="grid grid-cols-1 gap-0 sm:grid-cols-2 sm:gap-x-8 sm:gap-y-4 lg:grid-cols-3"
           >
             {otherCategories.map((category) => {
               const IconComponent = (Icons as any)[category.icon] || Icons.Wrench;
@@ -506,7 +511,7 @@ export default function Home() {
                 <motion.div key={category.id} variants={itemVariants}>
                   <Link
                     to={getCategoryLink(category.id)}
-                    className="group flex items-center gap-4 border-2 border-transparent bg-white px-4 py-4 transition-all duration-300 ease-[0.16,1,0.3,1] hover:-translate-y-1 hover:border-zinc-900 hover:shadow-[4px_4px_0px_0px_rgba(24,24,27,0.12)]"
+                    className="group flex items-center gap-4 border-x-0 border-y border-zinc-200 bg-white px-4 py-4 transition-all duration-300 ease-[0.16,1,0.3,1] hover:-translate-y-1 hover:border-zinc-900 hover:shadow-[4px_4px_0px_0px_rgba(24,24,27,0.12)] sm:border-2 sm:border-transparent"
                   >
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center border-2 border-zinc-200 bg-zinc-50 text-zinc-400 transition-colors duration-300 group-hover:border-zinc-900 group-hover:bg-zinc-900 group-hover:text-white">
                       <IconComponent

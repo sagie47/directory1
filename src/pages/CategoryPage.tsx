@@ -6,8 +6,9 @@ import BusinessCard from '../components/BusinessCard';
 import Breadcrumbs from '../components/Breadcrumbs';
 import { motion } from 'motion/react';
 import { Business, businessServesCity } from '../business';
-import { getCategoryHeroImage } from '../category-hero-images';
+import { getCategoryHeroFallbackImage, getCategoryHeroImage } from '../category-hero-images';
 import { useDirectoryData } from '../directory-data';
+import { createImageFallbackHandler } from '../supabase-images';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -52,7 +53,7 @@ export default function CategoryPage() {
 
       return (right.rating ?? 0) - (left.rating ?? 0) || (right.reviewCount ?? 0) - (left.reviewCount ?? 0);
     });
-  }, [categoryId, cityId, sortBy]);
+  }, [businesses, categoryId, cityId, sortBy]);
 
   const IconComponent = (Icons as any)[category.icon] || Icons.Wrench;
   const heroImage = getCategoryHeroImage({
@@ -60,6 +61,10 @@ export default function CategoryPage() {
     groupId: category.groupId,
     cityId: city.id,
     businesses,
+  });
+  const categoryHeroFallback = getCategoryHeroFallbackImage({
+    groupId: category.groupId,
+    cityId: city.id,
   });
 
   return (
@@ -89,6 +94,7 @@ export default function CategoryPage() {
               src={heroImage}
               alt={city.name}
               className="w-full h-full object-cover"
+              onError={createImageFallbackHandler(categoryHeroFallback)}
             />
             <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/90 via-zinc-900/40 to-transparent z-10"></div>
             <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent z-10"></div>
