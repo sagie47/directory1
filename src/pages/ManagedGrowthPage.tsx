@@ -73,7 +73,7 @@ export default function ManagedGrowthPage() {
       className="min-h-screen bg-[#FAFAFA] font-sans text-zinc-900 selection:bg-indigo-200 selection:text-indigo-900"
     >
       {/* Homepage-matched Hero Section */}
-      <section className="relative pt-32 pb-48 lg:pt-48 lg:pb-64 flex items-center bg-zinc-900 overflow-visible text-white">
+      <section className="relative flex items-center overflow-visible bg-zinc-900 pt-24 pb-24 text-white sm:pt-28 sm:pb-32 lg:pt-48 lg:pb-64">
         <div className="absolute inset-0 z-0">
           <motion.img 
             initial={{ scale: 1.1, opacity: 0 }}
@@ -87,7 +87,7 @@ export default function ManagedGrowthPage() {
           <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent z-10"></div>
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-20 mix-blend-overlay z-10"></div>
         </div>
-        <div className="relative z-20 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 w-full">
+        <div className="relative z-20 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col items-start text-left max-w-4xl">
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
@@ -102,7 +102,7 @@ export default function ManagedGrowthPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="text-6xl md:text-8xl lg:text-[7rem] font-medium tracking-tighter mb-8 leading-[1.05] text-white text-balance drop-shadow-2xl uppercase"
+              className="mb-6 text-4xl font-medium uppercase tracking-tighter leading-[1.02] text-white text-balance drop-shadow-2xl sm:text-5xl md:text-7xl lg:mb-8 lg:text-[7rem]"
             >
               Managed <span className="font-serif italic font-light text-zinc-200 normal-case text-balance">Growth.</span>
             </motion.h1>
@@ -110,7 +110,7 @@ export default function ManagedGrowthPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="text-xl md:text-2xl text-zinc-300 mb-12 font-sans max-w-2xl leading-relaxed text-balance drop-shadow-md"
+              className="mb-10 max-w-2xl text-lg leading-relaxed text-balance text-zinc-300 drop-shadow-md sm:mb-12 sm:text-xl md:text-2xl"
             >
               We help Okanagan contractors improve their online presence, respond faster to leads, and stay visible without adding more admin to the week.
             </motion.p>
@@ -118,18 +118,18 @@ export default function ManagedGrowthPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
-              className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto"
+              className="flex w-full flex-col gap-4 sm:w-auto sm:flex-row"
             >
               <Link
                 to="/book-call?offer=managed-growth"
-                className="bg-white text-zinc-950 px-12 py-6 font-sans text-lg font-semibold hover:bg-indigo-50 hover:text-indigo-600 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-3 rounded-sm shadow-lg group"
+                className="group flex min-h-12 items-center justify-center gap-3 rounded-sm bg-white px-6 py-4 font-sans text-base font-semibold text-zinc-950 shadow-lg transition-all duration-200 hover:bg-indigo-50 hover:text-indigo-600 active:scale-[0.98] sm:px-10 sm:py-5 sm:text-lg lg:px-12 lg:py-6"
               >
                 Book a Strategy Call
                 <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" strokeWidth={2.5} />
               </Link>
               <Link
                 to="/for-business"
-                className="bg-white/10 backdrop-blur-md text-white border border-white/20 px-12 py-6 font-sans text-lg font-semibold hover:bg-white/20 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-3 rounded-sm shadow-lg"
+                className="flex min-h-12 items-center justify-center gap-3 rounded-sm border border-white/20 bg-white/10 px-6 py-4 font-sans text-base font-semibold text-white shadow-lg backdrop-blur-md transition-all duration-200 hover:bg-white/20 active:scale-[0.98] sm:px-10 sm:py-5 sm:text-lg lg:px-12 lg:py-6"
               >
                 Back to Business Options
               </Link>
@@ -138,7 +138,7 @@ export default function ManagedGrowthPage() {
         </div>
       </section>
 
-      <section className="border-b-2 border-zinc-900 bg-zinc-50 py-24 lg:py-32">
+      <section className="border-b-2 border-zinc-900 bg-zinc-50 py-20 sm:py-24 lg:py-32">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-16 max-w-4xl">
             <SectionEyebrow
@@ -148,17 +148,17 @@ export default function ManagedGrowthPage() {
             >
               What We Handle
             </SectionEyebrow>
-            <h2 className="mb-4 text-4xl font-bold uppercase tracking-tight text-zinc-900 md:text-5xl">
+            <h2 className="mb-4 text-3xl font-bold uppercase tracking-tight text-zinc-900 sm:text-4xl md:text-5xl">
               Ongoing Support Without
               <br />
               Another Internal Job
             </h2>
-            <p className="text-lg font-medium leading-relaxed text-zinc-600">
+            <p className="text-base font-medium leading-relaxed text-zinc-600 sm:text-lg">
               This is for businesses that need more than a listing and more than a one-off build. It is the lane for ongoing help with the growth layer.
             </p>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-4 sm:gap-6 md:grid-cols-2 xl:grid-cols-4">
             {handledItems.map((item) => (
               <div key={item.title}>
                 <FeatureCard
@@ -173,8 +173,8 @@ export default function ManagedGrowthPage() {
         </div>
       </section>
 
-      <section className="border-b-2 border-zinc-900 bg-white py-24 lg:py-32">
-        <div className="mx-auto grid max-w-7xl gap-16 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
+      <section className="border-b-2 border-zinc-900 bg-white py-20 sm:py-24 lg:py-32">
+        <div className="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:gap-16 lg:px-8">
           <div>
             <SectionEyebrow
               icon={ShieldCheck}
@@ -183,12 +183,12 @@ export default function ManagedGrowthPage() {
             >
               Best Fit
             </SectionEyebrow>
-            <h2 className="mb-6 text-3xl font-bold uppercase tracking-tight text-zinc-900 md:text-4xl">
+            <h2 className="mb-5 text-2xl font-bold uppercase tracking-tight text-zinc-900 sm:text-3xl md:text-4xl md:mb-6">
               Who This Is Actually For
             </h2>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2 sm:gap-3">
               {fitItems.map((item) => (
-                <span key={item} className="rounded-sm border border-zinc-200 bg-zinc-50 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-700">
+                <span key={item} className="rounded-sm border border-zinc-200 bg-zinc-50 px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-700 sm:px-4 sm:tracking-[0.18em]">
                   {item}
                 </span>
               ))}
@@ -203,12 +203,12 @@ export default function ManagedGrowthPage() {
             >
               What You See
             </SectionEyebrow>
-            <h2 className="mb-6 text-3xl font-bold uppercase tracking-tight text-zinc-900 md:text-4xl">
+            <h2 className="mb-5 text-2xl font-bold uppercase tracking-tight text-zinc-900 sm:text-3xl md:text-4xl md:mb-6">
               Expected Outcomes
             </h2>
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {outcomeItems.map((item) => (
-                <div key={item} className="rounded-sm border border-zinc-200 bg-zinc-50 p-6 shadow-sm transition-all duration-500 hover:-translate-y-1 hover:border-zinc-300 hover:shadow-xl">
+                <div key={item} className="rounded-sm border border-zinc-200 bg-zinc-50 p-5 shadow-sm transition-all duration-500 hover:-translate-y-1 hover:border-zinc-300 hover:shadow-xl sm:p-6">
                   <div className="font-bold uppercase tracking-tight text-zinc-900">{item}</div>
                 </div>
               ))}
@@ -219,19 +219,19 @@ export default function ManagedGrowthPage() {
 
       <BusinessFAQ faqs={faqs} />
 
-      <section className="border-t border-zinc-200 bg-zinc-100 py-24 text-zinc-900 lg:py-32">
+      <section className="border-t border-zinc-200 bg-zinc-100 py-20 text-zinc-900 sm:py-24 lg:py-32">
         <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
-          <h2 className="mb-6 text-4xl font-bold uppercase tracking-tighter leading-[1.05] md:text-5xl lg:text-6xl">
+          <h2 className="mb-5 text-3xl font-bold uppercase tracking-tighter leading-[1.05] sm:text-4xl md:text-5xl lg:text-6xl md:mb-6">
             If the Whole Growth Layer
             <br />
             Needs Help, Start Here
           </h2>
-          <p className="mx-auto mb-10 max-w-2xl text-xl font-medium leading-relaxed text-zinc-900/80">
+          <p className="mx-auto mb-8 max-w-2xl text-lg font-medium leading-relaxed text-zinc-900/80 sm:text-xl md:mb-10">
             This is the lane for businesses that want ongoing help, not just a one-off fix.
           </p>
           <Link
             to="/book-call?offer=managed-growth"
-            className="inline-flex items-center justify-center gap-3 rounded-xl border border-zinc-900 bg-zinc-900 px-8 py-5 font-sans text-sm font-bold uppercase tracking-wider text-white shadow-sm transition-all hover:bg-zinc-800 hover:-translate-y-1 active:scale-95"
+            className="inline-flex min-h-12 items-center justify-center gap-3 rounded-xl border border-zinc-900 bg-zinc-900 px-8 py-4 font-sans text-sm font-bold uppercase tracking-wider text-white shadow-sm transition-all hover:bg-zinc-800 hover:-translate-y-1 active:scale-95 sm:py-5"
           >
             Book a Strategy Call
             <ArrowRight className="h-4 w-4" strokeWidth={2.5} />

@@ -91,26 +91,30 @@ export default function RegionsPage() {
         </div>
       </section>
 
-      <div className="relative z-30 mx-auto max-w-7xl px-4 pb-20 sm:px-6 sm:pb-24 lg:-mt-32 lg:px-8 lg:pb-32">
+      <div className="relative z-30 pb-20 sm:pb-24 lg:-mt-32 lg:pb-32">
         <motion.div 
           variants={containerVariants}
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, margin: "-50px" }}
-          className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:gap-8"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 border-t border-zinc-200"
         >
           {cities.map((c, i) => {
             return (
-              <motion.div key={c.id} variants={itemVariants}>
+              <motion.div key={c.id} variants={itemVariants} className="border-r border-b border-zinc-200 overflow-hidden group">
                 <Link 
                   to={category ? `/${c.id}/${category.id}` : `/${c.id}`} 
-                  className="group relative flex h-full flex-col overflow-x-hidden rounded-sm border border-zinc-200 bg-white p-6 shadow-sm transition-all duration-500 hover:-translate-y-1 hover:border-zinc-300 hover:shadow-xl sm:p-8 lg:p-10"
+                  className="relative flex h-full flex-col bg-white p-6 transition-colors duration-300 hover:bg-zinc-50/50 sm:p-8"
                 >
-                  <div className="relative z-10 mb-8 flex items-start justify-between sm:mb-10">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-zinc-200 bg-zinc-50 transition-all duration-500 group-hover:scale-110 group-hover:border-zinc-900 group-hover:bg-zinc-900 sm:h-14 sm:w-14">
-                      <MapPin className="h-6 w-6 text-zinc-400 group-hover:text-white transition-colors duration-500" strokeWidth={2} />
-                    </div>
-                    <div className="font-mono text-[9px] font-black uppercase tracking-[0.16em] text-zinc-300 sm:tracking-[0.2em]">
+                  <div className="relative z-10 mb-8 flex items-start justify-between sm:mb-12">
+                    <motion.div 
+                      whileHover={{ scale: 1.1, rotate: 5 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                      className="flex h-12 w-12 items-center justify-center rounded-xl border border-zinc-200 bg-zinc-50 shadow-sm transition-all duration-500 group-hover:border-zinc-900 group-hover:bg-zinc-900 group-hover:shadow-lg"
+                    >
+                      <MapPin className="h-6 w-6 text-zinc-400 group-hover:text-white transition-colors duration-500" strokeWidth={1.5} />
+                    </motion.div>
+                    <div className="font-mono text-[10px] font-black text-zinc-300 group-hover:text-orange-500 transition-colors duration-300 uppercase tracking-widest">
                       Region 0{i + 1}
                     </div>
                   </div>
