@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, type TouchEvent } from 'react';
-import { X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Expand } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface GalleryLightboxProps {
@@ -94,10 +94,21 @@ export default function GalleryLightbox({ images, businessName }: GalleryLightbo
 
   return (
     <>
-      <section className="overflow-hidden rounded-sm border border-zinc-200 bg-white shadow-sm">
-        <div className="flex flex-col gap-4 p-4 md:p-5">
+      <section className="overflow-hidden bg-white shadow-sm md:rounded-sm md:border md:border-zinc-200">
+        <div className="flex flex-col gap-4 p-0 md:gap-4 md:p-5">
+          <div className="hidden md:flex md:flex-row md:items-center md:justify-end">
+            <button
+              type="button"
+              onClick={() => openLightbox(currentIndex)}
+              className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-2 shadow-sm text-[11px] font-mono uppercase tracking-[0.1em] text-zinc-700 transition-colors hover:bg-zinc-50 hover:text-zinc-900"
+            >
+              <Expand className="h-3.5 w-3.5" strokeWidth={1.5} />
+              Expand Gallery
+            </button>
+          </div>
+
           <div
-            className="relative overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100"
+            className="relative overflow-hidden bg-zinc-100 md:rounded-xl md:border md:border-zinc-200"
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
           >
@@ -124,7 +135,7 @@ export default function GalleryLightbox({ images, businessName }: GalleryLightbo
                   transition={{ duration: 0.2 }}
                   src={images[currentIndex]}
                   alt={`${businessName} image ${currentIndex + 1}`}
-                  className="h-[280px] w-full object-cover md:h-[460px]"
+                  className="h-[320px] w-full object-cover md:h-[460px]"
                   referrerPolicy="no-referrer"
                 />
               </AnimatePresence>
