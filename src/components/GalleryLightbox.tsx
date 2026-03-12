@@ -5,9 +5,10 @@ import { motion, AnimatePresence } from 'motion/react';
 interface GalleryLightboxProps {
   images: string[];
   businessName: string;
+  mobileFullBleed?: boolean;
 }
 
-export default function GalleryLightbox({ images, businessName }: GalleryLightboxProps) {
+export default function GalleryLightbox({ images, businessName, mobileFullBleed = false }: GalleryLightboxProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -62,15 +63,19 @@ export default function GalleryLightbox({ images, businessName }: GalleryLightbo
 
   return (
     <>
-      <section className="overflow-hidden rounded-sm border border-zinc-200 bg-white shadow-sm">
-        <div className="flex flex-col gap-5 p-5 md:p-6">
+      <section
+        className={mobileFullBleed
+          ? 'overflow-hidden bg-transparent'
+          : 'overflow-hidden rounded-2xl border border-black/10 bg-white p-5 shadow-sm'}
+      >
+        <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
               <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.12em] text-zinc-500">
                 <Images className="h-3.5 w-3.5" strokeWidth={1.5} />
                 Photo Gallery
               </div>
-              <h3 className="mt-2 text-xl font-medium tracking-tight text-zinc-900">
+              <h3 className="mt-1 text-2xl font-medium tracking-tight text-zinc-900">
                 Site Preview
               </h3>
             </div>
@@ -78,21 +83,21 @@ export default function GalleryLightbox({ images, businessName }: GalleryLightbo
             <button
               type="button"
               onClick={() => openLightbox(currentIndex)}
-              className="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-2 shadow-sm text-[11px] font-mono uppercase tracking-[0.1em] text-zinc-700 transition-colors hover:bg-zinc-50 hover:text-zinc-900"
+              className="inline-flex h-11 items-center gap-2 self-start rounded-xl border border-black/10 bg-white px-4 text-[11px] font-mono uppercase tracking-[0.1em] text-zinc-600 transition-colors hover:bg-zinc-50 hover:text-zinc-900"
             >
               <Expand className="h-3.5 w-3.5" strokeWidth={1.5} />
               Expand Gallery
             </button>
           </div>
 
-          <div className="relative overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100">
+          <div className={`relative mt-1 overflow-hidden bg-zinc-100 ${mobileFullBleed ? 'rounded-none' : 'rounded-2xl'}`}>
             <button
               type="button"
               onClick={goToPrevious}
-              className="absolute left-3 top-1/2 z-10 -translate-y-1/2 rounded-full border border-white/20 bg-black/45 p-2 text-white transition-colors hover:bg-black/65"
+              className="absolute left-2.5 top-1/2 z-10 -translate-y-1/2 rounded-full border border-white/25 bg-black/30 p-1.5 text-white/90 backdrop-blur-sm transition-colors hover:bg-black/45"
               aria-label="Previous image"
             >
-              <ChevronLeft className="h-5 w-5" strokeWidth={1.5} />
+              <ChevronLeft className="h-4 w-4" strokeWidth={1.5} />
             </button>
 
             <button
@@ -109,7 +114,7 @@ export default function GalleryLightbox({ images, businessName }: GalleryLightbo
                   transition={{ duration: 0.2 }}
                   src={images[currentIndex]}
                   alt={`${businessName} image ${currentIndex + 1}`}
-                  className="h-[280px] w-full object-cover md:h-[460px]"
+                  className={`w-full object-cover ${mobileFullBleed ? 'h-[58vh] md:h-[460px]' : 'h-[280px] md:h-[460px]'}`}
                   referrerPolicy="no-referrer"
                 />
               </AnimatePresence>
@@ -118,18 +123,18 @@ export default function GalleryLightbox({ images, businessName }: GalleryLightbo
             <button
               type="button"
               onClick={goToNext}
-              className="absolute right-3 top-1/2 z-10 -translate-y-1/2 rounded-full border border-white/20 bg-black/45 p-2 text-white transition-colors hover:bg-black/65"
+              className="absolute right-2.5 top-1/2 z-10 -translate-y-1/2 rounded-full border border-white/25 bg-black/30 p-1.5 text-white/90 backdrop-blur-sm transition-colors hover:bg-black/45"
               aria-label="Next image"
             >
-              <ChevronRight className="h-5 w-5" strokeWidth={1.5} />
+              <ChevronRight className="h-4 w-4" strokeWidth={1.5} />
             </button>
 
-            <div className="absolute bottom-3 left-3 rounded-md bg-black/55 backdrop-blur-sm px-3 py-1.5 text-[10px] font-mono uppercase tracking-[0.12em] text-white">
+            <div className="absolute bottom-3 left-3 rounded-md bg-black/50 px-2.5 py-1 text-[10px] font-mono uppercase tracking-[0.1em] text-white">
               {currentIndex + 1} / {images.length}
             </div>
           </div>
 
-          {images.length > 1 && (
+          {images.length > 1 && !mobileFullBleed && (
             <div className="overflow-x-auto pb-1">
               <div className="flex min-w-max gap-2">
                 {images.map((image, index) => (

@@ -66,8 +66,6 @@ export default function BusinessPage() {
   const rating = business.rating ?? 0;
   const reviewCount = business.reviewCount ?? 0;
   
-  const heroImageSrc = photos[0];
-
   return (
     <motion.div 
       initial={{ opacity: 0 }}
@@ -86,19 +84,7 @@ export default function BusinessPage() {
           />
 
       {/* Hero Header Section */}
-      <div className="relative pt-12 pb-16 lg:pt-20 lg:pb-24 overflow-hidden border-b border-zinc-200 bg-white">
-        <div className="absolute inset-0 z-0 bg-white">
-          {heroImageSrc && (
-            <img 
-              src={heroImageSrc} 
-              alt="" 
-              className="w-full h-full object-cover opacity-[0.15] mix-blend-luminosity" 
-              aria-hidden="true" 
-            />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-b from-white/40 to-white/95" />
-        </div>
-
+      <div className="relative overflow-hidden border-b border-zinc-200 bg-white pt-6 pb-8 lg:pt-20 lg:pb-24">
         <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8">
           <div className="flex flex-col lg:flex-row justify-between items-start gap-12">
             <div className="max-w-3xl">
@@ -132,6 +118,21 @@ export default function BusinessPage() {
                   )}
                 </div>
               </div>
+
+              <div className="mt-6 flex flex-col gap-3 lg:hidden">
+                {phoneHref && (
+                  <a href={phoneHref} className="flex items-center justify-between w-full bg-zinc-900 text-white px-5 py-3.5 rounded-xl leading-none font-mono text-sm font-semibold uppercase tracking-widest border border-zinc-900">
+                    <span>Call Now</span>
+                    <Phone className="w-4 h-4" />
+                  </a>
+                )}
+                {websiteHref && (
+                  <a href={websiteHref} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between w-full bg-white border border-zinc-200 text-zinc-900 rounded-xl px-5 py-3.5 font-mono text-sm font-semibold uppercase tracking-widest">
+                    <span>Website</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </a>
+                )}
+              </div>
             </div>
 
             {/* Quick Actions Desktop */}
@@ -153,7 +154,13 @@ export default function BusinessPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 py-16 lg:py-24">
+      <div className="lg:hidden">
+        {photos.length > 0 ? (
+          <GalleryLightbox images={photos} businessName={business.name} mobileFullBleed />
+        ) : null}
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 lg:px-8 py-10 lg:py-24">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
           
           {/* Main Content */}
@@ -161,8 +168,8 @@ export default function BusinessPage() {
             
             {/* Gallery Section */}
             {photos.length > 0 ? (
-              <div className="bg-white border border-zinc-200 p-1.5 rounded-sm shadow-sm">
-                <GalleryLightbox images={photos} businessName={business.name} />
+              <div className="hidden lg:block">
+              <GalleryLightbox images={photos} businessName={business.name} />
               </div>
             ) : null}
 
@@ -253,22 +260,6 @@ export default function BusinessPage() {
           {/* Sidebar Area */}
           <div className="lg:col-span-4 space-y-8 lg:sticky lg:top-24">
             
-            {/* Mobile Actions */}
-            <div className="lg:hidden flex flex-col gap-4 mb-8">
-              {phoneHref && (
-                <a href={phoneHref} className="flex items-center justify-between w-full bg-zinc-900 text-white px-6 py-4 rounded-xl leading-none font-mono text-sm font-semibold uppercase tracking-widest shadow-sm border border-zinc-900">
-                  <span>Call Now</span>
-                  <Phone className="w-4 h-4" />
-                </a>
-              )}
-              {websiteHref && (
-                <a href={websiteHref} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between w-full bg-white border border-zinc-200 text-zinc-900 rounded-xl px-6 py-4 font-mono text-sm font-semibold uppercase tracking-widest shadow-sm">
-                  <span>Website</span>
-                  <ArrowRight className="w-4 h-4" />
-                </a>
-              )}
-            </div>
-
             <section className="pt-2 pb-6">
               <h3 className="text-sm font-black uppercase tracking-widest text-zinc-900 mb-6">Contact Details</h3>
               
