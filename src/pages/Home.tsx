@@ -118,7 +118,7 @@ export default function Home() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -12, scale: 0.97 }}
               transition={{ duration: 0.26, ease: [0.16, 1, 0.3, 1] }}
-              className="fixed inset-x-4 top-[4.9rem] z-40 flex items-center justify-between gap-3 border-2 border-zinc-900 bg-white/95 px-4 py-3 text-left shadow-[0_18px_26px_rgba(24,24,27,0.17)] backdrop-blur-sm md:hidden"
+              className="fixed inset-x-0 top-[4.9rem] z-40 flex items-center justify-between gap-3 border-y-2 border-zinc-900 bg-white/95 px-4 py-3 text-left shadow-[0_18px_26px_rgba(24,24,27,0.17)] backdrop-blur-sm md:hidden sm:inset-x-4 sm:border-2"
               onClick={() => setIsMobileSearchOpen(true)}
               aria-label="Open compact mobile search"
             >
@@ -335,8 +335,8 @@ export default function Home() {
       </section>
 
       {/* Popular Categories Grid - Overlapping the Hero */}
-      <section className="relative z-20 mb-8 px-4 pt-4 sm:mb-12 sm:px-6 sm:pt-6 lg:mb-16 lg:px-10 lg:pt-10">
-        <div className="mx-auto max-w-[96rem] overflow-hidden rounded-xl border-2 border-zinc-900 bg-white shadow-2xl">
+      <section className="relative z-20 mb-8 px-0 pt-4 sm:mb-12 sm:px-6 sm:pt-6 lg:mb-16 lg:px-10 lg:pt-10">
+        <div className="mx-auto w-full max-w-[96rem] overflow-hidden border-y-2 border-zinc-900 bg-white shadow-2xl sm:rounded-xl sm:border-2">
           <div className="flex flex-col md:flex-row">
             <div className="relative flex w-full flex-col justify-center overflow-hidden border-b-2 border-zinc-900 bg-zinc-50 p-6 sm:p-8 md:w-72 md:border-b-0 md:border-r-2 lg:p-12 group/core">
               <div className="absolute top-0 left-0 w-full h-2 bg-zinc-900"></div>
