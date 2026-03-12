@@ -15,6 +15,7 @@ const primaryLinks = [
 
 export default function Layout({ children }: { children: ReactNode }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
   const location = useLocation();
   const { source, businesses, cities, isLoading, error } = useDirectoryData();
 
@@ -22,9 +23,27 @@ export default function Layout({ children }: { children: ReactNode }) {
     setIsMenuOpen(false);
   }, [location.pathname]);
 
+
+  useEffect(() => {
+    function handleScroll() {
+      setIsHeaderCollapsed(window.scrollY > 24);
+    }
+
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
   return (
     <div className="min-h-screen flex flex-col bg-[#FAFAFA] font-sans text-zinc-900 selection:bg-zinc-200 selection:text-zinc-900">
-      <header className="relative sticky top-0 z-50 border-b-2 border-zinc-900 bg-[#FAFAFA]">
+      <motion.header
+        animate={{ y: 0 }}
+        transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+        className="relative sticky top-0 z-50 border-b-2 border-zinc-900 bg-[#FAFAFA]"
+      >
         <div className="hidden border-b border-zinc-900/10 bg-white sm:block">
           <div className="mx-auto flex max-w-[96rem] flex-wrap items-center justify-between gap-2 px-6 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500 lg:px-10">
             <span>Okanagan Valley Contractor Directory</span>
@@ -35,14 +54,14 @@ export default function Layout({ children }: { children: ReactNode }) {
         </div>
 
         <div className="mx-auto max-w-[96rem] px-4 sm:px-6 lg:px-10">
-          <div className="grid min-h-[4.75rem] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:min-h-[6rem] sm:gap-4 lg:grid-cols-[minmax(19rem,1.1fr)_minmax(0,1fr)_auto] lg:gap-8">
-            <Link to="/" className="group flex min-w-0 items-center gap-3 py-3 sm:gap-5 sm:py-5">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center border-2 border-zinc-900 bg-zinc-900 text-white shadow-[3px_3px_0px_0px_rgba(24,24,27,1)] transition-all duration-300 group-hover:-translate-x-0.5 group-hover:-translate-y-0.5 group-hover:shadow-[6px_6px_0px_0px_rgba(24,24,27,1)] sm:h-14 sm:w-14 sm:shadow-[4px_4px_0px_0px_rgba(24,24,27,1)]">
-                <LayoutGrid className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2.4} />
+          <div className={`grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 transition-all duration-200 sm:min-h-[6rem] sm:gap-4 lg:grid-cols-[minmax(19rem,1.1fr)_minmax(0,1fr)_auto] lg:gap-8 ${isHeaderCollapsed ? 'min-h-[4rem]' : 'min-h-[4.75rem]'}`}>
+            <Link to="/" className={`group flex min-w-0 items-center gap-3 transition-all duration-200 sm:gap-5 sm:py-5 ${isHeaderCollapsed ? 'py-2' : 'py-3'}`}>
+              <div className={`flex shrink-0 items-center justify-center border-2 border-zinc-900 bg-zinc-900 text-white shadow-[3px_3px_0px_0px_rgba(24,24,27,1)] transition-all duration-300 group-hover:-translate-x-0.5 group-hover:-translate-y-0.5 group-hover:shadow-[6px_6px_0px_0px_rgba(24,24,27,1)] sm:h-14 sm:w-14 sm:shadow-[4px_4px_0px_0px_rgba(24,24,27,1)] ${isHeaderCollapsed ? 'h-9 w-9' : 'h-11 w-11'}`}>
+                <LayoutGrid className={`sm:h-5 sm:w-5 ${isHeaderCollapsed ? 'h-3.5 w-3.5' : 'h-4 w-4'}`} strokeWidth={2.4} />
               </div>
               <div className="min-w-0 space-y-1">
-                <div className="truncate font-sans text-[1.02rem] font-black uppercase leading-none tracking-[-0.03em] text-zinc-950 sm:text-[1.55rem]">Okanagan Trades</div>
-                <div className="truncate font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400 transition-colors group-hover:text-orange-600 sm:text-[10px] sm:tracking-[0.24em]">Verified Regional Network</div>
+                <div className={`truncate font-sans font-black uppercase leading-none tracking-[-0.03em] text-zinc-950 transition-all duration-200 sm:text-[1.55rem] ${isHeaderCollapsed ? 'text-[0.94rem]' : 'text-[1.02rem]'}`}>Okanagan Trades</div>
+                <div className={`truncate font-mono text-[10px] font-bold uppercase text-zinc-400 transition-all duration-200 group-hover:text-orange-600 sm:text-[10px] sm:tracking-[0.24em] ${isHeaderCollapsed ? 'tracking-[0.14em]' : 'tracking-[0.18em]'}`}>Verified Regional Network</div>
               </div>
             </Link>
 
@@ -76,7 +95,7 @@ export default function Layout({ children }: { children: ReactNode }) {
               </div>
             </nav>
 
-            <div className="flex items-center justify-end gap-2 py-2 sm:gap-3 sm:py-4 lg:gap-4">
+            <div className={`flex items-center justify-end gap-2 transition-all duration-200 sm:gap-3 sm:py-4 lg:gap-4 ${isHeaderCollapsed ? 'py-1.5' : 'py-2'}`}>
               <div className="hidden items-center gap-3 md:flex">
                 <Link
                   to="/claim-business"
@@ -154,7 +173,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           </>
         )}
 
-      </header>
+      </motion.header>
 
       {import.meta.env.DEV ? (
         <div className="border-b border-zinc-200 bg-amber-50 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-700 sm:px-6 lg:px-10">

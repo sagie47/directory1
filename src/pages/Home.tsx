@@ -5,7 +5,7 @@ import * as Icons from 'lucide-react';
 import BusinessCard from '../components/BusinessCard';
 import FeatureCard from '../components/FeatureCard';
 import SectionEyebrow from '../components/SectionEyebrow';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, LayoutGroup, motion } from 'motion/react';
 import heroImage from '../photos/2024_active_transportation_construction_hintringer_63.jpg';
 import businessBg from '../photos/job-construction-scaled.jpg';
 import { useDirectoryData } from '../directory-data';
@@ -108,131 +108,134 @@ export default function Home() {
       transition={{ duration: 0.5 }}
       className="bg-[#FAFAFA] min-h-screen text-zinc-900 font-sans selection:bg-indigo-200 selection:text-indigo-900"
     >
-      <AnimatePresence>
-        {(showCompactSearch || isMobileSearchOpen) ? (
-          <motion.button
-            type="button"
-            initial={{ opacity: 0, y: -12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -12 }}
-            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed inset-x-4 top-[5.4rem] z-40 flex items-center justify-between gap-3 border-2 border-zinc-900 bg-white px-4 py-3 text-left shadow-[0_12px_20px_rgba(24,24,27,0.16)] md:hidden"
-            onClick={() => setIsMobileSearchOpen(true)}
-            aria-label="Open compact mobile search"
-          >
-            <div className="min-w-0">
-              <p className="truncate font-sans text-sm font-semibold text-zinc-900">{compactSearchLabel}</p>
-              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-500">{selectedCityName}</p>
-            </div>
-            <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center border-2 border-zinc-900 bg-zinc-900 text-white">
-              <SlidersHorizontal className="h-4 w-4" strokeWidth={2.2} />
-            </span>
-          </motion.button>
-        ) : null}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {isMobileSearchOpen ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-50 bg-zinc-950/45 px-4 pb-4 pt-[5.7rem] md:hidden"
-          >
-            <motion.div
-              initial={{ opacity: 0, y: 20, scale: 0.98 }}
+      <LayoutGroup id="mobile-search-surface">
+        <AnimatePresence mode="popLayout">
+          {(showCompactSearch || isMobileSearchOpen) ? (
+            <motion.button
+              type="button"
+              layoutId="mobile-search-trigger"
+              initial={{ opacity: 0, y: -12, scale: 0.97 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.98 }}
-              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-              className="mx-auto flex h-full w-full max-w-xl flex-col overflow-hidden border-2 border-zinc-900 bg-[#F5F5F5] shadow-[0_22px_48px_rgba(24,24,27,0.26)]"
+              exit={{ opacity: 0, y: -12, scale: 0.97 }}
+              transition={{ duration: 0.26, ease: [0.16, 1, 0.3, 1] }}
+              className="fixed inset-x-4 top-[4.9rem] z-40 flex items-center justify-between gap-3 border-2 border-zinc-900 bg-white/95 px-4 py-3 text-left shadow-[0_18px_26px_rgba(24,24,27,0.17)] backdrop-blur-sm md:hidden"
+              onClick={() => setIsMobileSearchOpen(true)}
+              aria-label="Open compact mobile search"
             >
-              <div className="flex items-center justify-between border-b border-zinc-200 px-5 py-4">
-                <p className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-zinc-500">Search Directory</p>
-                <button
-                  type="button"
-                  onClick={() => setIsMobileSearchOpen(false)}
-                  className="inline-flex h-10 w-10 items-center justify-center border-2 border-zinc-900 bg-white text-zinc-900"
-                  aria-label="Close mobile search"
-                >
-                  <X className="h-[18px] w-[18px]" strokeWidth={2.4} />
-                </button>
+              <div className="min-w-0">
+                <p className="truncate font-sans text-sm font-semibold text-zinc-900">{compactSearchLabel}</p>
+                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-zinc-500">{selectedCityName}</p>
               </div>
+              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center border-2 border-zinc-900 bg-zinc-900 text-white">
+                <SlidersHorizontal className="h-4 w-4" strokeWidth={2.2} />
+              </span>
+            </motion.button>
+          ) : null}
+        </AnimatePresence>
 
-              <form onSubmit={handleSearch} className="flex h-full flex-col">
-                <div className="space-y-3 overflow-y-auto px-4 py-4">
-                  <div className="border-2 border-zinc-900 bg-white p-4">
-                    <label className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Trade / Service</label>
-                    <div className="flex items-center gap-3 border border-zinc-300 px-3 py-3">
-                      <Search className="h-[18px] w-[18px] text-zinc-500" strokeWidth={2} />
-                      <input
-                        type="text"
-                        placeholder="Plumber, Roofer, Electrician"
-                        value={query}
-                        onChange={(event) => setQuery(event.target.value)}
-                        className="w-full border-none bg-transparent font-sans text-base text-zinc-900 outline-none placeholder:text-zinc-400"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="border border-zinc-300 bg-white p-4">
-                    <label className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Region</label>
-                    <div className="flex items-center gap-3 border border-zinc-300 px-3 py-3">
-                      <MapPin className="h-[18px] w-[18px] text-zinc-500" strokeWidth={2} />
-                      <select
-                        value={cityId}
-                        onChange={(event) => setCityId(event.target.value)}
-                        className="w-full appearance-none border-none bg-transparent font-sans text-base text-zinc-900 outline-none"
-                      >
-                        <option value="">All Okanagan</option>
-                        {cities.map((city) => (
-                          <option key={city.id} value={city.id}>{city.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="border border-zinc-300 bg-white p-4">
-                    <p className="mb-3 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Suggested searches</p>
-                    <div className="grid grid-cols-1 gap-2">
-                      {['Emergency plumber', 'HVAC repair', 'Roof inspection'].map((suggestion) => (
-                        <button
-                          key={suggestion}
-                          type="button"
-                          className="flex items-center justify-between border border-zinc-200 px-3 py-2 text-left font-sans text-sm font-medium text-zinc-700"
-                          onClick={() => setQuery(suggestion)}
-                        >
-                          <span>{suggestion}</span>
-                          <ArrowRight className="h-4 w-4" strokeWidth={2} />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-auto flex items-center justify-between border-t border-zinc-200 bg-white px-4 py-4">
+        <AnimatePresence>
+          {isMobileSearchOpen ? (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.24 }}
+              className="fixed inset-0 z-50 bg-zinc-950/50 px-4 pb-4 pt-[5.3rem] md:hidden"
+            >
+              <motion.div
+                initial={{ opacity: 0, y: 18, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 18, scale: 0.98 }}
+                transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
+                className="mx-auto flex h-full w-full max-w-xl flex-col overflow-hidden border-2 border-zinc-900 bg-zinc-100 shadow-[0_24px_52px_rgba(24,24,27,0.32)]"
+              >
+                <div className="flex items-center justify-between border-b border-zinc-300 bg-white px-5 py-4">
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-zinc-600">Search Directory</p>
                   <button
                     type="button"
-                    className="font-sans text-sm font-semibold text-zinc-700 underline underline-offset-2"
-                    onClick={() => {
-                      setQuery('');
-                      setCityId('');
-                    }}
+                    onClick={() => setIsMobileSearchOpen(false)}
+                    className="inline-flex h-10 w-10 items-center justify-center border-2 border-zinc-900 bg-white text-zinc-900 transition-colors hover:bg-zinc-900 hover:text-white"
+                    aria-label="Close mobile search"
                   >
-                    Clear
-                  </button>
-                  <button
-                    type="submit"
-                    className="inline-flex min-h-11 items-center justify-center border-2 border-zinc-900 bg-zinc-900 px-6 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white"
-                  >
-                    Search
+                    <X className="h-[18px] w-[18px]" strokeWidth={2.4} />
                   </button>
                 </div>
-              </form>
+
+                <form onSubmit={handleSearch} className="flex h-full flex-col">
+                  <div className="space-y-3 overflow-y-auto bg-zinc-100 px-4 py-4">
+                    <div className="border-2 border-zinc-900 bg-white p-4 shadow-[0_6px_0px_0px_rgba(24,24,27,0.08)]">
+                      <label className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Trade / Service</label>
+                      <div className="flex items-center gap-3 border border-zinc-300 px-3 py-3">
+                        <Search className="h-[18px] w-[18px] text-zinc-500" strokeWidth={2} />
+                        <input
+                          type="text"
+                          placeholder="Plumber, Roofer, Electrician"
+                          value={query}
+                          onChange={(event) => setQuery(event.target.value)}
+                          className="w-full border-none bg-transparent font-sans text-base text-zinc-900 outline-none placeholder:text-zinc-400"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="border border-zinc-300 bg-white p-4">
+                      <label className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Region</label>
+                      <div className="flex items-center gap-3 border border-zinc-300 px-3 py-3">
+                        <MapPin className="h-[18px] w-[18px] text-zinc-500" strokeWidth={2} />
+                        <select
+                          value={cityId}
+                          onChange={(event) => setCityId(event.target.value)}
+                          className="w-full appearance-none border-none bg-transparent font-sans text-base text-zinc-900 outline-none"
+                        >
+                          <option value="">All Okanagan</option>
+                          {cities.map((city) => (
+                            <option key={city.id} value={city.id}>{city.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="border border-zinc-300 bg-white p-4">
+                      <p className="mb-3 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Suggested searches</p>
+                      <div className="grid grid-cols-1 gap-2">
+                        {['Emergency plumber', 'HVAC repair', 'Roof inspection'].map((suggestion) => (
+                          <button
+                            key={suggestion}
+                            type="button"
+                            className="flex items-center justify-between border border-zinc-200 px-3 py-2 text-left font-sans text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-100"
+                            onClick={() => setQuery(suggestion)}
+                          >
+                            <span>{suggestion}</span>
+                            <ArrowRight className="h-4 w-4" strokeWidth={2} />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-auto flex items-center justify-between border-t border-zinc-300 bg-white px-4 py-4">
+                    <button
+                      type="button"
+                      className="font-sans text-sm font-semibold text-zinc-700 underline underline-offset-2"
+                      onClick={() => {
+                        setQuery('');
+                        setCityId('');
+                      }}
+                    >
+                      Clear
+                    </button>
+                    <button
+                      type="submit"
+                      className="inline-flex min-h-11 items-center justify-center border-2 border-zinc-900 bg-zinc-900 px-6 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white shadow-[3px_3px_0px_0px_rgba(24,24,27,1)] transition-all hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none"
+                    >
+                      Search
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
+          ) : null}
+        </AnimatePresence>
+      </LayoutGroup>
 
       {/* Dramatic Hero Section */}
       <section className="relative flex min-h-[70svh] items-end overflow-hidden bg-zinc-900 px-0 pb-10 pt-20 text-white sm:min-h-[82svh] sm:pb-14 sm:pt-24 lg:min-h-[100svh] lg:pb-24 lg:pt-44">
@@ -273,12 +276,15 @@ export default function Home() {
               Find trusted contractors across the Okanagan for design, build, repair, and maintenance.
             </motion.p>
             
-            <motion.button
-              variants={heroItemVariants}
-              type="button"
-              className="group relative flex w-full items-center justify-between gap-3 border-2 border-white/30 bg-white/10 px-4 py-3 text-left backdrop-blur-sm md:hidden"
-              onClick={() => setIsMobileSearchOpen(true)}
-            >
+            {!showCompactSearch && !isMobileSearchOpen ? (
+              <motion.button
+                variants={heroItemVariants}
+                layoutId="mobile-search-trigger"
+                type="button"
+                className="group relative flex w-full items-center justify-between gap-3 border-2 border-white/30 bg-white/10 px-4 py-3 text-left backdrop-blur-sm md:hidden"
+                transition={{ type: 'spring', stiffness: 260, damping: 28 }}
+                onClick={() => setIsMobileSearchOpen(true)}
+              >
               <div>
                 <p className="font-sans text-sm font-semibold text-white">{compactSearchLabel}</p>
                 <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-300">{selectedCityName}</p>
@@ -286,7 +292,8 @@ export default function Home() {
               <span className="inline-flex h-9 w-9 items-center justify-center border border-white/35 bg-zinc-950/50 text-white">
                 <Search className="h-4 w-4" strokeWidth={2.2} />
               </span>
-            </motion.button>
+              </motion.button>
+            ) : null}
 
             {/* Massive Search Bar */}
             <motion.form variants={heroItemVariants} onSubmit={handleSearch} className="group/search relative hidden w-full max-w-5xl flex-col gap-2 rounded-lg border border-white/20 bg-white/10 p-2 shadow-[0_20px_40px_rgba(0,0,0,0.35)] backdrop-blur-2xl md:flex md:flex-row">
