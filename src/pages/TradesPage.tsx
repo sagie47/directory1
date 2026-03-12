@@ -78,7 +78,7 @@ export default function TradesPage() {
         </div>
       </section>
 
-      <div className="relative z-30 mx-auto max-w-7xl px-4 pb-20 sm:px-6 sm:pb-24 lg:-mt-32 lg:px-8 lg:pb-32">
+      <div className="relative z-30 mx-auto max-w-7xl px-0 pb-20 sm:px-6 sm:pb-24 lg:-mt-32 lg:px-8 lg:pb-32">
         <motion.div 
           variants={containerVariants}
           initial="hidden"
@@ -93,7 +93,7 @@ export default function TradesPage() {
               <motion.div key={c.id} variants={itemVariants}>
                 <Link 
                   to={`/regions?category=${encodeURIComponent(c.id)}`} 
-                  className="group relative flex h-full flex-col overflow-x-hidden border border-zinc-200 bg-white p-6 shadow-none transition-all duration-500 hover:border-zinc-300 sm:rounded-sm sm:shadow-sm sm:hover:-translate-y-1 sm:hover:shadow-xl sm:p-8"
+                  className="group relative flex h-full flex-col overflow-x-hidden border-y border-zinc-200 bg-white p-6 shadow-none transition-all duration-500 sm:rounded-sm sm:border sm:hover:-translate-y-1 sm:hover:border-zinc-300 sm:shadow-sm sm:hover:shadow-xl sm:p-8"
                 >
                   <div className="relative z-10 mb-8 flex items-start justify-between sm:mb-12">
                     <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-zinc-200 bg-zinc-50 shadow-sm transition-all duration-500 group-hover:border-zinc-900 group-hover:bg-zinc-900">
