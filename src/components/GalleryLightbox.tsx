@@ -95,7 +95,7 @@ export default function GalleryLightbox({ images, businessName }: GalleryLightbo
   return (
     <>
       <section className="overflow-hidden bg-white shadow-sm md:rounded-sm md:border md:border-zinc-200">
-        <div className="flex flex-col gap-4 p-0 md:gap-5 md:p-6">
+        <div className="flex flex-col gap-4 p-0 md:gap-4 md:p-5">
           <div className="hidden md:flex md:flex-row md:items-center md:justify-end">
             <button
               type="button"
