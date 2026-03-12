@@ -3,6 +3,7 @@ import type { LucideProps } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface FeatureCardProps {
+  key?: string;
   title: string | ReactNode;
   description: string;
   icon: ComponentType<LucideProps>;

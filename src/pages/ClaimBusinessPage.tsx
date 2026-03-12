@@ -65,7 +65,7 @@ export default function ClaimBusinessPage() {
   return (
     <div className="bg-[#FAFAFA] text-zinc-900 font-sans selection:bg-indigo-200 selection:text-indigo-900">
       {/* Homepage-matched Hero Section */}
-      <section className="relative pt-32 pb-48 lg:pt-48 lg:pb-64 flex items-center bg-zinc-900 overflow-visible text-white">
+      <section className="relative flex items-center overflow-visible bg-zinc-900 pt-24 pb-24 text-white sm:pt-28 sm:pb-32 lg:pt-48 lg:pb-64">
         <div className="absolute inset-0 z-0">
           <motion.img 
             initial={{ scale: 1.1, opacity: 0 }}
@@ -80,7 +80,7 @@ export default function ClaimBusinessPage() {
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-20 mix-blend-overlay z-10"></div>
         </div>
         
-        <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+        <div className="relative z-20 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col items-start text-left max-w-4xl">
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
@@ -96,7 +96,7 @@ export default function ClaimBusinessPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="text-6xl md:text-8xl lg:text-[7.5rem] font-bold tracking-tighter mb-8 leading-[0.95] text-white text-balance drop-shadow-2xl uppercase"
+              className="mb-6 text-4xl font-bold uppercase tracking-tighter leading-[0.95] text-white text-balance drop-shadow-2xl sm:text-5xl md:text-7xl lg:mb-8 lg:text-[7.5rem]"
             >
               Own your <span className="font-serif italic font-light text-zinc-200 normal-case">Identity.</span>
             </motion.h1>
@@ -105,7 +105,7 @@ export default function ClaimBusinessPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="text-xl md:text-2xl text-zinc-300 mb-16 font-sans max-w-2xl leading-relaxed text-balance drop-shadow-md"
+              className="mb-10 max-w-2xl text-lg leading-relaxed text-balance text-zinc-300 drop-shadow-md sm:mb-12 sm:text-xl md:text-2xl lg:mb-16"
             >
               Take control of your directory profile, keep your info accurate, and make it easier for local customers to find and contact you.
             </motion.p>
@@ -114,12 +114,12 @@ export default function ClaimBusinessPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
-              className="flex flex-col sm:flex-row gap-6 w-full sm:w-auto"
+              className="flex w-full flex-col gap-4 sm:w-auto sm:flex-row sm:gap-6"
             >
-              <Link to="/claim" className="bg-white text-zinc-950 px-12 py-6 font-sans text-sm font-bold uppercase tracking-wider hover:bg-zinc-100 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-3 rounded-sm shadow-2xl group">
+              <Link to="/claim" className="group flex min-h-12 items-center justify-center gap-3 rounded-sm bg-white px-6 py-4 font-sans text-sm font-bold uppercase tracking-wider text-zinc-950 shadow-2xl transition-all duration-200 hover:bg-zinc-100 active:scale-[0.98] sm:px-10 sm:py-5 lg:px-12 lg:py-6">
                 Find My Business <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" strokeWidth={2.5} />
               </Link>
-              <Link to="/claim" className="bg-white/10 backdrop-blur-md text-white border border-white/20 px-12 py-6 font-sans text-sm font-bold uppercase tracking-wider hover:bg-white/20 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-3 rounded-sm">
+              <Link to="/claim" className="flex min-h-12 items-center justify-center gap-3 rounded-sm border border-white/20 bg-white/10 px-6 py-4 font-sans text-sm font-bold uppercase tracking-wider text-white backdrop-blur-md transition-all duration-200 hover:bg-white/20 active:scale-[0.98] sm:px-10 sm:py-5 lg:px-12 lg:py-6">
                 <Plus className="h-5 w-5 text-zinc-300" strokeWidth={2.5} /> Add My Business
               </Link>
             </motion.div>
@@ -128,15 +128,15 @@ export default function ClaimBusinessPage() {
       </section>
 
       {/* Benefits Section */}
-      <section className="py-32 bg-zinc-50 border-b border-zinc-200">
+      <section className="border-b border-zinc-200 bg-zinc-50 py-20 sm:py-24 lg:py-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="mb-24 text-center">
+          <div className="mb-14 text-center sm:mb-18 lg:mb-24">
             <SectionEyebrow icon={Zap} className="mb-6 bg-zinc-900 text-white">Platform Tools</SectionEyebrow>
-            <h2 className="text-4xl md:text-6xl font-bold uppercase tracking-tight text-zinc-900 mb-6">Why Claim Your Listing?</h2>
-            <p className="text-xl text-zinc-500 max-w-2xl mx-auto font-medium">Unlock the full power of the Okanagan's most precise operational directory.</p>
+            <h2 className="mb-5 text-3xl font-bold uppercase tracking-tight text-zinc-900 sm:text-4xl md:text-6xl md:mb-6">Why Claim Your Listing?</h2>
+            <p className="mx-auto max-w-2xl text-lg font-medium text-zinc-500 sm:text-xl">Unlock the full power of the Okanagan's most precise operational directory.</p>
           </div>
 
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3 lg:gap-8">
             {whyClaimItems.map((item, index) => (
               <div key={item.title}>
                 <FeatureCard
@@ -152,20 +152,20 @@ export default function ClaimBusinessPage() {
       </section>
 
       {/* Process Section - Elevated */}
-      <section className="py-32 bg-white border-b border-zinc-200 relative overflow-hidden">
+      <section className="relative overflow-hidden border-b border-zinc-200 bg-white py-20 sm:py-24 lg:py-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="flex flex-col lg:flex-row gap-20 items-center">
+          <div className="flex flex-col items-center gap-12 lg:flex-row lg:gap-20">
             <div className="lg:w-1/2">
               <SectionEyebrow icon={Workflow} className="mb-8">Simple Process</SectionEyebrow>
-              <h2 className="text-4xl md:text-6xl font-bold uppercase tracking-tight text-zinc-900 mb-8 leading-[1.1]">
+              <h2 className="mb-6 text-3xl font-bold uppercase tracking-tight leading-[1.1] text-zinc-900 sm:text-4xl md:text-6xl md:mb-8">
                 Three Steps to <br /> <span className="font-serif italic font-light text-zinc-400 normal-case">Verification.</span>
               </h2>
-              <p className="text-xl text-zinc-500 font-medium leading-relaxed max-w-xl">
+              <p className="max-w-xl text-lg font-medium leading-relaxed text-zinc-500 sm:text-xl">
                 Establishing administrative control over your regional assets is straightforward and built around data integrity.
               </p>
             </div>
             
-            <div className="lg:w-1/2 space-y-6 w-full">
+            <div className="w-full space-y-4 sm:space-y-6 lg:w-1/2">
               {processSteps.map((step, index) => (
                 <motion.div 
                   key={step.number}
@@ -173,12 +173,12 @@ export default function ClaimBusinessPage() {
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.1 }}
-                  className="group flex gap-8 p-10 bg-zinc-50 border border-zinc-100 rounded-sm transition-all duration-500 hover:bg-white hover:border-zinc-200 hover:shadow-2xl"
+                  className="group flex gap-5 rounded-sm border border-zinc-100 bg-zinc-50 p-6 transition-all duration-500 hover:border-zinc-200 hover:bg-white hover:shadow-2xl sm:gap-8 sm:p-10"
                 >
-                  <div className="text-5xl font-black text-zinc-200 group-hover:text-orange-500 transition-colors duration-500 leading-none">{step.number}</div>
+                  <div className="text-4xl font-black leading-none text-zinc-200 transition-colors duration-500 group-hover:text-orange-500 sm:text-5xl">{step.number}</div>
                   <div>
-                    <h4 className="text-2xl font-bold text-zinc-900 mb-3 uppercase tracking-tight">{step.title}</h4>
-                    <p className="text-zinc-500 font-medium text-lg leading-relaxed">{step.description}</p>
+                    <h4 className="mb-2 text-xl font-bold uppercase tracking-tight text-zinc-900 sm:mb-3 sm:text-2xl">{step.title}</h4>
+                    <p className="text-base font-medium leading-relaxed text-zinc-500 sm:text-lg">{step.description}</p>
                   </div>
                 </motion.div>
               ))}
