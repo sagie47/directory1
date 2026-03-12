@@ -84,7 +84,7 @@ export default function TradesPage() {
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, margin: "-50px" }}
-          className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4"
+          className="grid grid-cols-1 gap-0 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4"
         >
           {categories.map((c, i) => {
             const Icon = (Icons as any)[c.icon] || Icons.Wrench;
@@ -93,7 +93,7 @@ export default function TradesPage() {
               <motion.div key={c.id} variants={itemVariants}>
                 <Link 
                   to={`/regions?category=${encodeURIComponent(c.id)}`} 
-                  className="group relative flex h-full flex-col overflow-x-hidden rounded-sm border border-zinc-200 bg-white p-6 shadow-sm transition-all duration-500 hover:-translate-y-1 hover:border-zinc-300 hover:shadow-xl sm:p-8"
+                  className="group relative flex h-full flex-col overflow-x-hidden border border-zinc-200 bg-white p-6 shadow-none transition-all duration-500 hover:border-zinc-300 sm:rounded-sm sm:shadow-sm sm:hover:-translate-y-1 sm:hover:shadow-xl sm:p-8"
                 >
                   <div className="relative z-10 mb-8 flex items-start justify-between sm:mb-12">
                     <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-zinc-200 bg-zinc-50 shadow-sm transition-all duration-500 group-hover:border-zinc-900 group-hover:bg-zinc-900">
