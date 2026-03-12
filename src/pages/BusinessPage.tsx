@@ -102,7 +102,7 @@ export default function BusinessPage() {
           />
 
       {/* Hero Header Section */}
-      <div className="relative overflow-hidden border-b border-zinc-200 bg-white pt-8 pb-10 sm:pt-10 sm:pb-12 lg:pt-20 lg:pb-24">
+      <div className="relative overflow-hidden border-b border-zinc-200 bg-white pt-5 pb-5 sm:pt-10 sm:pb-12 lg:pt-20 lg:pb-24">
         <div className="absolute inset-0 z-0 bg-white">
           {heroImageSrc && (
             <img 
@@ -127,7 +127,7 @@ export default function BusinessPage() {
                 </span>
               </div>
               
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-black uppercase tracking-tighter text-zinc-900 mb-6 leading-[1.05]">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-black uppercase tracking-tighter text-zinc-900 mb-4 leading-[1.05]">
                 {business.name}
               </h1>
               
@@ -148,6 +148,23 @@ export default function BusinessPage() {
                   )}
                 </div>
               </div>
+
+              {(phoneHref || websiteHref) && (
+                <div className={`mt-4 grid gap-2.5 lg:hidden ${phoneHref && websiteHref ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                  {phoneHref && (
+                    <a href={phoneHref} className="flex items-center justify-between w-full bg-zinc-900 text-white px-4 py-3 rounded-xl leading-none font-mono text-[11px] font-semibold uppercase tracking-[0.12em] shadow-sm border border-zinc-900">
+                      <span>Call Now</span>
+                      <Phone className="w-4 h-4" />
+                    </a>
+                  )}
+                  {websiteHref && (
+                    <a href={websiteHref} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between w-full bg-white border border-zinc-200 text-zinc-900 rounded-xl px-4 py-3 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] shadow-sm">
+                      <span>Website</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Quick Actions Desktop */}
@@ -169,15 +186,15 @@ export default function BusinessPage() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8 lg:py-24">
-        <div className="grid grid-cols-1 items-start gap-10 sm:gap-12 lg:grid-cols-12 lg:gap-16">
+      <div className="mx-auto max-w-7xl px-0 py-3 sm:px-6 sm:py-12 lg:px-8 lg:py-24">
+        <div className="grid grid-cols-1 items-start gap-6 sm:gap-12 lg:grid-cols-12 lg:gap-16">
           
           {/* Main Content */}
-          <div className="space-y-10 sm:space-y-12 lg:col-span-8 lg:space-y-24">
+          <div className="space-y-6 sm:space-y-12 lg:col-span-8 lg:space-y-24">
             
             {/* Gallery Section */}
             {photos.length > 0 ? (
-              <div className="bg-white border border-zinc-200 p-1.5 rounded-sm shadow-sm">
+              <div className="sm:px-0">
                 <GalleryLightbox images={photos} businessName={business.name} />
               </div>
             ) : null}
@@ -303,22 +320,6 @@ export default function BusinessPage() {
           {/* Sidebar Area */}
           <div className="lg:col-span-4 space-y-8 lg:sticky lg:top-24">
             
-            {/* Mobile Actions */}
-            <div className="mb-2 flex flex-col gap-3 lg:hidden">
-              {phoneHref && (
-                <a href={phoneHref} className="flex items-center justify-between w-full bg-zinc-900 text-white px-6 py-4 rounded-xl leading-none font-mono text-sm font-semibold uppercase tracking-widest shadow-sm border border-zinc-900">
-                  <span>Call Now</span>
-                  <Phone className="w-4 h-4" />
-                </a>
-              )}
-              {websiteHref && (
-                <a href={websiteHref} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between w-full bg-white border border-zinc-200 text-zinc-900 rounded-xl px-6 py-4 font-mono text-sm font-semibold uppercase tracking-widest shadow-sm">
-                  <span>Website</span>
-                  <ArrowRight className="w-4 h-4" />
-                </a>
-              )}
-            </div>
-
             <section className="pt-2 pb-6">
               <h3 className="text-sm font-black uppercase tracking-widest text-zinc-900 mb-6">Contact Details</h3>
               
