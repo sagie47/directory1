@@ -22,6 +22,13 @@ import SearchPage from './pages/SearchPage';
 import TermsPage from './pages/TermsPage';
 import PrivacyPage from './pages/PrivacyPage';
 import ContactPage from './pages/ContactPage';
+import NeverMissLeadPage from './pages/NeverMissLeadPage';
+import BookDemoPage from './pages/BookDemoPage';
+import DemoRequestedPage from './pages/DemoRequestedPage';
+import WebsitesForTradesPage from './pages/WebsitesForTradesPage';
+import ManagedGrowthPage from './pages/ManagedGrowthPage';
+import BookCallPage from './pages/BookCallPage';
+import CallRequestedPage from './pages/CallRequestedPage';
 import { DirectoryDataProvider } from './directory-data';
 
 function ScrollToTop() {
@@ -55,6 +62,13 @@ function AnimatedRoutes() {
         <Route path="terms" element={<TermsPage />} />
         <Route path="privacy" element={<PrivacyPage />} />
         <Route path="contact" element={<ContactPage />} />
+        <Route path="never-miss-a-lead" element={<NeverMissLeadPage />} />
+        <Route path="book-demo" element={<BookDemoPage />} />
+        <Route path="demo-requested" element={<DemoRequestedPage />} />
+        <Route path="websites-for-trades" element={<WebsitesForTradesPage />} />
+        <Route path="managed-growth" element={<ManagedGrowthPage />} />
+        <Route path="book-call" element={<BookCallPage />} />
+        <Route path="call-requested" element={<CallRequestedPage />} />
         
         {/* Protected routes */}
         <Route

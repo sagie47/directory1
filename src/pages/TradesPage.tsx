@@ -30,7 +30,7 @@ export default function TradesPage() {
       className="bg-[#FAFAFA] min-h-screen text-zinc-900 font-sans selection:bg-indigo-200 selection:text-indigo-900 overflow-x-hidden"
     >
       {/* Homepage-matched Hero Section */}
-      <section className="relative pt-32 pb-48 lg:pt-48 lg:pb-64 flex items-center bg-zinc-900 overflow-visible text-white">
+      <section className="relative flex items-center overflow-visible bg-zinc-900 pt-24 pb-24 text-white sm:pt-28 sm:pb-32 lg:pt-48 lg:pb-64">
         <div className="absolute inset-0 z-0">
           <motion.img 
             initial={{ scale: 1.1, opacity: 0 }}
@@ -45,7 +45,7 @@ export default function TradesPage() {
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-20 mix-blend-overlay z-10"></div>
         </div>
         
-        <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+        <div className="relative z-20 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col items-start text-left max-w-4xl">
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
@@ -61,7 +61,7 @@ export default function TradesPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="text-5xl md:text-7xl lg:text-[6.5rem] font-black uppercase tracking-tighter mb-8 leading-[0.95] text-white text-balance drop-shadow-2xl"
+              className="mb-6 text-4xl font-black uppercase tracking-tighter leading-[0.95] text-white text-balance drop-shadow-2xl sm:text-5xl md:text-7xl lg:mb-8 lg:text-[6.5rem]"
             >
               Complete <span className="font-serif italic font-light text-zinc-300">Trades.</span>
             </motion.h1>
@@ -70,7 +70,7 @@ export default function TradesPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="text-xl md:text-2xl text-zinc-300 mb-12 font-sans max-w-2xl leading-relaxed text-balance drop-shadow-md"
+              className="mb-10 max-w-2xl text-lg leading-relaxed text-balance text-zinc-300 drop-shadow-md sm:mb-12 sm:text-xl md:text-2xl"
             >
               Browse all verified operational categories and trade professionals. Precision-mapped directories for regional milestones.
             </motion.p>
@@ -78,13 +78,13 @@ export default function TradesPage() {
         </div>
       </section>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-30 -mt-24 lg:-mt-32 pb-32">
+      <div className="relative z-30 mx-auto max-w-7xl px-4 pb-20 sm:px-6 sm:pb-24 lg:-mt-32 lg:px-8 lg:pb-32">
         <motion.div 
           variants={containerVariants}
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, margin: "-50px" }}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+          className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4"
         >
           {categories.map((c, i) => {
             const Icon = (Icons as any)[c.icon] || Icons.Wrench;
@@ -93,10 +93,10 @@ export default function TradesPage() {
               <motion.div key={c.id} variants={itemVariants}>
                 <Link 
                   to={`/regions?category=${encodeURIComponent(c.id)}`} 
-                  className="group bg-white rounded-2xl border border-zinc-200 p-8 shadow-sm transition-all duration-500 hover:-translate-y-1 hover:shadow-xl hover:border-zinc-300 flex flex-col h-full relative overflow-x-hidden"
+                  className="group relative flex h-full flex-col overflow-x-hidden rounded-sm border border-zinc-200 bg-white p-6 shadow-sm transition-all duration-500 hover:-translate-y-1 hover:border-zinc-300 hover:shadow-xl sm:p-8"
                 >
-                  <div className="flex justify-between items-start mb-12 relative z-10">
-                    <div className="w-12 h-12 bg-zinc-50 border border-zinc-200 rounded-xl flex items-center justify-center transition-all duration-500 group-hover:bg-zinc-900 group-hover:border-zinc-900 shadow-sm">
+                  <div className="relative z-10 mb-8 flex items-start justify-between sm:mb-12">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-zinc-200 bg-zinc-50 shadow-sm transition-all duration-500 group-hover:border-zinc-900 group-hover:bg-zinc-900">
                       <Icon className="h-6 w-6 text-zinc-400 transition-colors duration-500 group-hover:text-white" strokeWidth={1.5} />
                     </div>
                     <div className="font-mono text-[10px] font-black text-zinc-300 group-hover:text-orange-500 transition-colors duration-300 uppercase tracking-widest">
@@ -105,7 +105,7 @@ export default function TradesPage() {
                   </div>
                   
                   <div className="mt-auto relative z-10">
-                    <h3 className="font-black text-xl text-zinc-900 uppercase tracking-tighter leading-none mb-4 group-hover:text-orange-600 transition-colors">
+                    <h3 className="mb-3 font-black text-lg uppercase tracking-tighter leading-tight text-zinc-900 transition-colors group-hover:text-orange-600 sm:mb-4 sm:text-xl">
                       {c.name}
                     </h3>
                     <div className="flex items-center gap-2 font-mono text-[9px] font-black uppercase tracking-[0.2em] text-zinc-400 group-hover:text-zinc-900 transition-colors">
@@ -124,12 +124,12 @@ export default function TradesPage() {
       </div>
       
       {/* Bottom Info Section */}
-      <section className="bg-white border-t border-zinc-200 py-24">
+      <section className="border-t border-zinc-200 bg-white py-20 sm:py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+          <div className="grid grid-cols-1 items-center gap-12 md:grid-cols-2 md:gap-16">
             <div className="relative order-2 md:order-1">
-              <div className="aspect-square md:aspect-[4/3] rounded-3xl overflow-hidden border border-zinc-200 shadow-xl relative z-10 bg-zinc-100 p-12">
-                <div className="h-full border border-dashed border-zinc-300 rounded-xl flex items-center justify-center bg-white p-8 group transition-all">
+              <div className="relative z-10 aspect-square overflow-hidden rounded-sm border border-zinc-200 bg-zinc-100 p-6 shadow-xl sm:p-8 md:aspect-[4/3] lg:p-12">
+                <div className="group flex h-full items-center justify-center rounded-xl border border-dashed border-zinc-300 bg-white p-6 transition-all sm:p-8">
                   <div className="text-center flex flex-col items-center">
                     <div className="w-16 h-16 bg-orange-50 border border-orange-100 rounded-full flex items-center justify-center mb-6 shadow-sm group-hover:bg-orange-100 transition-colors">
                       <LayoutGrid className="w-8 h-8 text-orange-600" />
@@ -143,11 +143,11 @@ export default function TradesPage() {
             </div>
             
             <div className="order-1 md:order-2">
-              <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter text-zinc-900 mb-6 leading-none">
+              <h2 className="mb-5 text-3xl font-black uppercase tracking-tighter leading-none text-zinc-900 md:text-5xl md:mb-6">
                 Comprehensive. <br />
                 <span className="text-zinc-400 font-serif italic font-light tracking-normal">Coverage.</span>
               </h2>
-              <p className="text-zinc-600 text-lg leading-relaxed mb-8 max-w-lg">
+              <p className="mb-8 max-w-lg text-base leading-relaxed text-zinc-600 sm:text-lg">
                 Whether you're developing a large commercial project or renovating a residential property, our exhaustive list of trade categories ensures you connect with the exact skillsets needed for the job.
               </p>
               

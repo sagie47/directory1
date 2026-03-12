@@ -1,4 +1,5 @@
 import type { Business } from './business';
+import { getCityHeroImage } from './city-hero-images';
 
 import constructionHero from './photos/job-construction-scaled.jpg';
 import transitHero from './photos/2024_active_transportation_construction_hintringer_63.jpg';
@@ -50,6 +51,12 @@ export function getCategoryHeroImage({ categoryId, groupId, cityId, businesses }
 
   if (groupId && categoryFallbackImages[groupId]) {
     return categoryFallbackImages[groupId];
+  }
+  
+  // Use city hero image as a final contextual fallback before the generic one
+  const cityHero = getCityHeroImage(cityId);
+  if (cityHero) {
+    return cityHero;
   }
 
   return constructionHero;

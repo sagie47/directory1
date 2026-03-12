@@ -39,13 +39,23 @@ export default function UserMenu() {
       };
     }
 
-    hasApprovedClaim(user.id).then((hasClaim) => {
-      if (!isActive) {
-        return;
-      }
+    hasApprovedClaim(user.id)
+      .then((hasClaim) => {
+        if (!isActive) {
+          return;
+        }
 
-      setCanAccessOwnerDashboard(hasClaim);
-    });
+        setCanAccessOwnerDashboard(hasClaim);
+      })
+      .catch((claimError) => {
+        console.error('Error checking owner dashboard access:', claimError);
+
+        if (!isActive) {
+          return;
+        }
+
+        setCanAccessOwnerDashboard(false);
+      });
 
     return () => {
       isActive = false;
@@ -72,12 +82,6 @@ export default function UserMenu() {
           className="inline-flex items-center justify-center border-2 border-zinc-200 bg-white px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-700 transition-all hover:border-zinc-900 hover:text-zinc-950"
         >
           Sign In
-        </Link>
-        <Link
-          to="/claim-business"
-          className="inline-flex items-center justify-center border-2 border-zinc-900 bg-zinc-900 px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white shadow-[4px_4px_0px_0px_rgba(24,24,27,1)] transition-all hover:translate-x-0.5 hover:translate-y-0.5 hover:border-orange-500 hover:bg-orange-500 hover:shadow-none active:scale-[0.98]"
-        >
-          Claim Business
         </Link>
       </div>
     );

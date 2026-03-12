@@ -5,7 +5,7 @@ import * as Icons from 'lucide-react';
 import BusinessCard from '../components/BusinessCard';
 import Breadcrumbs from '../components/Breadcrumbs';
 import { motion } from 'motion/react';
-import { Business } from '../business';
+import { Business, businessServesCity } from '../business';
 import { getCategoryHeroImage } from '../category-hero-images';
 import { useDirectoryData } from '../directory-data';
 
@@ -37,7 +37,9 @@ export default function CategoryPage() {
   }
 
   const categoryBusinesses = useMemo(() => {
-    const filtered = businesses.filter(b => b.cityId === cityId && b.categoryId === categoryId) as Business[];
+    const filtered = businesses.filter(
+      (business) => business.categoryId === categoryId && businessServesCity(business, city.id, city.name)
+    ) as Business[];
 
     return [...filtered].sort((left, right) => {
       if (sortBy === 'Most Reviewed') {
@@ -77,42 +79,45 @@ export default function CategoryPage() {
       />
 
       {/* Category Hero */}
-      <section className={`relative border-b-2 border-zinc-900 overflow-hidden py-16 md:py-24 ${heroImage ? 'bg-zinc-900 text-white' : 'bg-white text-zinc-900'}`}>
-        {heroImage ? (
+      <section className={`relative border-b-2 border-zinc-900 overflow-hidden py-24 md:py-32 flex items-center bg-zinc-900 text-white`}>
+        {heroImage && (
           <div className="absolute inset-0 z-0">
             <motion.img 
               initial={{ scale: 1.1, opacity: 0 }}
-              animate={{ scale: 1, opacity: 0.8 }}
+              animate={{ scale: 1, opacity: 0.6 }}
               transition={{ duration: 1.5, ease: "easeOut" }}
               src={heroImage}
               alt={city.name}
               className="w-full h-full object-cover"
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/70 via-zinc-900/20 to-transparent z-10"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/90 via-zinc-900/40 to-transparent z-10"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent z-10"></div>
           </div>
-        ) : (
-          <div className="absolute inset-0 z-0 opacity-50" style={{ backgroundImage: 'linear-gradient(to right, #f4f4f5 1px, transparent 1px), linear-gradient(to bottom, #f4f4f5 1px, transparent 1px)', backgroundSize: '4rem 4rem' }}></div>
         )}
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row gap-8 items-start md:items-end justify-between">
-            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }} className="max-w-3xl">
-              <div className={`inline-flex items-center gap-2 border px-3 py-1.5 font-mono text-[10px] tracking-[0.15em] mb-8 uppercase rounded-sm shadow-sm backdrop-blur-sm ${heroImage ? 'border-white/20 bg-black/20 text-white' : 'border-zinc-200 bg-white text-zinc-600'}`}>
-                <IconComponent className={`h-3.5 w-3.5 ${heroImage ? 'text-white' : 'text-zinc-400'}`} strokeWidth={1.5} /> {category.name}
+        <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+          <div className="flex flex-col md:flex-row gap-12 items-start md:items-end justify-between">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="max-w-4xl text-left">
+              <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md text-zinc-100 border border-white/20 font-mono text-[10px] tracking-[0.3em] uppercase px-4 py-2 mb-8 shadow-sm rounded-sm">
+                <IconComponent className="w-3.5 h-3.5 text-zinc-300" strokeWidth={1.5} /> {category.name}
               </div>
-              <h1 className={`text-5xl md:text-7xl font-medium tracking-tight mb-4 leading-[1.05] ${heroImage ? 'text-white' : 'text-zinc-900'}`}>
-                {category.name}
+              
+              <h1 className="text-6xl md:text-8xl lg:text-[7rem] font-medium tracking-tighter mb-8 leading-[1.05] drop-shadow-2xl uppercase">
+                {category.name} <span className="font-serif italic font-light text-zinc-200 normal-case block md:inline">Experts.</span>
               </h1>
-              <div className={`text-lg font-mono tracking-[0.15em] uppercase flex items-center gap-2 ${heroImage ? 'text-zinc-300' : 'text-zinc-500'}`}>
-                <MapPin className="h-4 w-4" strokeWidth={1.5} /> IN {city.name}
+
+              <div className="text-xl md:text-2xl text-zinc-300 font-sans flex items-center gap-3 drop-shadow-md">
+                <MapPin className="h-6 w-6 text-orange-500" strokeWidth={2} /> 
+                <span>Verified Professionals in <strong className="text-white font-bold">{city.name}</strong></span>
               </div>
             </motion.div>
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }} className="shrink-0 flex flex-col items-start md:items-end gap-4">
-              <Link to="/signup" className={`inline-flex items-center justify-center gap-2 px-6 py-3 font-sans text-sm font-medium transition-colors rounded-sm shadow-sm group ${heroImage ? 'bg-white text-zinc-900 hover:bg-zinc-100' : 'bg-zinc-900 text-white hover:bg-zinc-800'}`}>
-                List Your Business <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" strokeWidth={1.5} />
+
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, delay: 0.2 }} className="shrink-0 flex flex-col items-start md:items-end gap-6">
+              <Link to="/claim" className="inline-flex items-center justify-center gap-3 bg-white text-zinc-950 px-8 py-4 font-sans text-sm font-bold uppercase tracking-wider transition-all hover:bg-zinc-100 hover:-translate-y-1 active:scale-95 rounded-md shadow-xl group">
+                List Your Business <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" strokeWidth={2.5} />
               </Link>
-              <p className={`text-sm font-sans max-w-[220px] text-left md:text-right leading-relaxed ${heroImage ? 'text-zinc-300' : 'text-zinc-500'}`}>
-                Are you a verified {category.name.toLowerCase()} professional? Join the directory.
+              <p className="text-sm font-sans max-w-[240px] text-left md:text-right leading-relaxed text-zinc-400">
+                Are you a verified {category.name.toLowerCase()} professional? Join the regional network.
               </p>
             </motion.div>
           </div>
@@ -157,7 +162,7 @@ export default function CategoryPage() {
             >
               {categoryBusinesses.map((business) => (
                 <motion.div key={business.id} variants={itemVariants} className="h-full">
-                  <BusinessCard business={business} />
+                  <BusinessCard business={business} contextCityName={city.name} />
                 </motion.div>
               ))}
             </motion.div>

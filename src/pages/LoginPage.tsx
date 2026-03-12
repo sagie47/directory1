@@ -1,4 +1,4 @@
-import React, { type FormEvent, useState } from 'react';
+import { type FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, ShieldCheck, Zap } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -7,14 +7,25 @@ import { useAuth } from '../contexts/AuthContext';
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { signIn, signInWithGoogle } = useAuth();
+  const { user, loading: authLoading, error: authError, isConfigured, signIn, signInWithGoogle } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate('/account', { replace: true });
+    }
+  }, [authLoading, navigate, user]);
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+
+    if (authLoading || !isConfigured) {
+      return;
+    }
+
     setError(null);
     setLoading(true);
 
@@ -29,6 +40,10 @@ export default function LoginPage() {
   };
 
   const handleGoogleSignIn = async () => {
+    if (authLoading || !isConfigured) {
+      return;
+    }
+
     setError(null);
     setLoading(true);
 
@@ -39,6 +54,8 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  const visibleError = error ?? authError;
 
   return (
     <motion.div 
@@ -64,18 +81,24 @@ export default function LoginPage() {
           Access your dashboard to manage your business profile, respond to reviews, and update your services.
         </p>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }} className="bg-white border border-zinc-200 p-8 sm:p-12 rounded-3xl shadow-xl text-left relative z-10">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }} className="bg-white border border-zinc-200 p-8 sm:p-12 rounded-sm shadow-xl text-left relative z-10">
           <div className="space-y-6">
-            {error && (
+            {visibleError && (
               <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-widest">
-                {error}
+                {visibleError}
+              </div>
+            )}
+
+            {!isConfigured && (
+              <div className="bg-amber-50 border border-amber-200 text-amber-700 rounded-xl px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-widest">
+                Authentication is not configured in this environment.
               </div>
             )}
 
             <button
               type="button"
               onClick={handleGoogleSignIn}
-              disabled={loading}
+              disabled={loading || authLoading || !isConfigured}
               className="w-full inline-flex items-center justify-center gap-3 bg-white text-zinc-900 border border-zinc-200 rounded-xl px-8 py-4 font-sans text-sm font-semibold uppercase tracking-widest transition-all shadow-sm hover:-translate-y-1 hover:shadow-md hover:border-zinc-300 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
             >
               <GoogleIcon />
@@ -118,7 +141,7 @@ export default function LoginPage() {
             <div className="pt-6">
               <button 
                 type="submit" 
-                disabled={loading}
+                disabled={loading || authLoading || !isConfigured}
                 className="w-full inline-flex items-center justify-center gap-3 bg-zinc-900 text-white rounded-xl px-8 py-4 font-sans text-sm font-semibold uppercase tracking-widest transition-all shadow-sm hover:bg-orange-500 hover:-translate-y-1 hover:shadow-md active:scale-95 group disabled:opacity-50 disabled:pointer-events-none"
               >
                 {loading ? 'Authenticating...' : <>Secure Login <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" strokeWidth={2.5} /></>}

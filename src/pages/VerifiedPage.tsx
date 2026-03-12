@@ -22,6 +22,21 @@ const itemVariants = {
 
 const PAGE_SIZE = 12;
 
+function normalizeSearchValue(value: string) {
+  return value
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function getSearchTokens(value: string) {
+  const normalized = normalizeSearchValue(value);
+  return normalized ? normalized.split(/\s+/).filter(Boolean) : [];
+}
+
 export default function VerifiedPage() {
   const { businesses, categories, categoryGroups, cities } = useDirectoryData();
   const [searchQuery, setSearchQuery] = useState('');
@@ -37,6 +52,10 @@ export default function VerifiedPage() {
   const citiesById = useMemo(
     () => new Map(cities.map((city) => [city.id, city])),
     [cities],
+  );
+  const groupsById = useMemo(
+    () => new Map(categoryGroups.map((group) => [group.id, group])),
+    [categoryGroups],
   );
 
   const visibleCategories = useMemo(() => {
@@ -59,7 +78,7 @@ export default function VerifiedPage() {
   }, [categoryFilter, visibleCategories]);
 
   const filteredBusinesses = useMemo(() => {
-    const normalizedSearch = deferredSearchQuery.trim().toLowerCase();
+    const searchTokens = getSearchTokens(deferredSearchQuery);
 
     return businesses
       .filter((business) => {
@@ -76,28 +95,68 @@ export default function VerifiedPage() {
           return false;
         }
 
-        if (!normalizedSearch) {
+        if (searchTokens.length === 0) {
           return true;
         }
 
         const city = citiesById.get(business.cityId);
+        const group = category?.groupId ? groupsById.get(category.groupId) : undefined;
         const searchFields = [
           business.name,
           business.description ?? '',
           city?.name ?? '',
           category?.name ?? '',
+          category?.id ?? '',
+          group?.name ?? '',
+          business.contact.address ?? '',
+          business.contact.phone ?? '',
+          business.contact.website ?? '',
+          business.source?.category ?? '',
           ...(business.categoryTags ?? []),
           ...(business.serviceAreas ?? []),
+          ...(business.specialties ?? []),
         ];
+        const normalizedBlob = normalizeSearchValue(searchFields.join(' '));
 
-        return searchFields.some((field) => field.toLowerCase().includes(normalizedSearch));
+        return searchTokens.every((token) => normalizedBlob.includes(token));
       })
       .sort((left, right) =>
-        (right.rating ?? 0) - (left.rating ?? 0)
+        (() => {
+          const leftCategory = categoriesById.get(left.categoryId);
+          const rightCategory = categoriesById.get(right.categoryId);
+          const leftCity = citiesById.get(left.cityId);
+          const rightCity = citiesById.get(right.cityId);
+          const searchTokens = getSearchTokens(deferredSearchQuery);
+
+          if (searchTokens.length > 0) {
+            const scoreBusiness = (businessName: string, cityName?: string, categoryName?: string) => {
+              const normalizedName = normalizeSearchValue(businessName);
+              const normalizedCity = normalizeSearchValue(cityName ?? '');
+              const normalizedCategory = normalizeSearchValue(categoryName ?? '');
+
+              return searchTokens.reduce((score, token) => {
+                if (normalizedName === token) return score + 8;
+                if (normalizedName.startsWith(token)) return score + 5;
+                if (normalizedName.includes(token)) return score + 3;
+                if (normalizedCategory.includes(token)) return score + 2;
+                if (normalizedCity.includes(token)) return score + 1;
+                return score;
+              }, 0);
+            };
+
+            const rightScore = scoreBusiness(right.name, rightCity?.name, rightCategory?.name);
+            const leftScore = scoreBusiness(left.name, leftCity?.name, leftCategory?.name);
+            if (rightScore !== leftScore) {
+              return rightScore - leftScore;
+            }
+          }
+
+          return (right.rating ?? 0) - (left.rating ?? 0)
         || (right.reviewCount ?? 0) - (left.reviewCount ?? 0)
-        || left.name.localeCompare(right.name)
+        || left.name.localeCompare(right.name);
+        })()
       );
-  }, [businesses, categoriesById, categoryFilter, citiesById, cityFilter, deferredSearchQuery, groupFilter]);
+  }, [businesses, categoriesById, categoryFilter, citiesById, cityFilter, deferredSearchQuery, groupFilter, groupsById]);
 
   const totalPages = Math.max(1, Math.ceil(filteredBusinesses.length / PAGE_SIZE));
 

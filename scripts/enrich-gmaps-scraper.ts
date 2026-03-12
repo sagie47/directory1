@@ -142,7 +142,7 @@ function toTag(value: string) {
     .trim();
 }
 
-function buildCategoryTags(place: ScrapedPlace, existing: ExistingBusiness) {
+function buildCategoryTags(place: ScrapedPlace, existingCategoryName?: string) {
   const tags = new Set<string>();
 
   for (const category of place.categories ?? []) {
@@ -152,8 +152,8 @@ function buildCategoryTags(place: ScrapedPlace, existing: ExistingBusiness) {
     }
   }
 
-  for (const value of [place.category, existing.categoryName]) {
-    const normalized = toTag(value ?? '');
+  for (const value of [place.category, existingCategoryName]) {
+    const normalized = toTag(typeof value === 'string' ? value : '');
     if (normalized) {
       tags.add(normalized);
     }
@@ -364,9 +364,7 @@ function createBusinessFromPlace(place: ScrapedPlace, queryCityId: string | null
     return null;
   }
 
-  const categoryTags = buildCategoryTags(place, {
-    categoryName: category.name,
-  } as ExistingBusiness);
+  const categoryTags = buildCategoryTags(place, category.name);
   const specialties = buildSpecialties(place);
   const photos = buildPhotos(place);
   const reviews = buildReviews(place);
@@ -545,7 +543,10 @@ async function main() {
 
     updatedCount += 1;
 
-    const categoryTags = buildCategoryTags(place, existing);
+    const categoryTags = buildCategoryTags(
+      place,
+      typeof existing.categoryName === 'string' ? existing.categoryName : undefined,
+    );
     const specialties = buildSpecialties(place);
     const photos = buildPhotos(place);
     const reviews = buildReviews(place);
@@ -618,9 +619,9 @@ async function main() {
     || String(left.name).localeCompare(String(right.name)),
   );
 
-  const serializedBusinesses = `export const businesses = ${formatValue(allBusinesses, 0)};\n`;
+  const serializedBusinesses = `export const businesses: Business[] = ${formatValue(allBusinesses, 0)};\n`;
   const currentData = await readFile(dataFile, 'utf8');
-  const exportStart = currentData.indexOf('export const businesses = [');
+  const exportStart = currentData.indexOf('export const businesses');
   const exportEnd = currentData.lastIndexOf('];');
 
   if (exportStart === -1 || exportEnd === -1 || exportEnd < exportStart) {

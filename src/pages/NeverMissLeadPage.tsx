@@ -1,19 +1,11 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Phone, MessageSquare, Clock, Check, Sparkles, Building2, Zap, Users, Shield, ChevronDown } from 'lucide-react';
+import { ArrowRight, Phone, MessageSquare, Check, Sparkles, LayoutGrid, HelpCircle, Zap, ShieldAlert, Clock, Smartphone } from 'lucide-react';
 import { motion } from 'motion/react';
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: { staggerChildren: 0.1, delayChildren: 0.2 }
-  }
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } }
-};
+import SectionEyebrow from '../components/SectionEyebrow';
+import leadHero from '../photos/businessown/plumbing_career_social jpg.jpg';
+import BusinessFAQ from '../components/BusinessFAQ';
+import BusinessCTA from '../components/BusinessCTA';
+import FeatureCard from '../components/FeatureCard';
 
 const howItWorks = [
   {
@@ -47,7 +39,7 @@ const features = [
   {
     icon: MessageSquare,
     title: 'Quote Follow-Up',
-    description: 'Automatically follow up on estimates so opportunities don\'t go cold.'
+    description: 'Automatically follow up on estimates so opportunities do not go cold.'
   }
 ];
 
@@ -60,290 +52,179 @@ const outcomes = [
   'Give customers a better first impression'
 ];
 
-const bestFit = [
-  'Plumbers',
-  'Electricians',
-  'HVAC Technicians',
-  'Roofers',
-  'Restoration / Emergency Services',
-  'Busy Small Crews',
-  'Owner-Operators',
-  'Companies without dedicated office staff'
-];
-
-const onboardingSteps = [
-  'We learn how your business handles calls',
-  'We configure your response flow',
-  'We test everything with you',
-  'You start catching missed leads fast'
-];
-
 const faqs = [
-  { q: 'Do I need a new phone number?', a: 'No. Our system works with your existing number — no changes to your current setup.' },
-  { q: 'Can this work with my current website?', a: 'Yes. We integrate seamlessly with your existing website and business tools.' },
-  { q: 'What happens when I\'m already on a job?', a: 'That\'s exactly when this helps. The AI handles incoming calls so you never miss a lead.' },
-  { q: 'Can I approve the messages?', a: 'Absolutely. You have full control over what the AI says and can preview or approve messages before they go out.' },
-  { q: 'Will callers know it\'s automated?', a: 'The AI is designed to sound natural and helpful. Most callers have a positive experience.' },
-  { q: 'Can this work after hours only?', a: 'Yes. You can set exact hours for when the AI should activate — evenings, weekends, or 24/7.' },
-  { q: 'How long does setup take?', a: 'Most businesses are up and running within 1-2 business days.' },
-  { q: 'Do you serve only Okanagan businesses?', a: 'We currently focus on the Okanagan Valley but can discuss other areas.' },
-  { q: 'How much does it cost?', a: 'Pricing varies based on your needs. Book a demo and we\'ll give you a custom quote.' }
+  { question: 'Do I need a new phone number?', answer: 'No. The system can work with your existing number and current process.' },
+  { question: 'Can this work with my current website?', answer: 'Yes. The lead-response system can complement your current website and directory presence.' },
+  { question: 'What happens when I am already on a job?', answer: 'That is the main use case. Incoming calls get engaged immediately instead of sitting in voicemail.' },
+  { question: 'Can I approve the messages?', answer: 'Yes. Message flows can be configured around your preferred tone and process.' },
+  { question: 'Will callers know it is automated?', answer: 'The system is designed to feel operational and helpful, not robotic or spammy.' },
+  { question: 'Can this work after hours only?', answer: 'Yes. It can be used after hours, during overflow periods, or full-time.' },
+  { question: 'How long does setup take?', answer: 'Most setups can be configured quickly once we know how your business handles inbound calls.' }
 ];
 
 export default function NeverMissLeadPage() {
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
-      className="bg-[#FAFAFA] min-h-screen text-zinc-900 font-sans selection:bg-orange-500/20"
+      className="min-h-screen bg-[#FAFAFA] font-sans text-zinc-900 selection:bg-indigo-200 selection:text-indigo-900"
     >
-      {/* Hero Section */}
-      <section className="relative pt-32 pb-24 lg:pt-48 lg:pb-40 overflow-hidden bg-white border-b border-zinc-200">
-        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(to right, #71717a 1px, transparent 1px), linear-gradient(to bottom, #71717a 1px, transparent 1px)', backgroundSize: '3rem 3rem' }}></div>
-        
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div 
-            variants={containerVariants}
-            initial="hidden"
-            animate="show"
-            className="text-center max-w-4xl mx-auto"
-          >
-            <motion.div variants={itemVariants} className="mb-8">
-              <span className="inline-flex items-center gap-2 font-mono text-[10px] font-bold tracking-widest text-orange-600 uppercase bg-orange-50 px-4 py-2 rounded-full">
-                <Phone className="w-3.5 h-3.5" /> AI-Powered Lead Capture
-              </span>
+      {/* Homepage-matched Hero Section */}
+      <section className="relative flex items-center overflow-visible bg-zinc-900 pt-24 pb-24 text-white sm:pt-28 sm:pb-32 lg:pt-48 lg:pb-64">
+        <div className="absolute inset-0 z-0">
+          <motion.img 
+            initial={{ scale: 1.1, opacity: 0 }}
+            animate={{ scale: 1, opacity: 0.5 }}
+            transition={{ duration: 1.5, ease: "easeOut" }}
+            src={leadHero}
+            alt="Plumbing Trade" 
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/90 via-zinc-900/40 to-transparent z-10"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent z-10"></div>
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-20 mix-blend-overlay z-10"></div>
+        </div>
+
+        <div className="relative z-20 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col items-start text-left max-w-4xl">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md text-zinc-100 border border-white/20 font-mono text-[10px] tracking-[0.3em] uppercase px-4 py-2 mb-8 shadow-sm rounded-sm"
+            >
+              <LayoutGrid className="w-3.5 h-3.5 text-zinc-300" />
+              Lead Capture System
             </motion.div>
-            
-            <motion.h1 variants={itemVariants} className="text-4xl md:text-6xl lg:text-7xl font-black uppercase tracking-tighter text-zinc-900 mb-8 leading-[0.95]">
-              Never Miss a Lead <br />
-              <span className="text-zinc-500">While You're on the Job</span>
+
+            <motion.h1 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="mb-6 text-4xl font-bold uppercase tracking-tighter leading-[0.95] text-white text-balance drop-shadow-2xl sm:text-5xl md:text-7xl lg:mb-8 lg:text-[7.5rem]"
+            >
+              Never Miss a <span className="font-serif italic font-light text-zinc-200 normal-case">Lead.</span>
             </motion.h1>
-            
-            <motion.p variants={itemVariants} className="text-xl text-zinc-600 leading-relaxed mb-4 max-w-2xl mx-auto">
+
+            <motion.p 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="mb-10 max-w-2xl text-lg leading-relaxed text-balance text-zinc-300 drop-shadow-md sm:mb-12 sm:text-xl md:text-2xl"
+            >
               We help Okanagan trades businesses capture missed calls, respond instantly by text, and qualify leads even when nobody can answer the phone.
             </motion.p>
-            
-            <motion.p variants={itemVariants} className="text-sm text-zinc-500 mb-12">
-              Works for busy crews, solo operators, and shops without full-time office staff.
-            </motion.p>
-            
-            <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link to="/book-demo" className="inline-flex items-center justify-center gap-2 bg-zinc-900 text-white px-8 py-4 rounded-xl font-sans text-sm font-semibold uppercase tracking-widest shadow-sm hover:bg-orange-500 hover:-translate-y-1 hover:shadow-md transition-all">
-                Book a Demo <ArrowRight className="w-4 h-4" />
+
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="flex w-full flex-col gap-4 sm:w-auto sm:flex-row sm:gap-6"
+            >
+              <Link to="/book-demo" className="group flex min-h-12 items-center justify-center gap-3 rounded-sm bg-white px-6 py-4 font-sans text-sm font-bold uppercase tracking-wider text-zinc-950 shadow-2xl transition-all duration-200 hover:bg-zinc-100 active:scale-[0.98] sm:px-10 sm:py-5 lg:px-12 lg:py-6">
+                Book a Demo <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" strokeWidth={2.5} />
               </Link>
-              <a href="#how-it-works" className="inline-flex items-center justify-center gap-2 bg-white text-zinc-900 border border-zinc-200 px-8 py-4 rounded-xl font-sans text-sm font-semibold uppercase tracking-widest shadow-sm hover:-translate-y-1 hover:shadow-md transition-all">
+              <a href="#how-it-works" className="flex min-h-12 items-center justify-center gap-3 rounded-sm border border-white/20 bg-white/10 px-6 py-4 font-sans text-sm font-bold uppercase tracking-wider text-white backdrop-blur-md transition-all duration-200 hover:bg-white/20 active:scale-[0.98] sm:px-10 sm:py-5 lg:px-12 lg:py-6">
                 See How It Works
               </a>
             </motion.div>
-          </motion.div>
+          </div>
         </div>
       </section>
 
-      {/* Problem Section */}
-      <section className="py-24 lg:py-32 bg-zinc-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl">
-            <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter mb-8 leading-tight">
-              Most Trades Businesses Don't Need More Leads First — <br />
-              <span className="text-zinc-400">They Need to Stop Losing the Ones They Already Get</span>
-            </h2>
-            <div className="space-y-4 text-lg text-zinc-300 leading-relaxed">
-              <p>Phone rings while they're on a job → lead goes to voicemail → customer calls the next company → quote doesn't get followed up → job slips through the cracks.</p>
-              <p className="text-zinc-500">Sound familiar? You're not alone.</p>
+      {/* Problem Section - Elevated */}
+      <section className="relative border-b border-zinc-200 bg-zinc-50 py-20 sm:py-24 lg:py-32">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="flex flex-col items-center gap-12 lg:flex-row lg:gap-20">
+            <div className="lg:w-1/2">
+              <SectionEyebrow icon={ShieldAlert} className="mb-8">The Problem</SectionEyebrow>
+              <h2 className="mb-6 text-3xl font-bold uppercase tracking-tight leading-[1.1] text-zinc-900 sm:text-4xl md:text-6xl md:mb-8">
+                Most Trades Do Not Need <br /> <span className="font-serif italic font-light text-zinc-400 normal-case">More Leads.</span>
+              </h2>
+              <p className="max-w-xl text-lg font-medium leading-relaxed text-zinc-500 sm:text-xl">
+                They need to stop losing the ones they already get. Every missed call is a missed opportunity that goes directly to your competitor.
+              </p>
+            </div>
+            
+            <div className="grid w-full gap-4 sm:grid-cols-2 sm:gap-6 lg:w-1/2">
+              {[
+                { icon: Phone, title: 'Missed Calls', desc: 'Phone rings while you are on site.' },
+                { icon: Clock, title: 'Slow Response', desc: 'Leads cool down in minutes.' },
+                { icon: Smartphone, title: 'Text-Back Gap', desc: 'No instant engagement by SMS.' },
+                { icon: Zap, title: 'Lost Revenue', desc: 'The job goes to the next crew.' }
+              ].map((item, index) => (
+                <div key={index} className="rounded-sm border border-zinc-100 bg-white p-6 shadow-sm transition-all duration-500 hover:shadow-xl sm:p-8">
+                  <item.icon className="h-8 w-8 text-orange-500 mb-4" />
+                  <h4 className="text-lg font-bold uppercase tracking-tight mb-2">{item.title}</h4>
+                  <p className="text-zinc-500 font-medium leading-tight">{item.desc}</p>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
-      {/* How It Works */}
-      <section id="how-it-works" className="py-24 lg:py-32 bg-white">
+      {/* How it Works - Interactive Cards */}
+      <section id="how-it-works" className="border-b border-zinc-200 bg-white py-20 sm:py-24 lg:py-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter text-zinc-900 mb-4">How It Works</h2>
-            <p className="text-zinc-500">Three simple steps to never miss another lead.</p>
+          <div className="mb-14 text-center sm:mb-18 lg:mb-24">
+            <SectionEyebrow icon={Zap} className="mb-6 bg-zinc-900 text-white">Mechanism</SectionEyebrow>
+            <h2 className="mb-5 text-3xl font-bold uppercase tracking-tight text-zinc-900 sm:text-4xl md:text-6xl md:mb-6">How It Works</h2>
+            <p className="mx-auto max-w-2xl text-lg font-medium text-zinc-500 sm:text-xl">A seamless, automated response layer for your busy crew.</p>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
-            {howItWorks.map((item, idx) => (
-              <motion.div 
-                key={idx}
+
+          <div className="grid gap-4 sm:gap-6 md:grid-cols-3 md:gap-8">
+            {howItWorks.map((item, index) => (
+              <motion.div
+                key={item.step}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: idx * 0.1, duration: 0.6 }}
-                className="relative"
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+                className="group rounded-sm border border-zinc-100 bg-zinc-50 p-6 text-center transition-all duration-500 hover:border-zinc-200 hover:bg-white hover:shadow-2xl sm:p-8 lg:p-12"
               >
-                <div className="text-8xl font-black text-zinc-100 leading-none mb-4">{item.step}</div>
-                <h3 className="text-xl font-bold text-zinc-900 uppercase tracking-tight mb-3">{item.title}</h3>
-                <p className="text-zinc-600 leading-relaxed">{item.description}</p>
+                <div className="mb-6 text-5xl font-black leading-none text-zinc-200 transition-colors duration-500 group-hover:text-orange-500/20 sm:mb-8 sm:text-7xl">{item.step}</div>
+                <h3 className="mb-3 text-xl font-bold uppercase tracking-tight text-zinc-900 sm:mb-4 sm:text-2xl">{item.title}</h3>
+                <p className="text-base font-medium leading-relaxed text-zinc-500 sm:text-lg">{item.description}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Features Stack */}
-      <section className="py-24 lg:py-32 bg-[#FAFAFA]">
+      {/* Offer Stack */}
+      <section className="border-b border-zinc-200 bg-zinc-50 py-20 sm:py-24 lg:py-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter text-zinc-900 mb-4">Built for Busy Trade Businesses</h2>
+          <div className="mb-14 text-center sm:mb-18 lg:mb-24">
+            <SectionEyebrow icon={Sparkles} className="mb-6">Offer Stack</SectionEyebrow>
+            <h2 className="mb-5 text-3xl font-bold uppercase tracking-tight text-zinc-900 sm:text-4xl md:text-6xl md:mb-6">Built for Operations</h2>
           </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {features.map((feature, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: idx * 0.1, duration: 0.6 }}
-                className="bg-white border border-zinc-200 p-8 rounded-2xl shadow-sm hover:shadow-md transition-shadow"
-              >
-                <div className="w-12 h-12 bg-orange-50 border border-orange-100 rounded-xl flex items-center justify-center mb-6">
-                  <feature.icon className="w-6 h-6 text-orange-500" />
-                </div>
-                <h3 className="text-lg font-bold text-zinc-900 uppercase tracking-tight mb-3">{feature.title}</h3>
-                <p className="text-zinc-600 leading-relaxed">{feature.description}</p>
-              </motion.div>
+
+          <div className="grid gap-4 sm:gap-6 md:grid-cols-3 md:gap-8">
+            {features.map((feature, index) => (
+              <FeatureCard
+                key={feature.title}
+                icon={feature.icon}
+                title={feature.title}
+                description={feature.description}
+                index={index}
+              />
             ))}
           </div>
         </div>
       </section>
 
-      {/* Outcomes/Benefits */}
-      <section className="py-24 lg:py-32 bg-white border-t border-zinc-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter text-zinc-900 mb-4">What This Helps You Do</h2>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto">
-            {outcomes.map((outcome, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, x: -10 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: idx * 0.05, duration: 0.4 }}
-                className="flex items-center gap-3 p-4"
-              >
-                <div className="w-6 h-6 bg-zinc-900 rounded-full flex items-center justify-center shrink-0">
-                  <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />
-                </div>
-                <span className="font-medium text-zinc-700">{outcome}</span>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <BusinessFAQ faqs={faqs} />
 
-      {/* Best Fit For */}
-      <section className="py-24 lg:py-32 bg-zinc-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter mb-4">Best Fit For</h2>
-          </div>
-          
-          <div className="flex flex-wrap justify-center gap-3 max-w-3xl mx-auto mb-12">
-            {bestFit.map((fit, idx) => (
-              <span key={idx} className="px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm font-medium text-zinc-300">
-                {fit}
-              </span>
-            ))}
-          </div>
-          
-          <p className="text-center text-zinc-500 text-sm font-mono uppercase tracking-widest">
-            Not ideal for businesses that already have a full-time dispatcher handling every inbound lead.
-          </p>
-        </div>
-      </section>
-
-      {/* Differentiation */}
-      <section className="py-24 lg:py-32 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter text-zinc-900 mb-8">
-              A Website Doesn't Answer the Phone
-            </h2>
-            <p className="text-xl text-zinc-600 leading-relaxed">
-              A website is helpful. Directory placement is helpful. Ads are helpful. But none of it matters if nobody responds when the lead comes in.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Onboarding */}
-      <section className="py-24 lg:py-32 bg-[#FAFAFA] border-t border-zinc-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter text-zinc-900 mb-4">Simple to Set Up</h2>
-            <p className="text-zinc-500">No complicated software. No long onboarding.</p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
-            {onboardingSteps.map((step, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: idx * 0.1, duration: 0.5 }}
-                className="relative"
-              >
-                <div className="bg-white border border-zinc-200 p-6 rounded-xl shadow-sm">
-                  <div className="w-8 h-8 bg-zinc-900 text-white font-mono text-sm font-bold flex items-center justify-center rounded-full mb-4">
-                    {idx + 1}
-                  </div>
-                  <p className="text-zinc-700 font-medium">{step}</p>
-                </div>
-                {idx < onboardingSteps.length - 1 && (
-                  <ArrowRight className="hidden lg:block absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 text-zinc-300" />
-                )}
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Block */}
-      <section className="py-24 lg:py-32 bg-zinc-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter mb-4">
-            See What This Could Look Like for Your Business
-          </h2>
-          <p className="text-xl text-zinc-400 mb-12 max-w-2xl mx-auto">
-            We'll show you exactly how missed-call text back and AI lead handling could work for your trade business.
-          </p>
-          <Link to="/book-demo" className="inline-flex items-center justify-center gap-2 bg-orange-500 text-white px-10 py-5 rounded-xl font-sans text-sm font-semibold uppercase tracking-widest shadow-sm hover:bg-orange-600 hover:-translate-y-1 hover:shadow-md transition-all">
-            Book a Demo <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
-      </section>
-
-      {/* FAQ */}
-      <section className="py-24 lg:py-32 bg-white">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-black uppercase tracking-tighter text-zinc-900 mb-12 text-center">Frequently Asked Questions</h2>
-          
-          <div className="space-y-6">
-            {faqs.map((faq, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: idx * 0.05, duration: 0.4 }}
-                className="border-b border-zinc-200 pb-6"
-              >
-                <h3 className="font-bold text-zinc-900 mb-2">{faq.q}</h3>
-                <p className="text-zinc-600 leading-relaxed">{faq.a}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <BusinessCTA 
+        eyebrow="Catch Every Call"
+        title={<>Recover your <br /> <span className="text-zinc-400 italic font-serif font-light text-balance">Revenue.</span></>}
+        description="We will show you exactly how missed-call text back and AI lead handling could work for your trade business."
+        ctaText="Book a Demo"
+        ctaHref="/book-demo"
+      />
     </motion.div>
   );
 }

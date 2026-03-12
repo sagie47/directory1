@@ -73,6 +73,8 @@ type BusinessOverrideRow = {
   photos: unknown;
 };
 
+const PAGE_SIZE = 1000;
+
 function isMissingOverridesTable(error: { code?: string; message?: string } | null | undefined) {
   if (!error) {
     return false;
@@ -205,6 +207,29 @@ function mergeBusinessOverride(business: Business, override?: BusinessOverrideRo
   };
 }
 
+async function fetchAllRows<T>(query: (from: number, to: number) => Promise<{ data: T[] | null; error: { message: string } | null }>) {
+  const rows: T[] = [];
+  let from = 0;
+
+  while (true) {
+    const to = from + PAGE_SIZE - 1;
+    const { data, error } = await query(from, to);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    const batch = data ?? [];
+    rows.push(...batch);
+
+    if (batch.length < PAGE_SIZE) {
+      return rows;
+    }
+
+    from += PAGE_SIZE;
+  }
+}
+
 async function fetchDirectoryData(): Promise<DirectoryData> {
   if (!supabase) {
     console.info('[directory-data] Supabase not configured. Using local seed data.', {
@@ -215,22 +240,33 @@ async function fetchDirectoryData(): Promise<DirectoryData> {
     return seedData;
   }
 
-  const [citiesResult, groupResult, categoriesResult, businessesResult, overridesResult] = await Promise.all([
+  const [citiesResult, groupResult, categoriesResult, businessRows, overrideRowsResult] = await Promise.all([
     supabase.from('cities').select('id, name, description').order('name'),
     supabase.from('category_groups').select('id, name, description').order('name'),
     supabase.from('categories').select('id, name, icon, group_id').order('name'),
-    supabase.from('businesses').select('id, name, city_id, category_id, description, rating, review_count, service_areas, category_tags, specialties, photos, reviews, hours, coordinates, contact, source').order('name'),
+    fetchAllRows<BusinessRow>(async (from, to) => {
+      const result = await supabase
+        .from('businesses')
+        .select('id, name, city_id, category_id, description, rating, review_count, service_areas, category_tags, specialties, photos, reviews, hours, coordinates, contact, source')
+        .order('name')
+        .range(from, to);
+
+      return {
+        data: (result.data ?? []) as BusinessRow[],
+        error: result.error ? { message: result.error.message } : null,
+      };
+    }),
     supabase.from('business_overrides').select('business_id, description, contact, service_areas, hours, photos'),
   ]);
 
-  const overridesError = isMissingOverridesTable(overridesResult.error) ? null : overridesResult.error;
-  const firstError = citiesResult.error ?? groupResult.error ?? categoriesResult.error ?? businessesResult.error ?? overridesError;
+  const overridesError = isMissingOverridesTable(overrideRowsResult.error) ? null : overrideRowsResult.error;
+  const firstError = citiesResult.error ?? groupResult.error ?? categoriesResult.error ?? overridesError;
   if (firstError) {
     throw new Error(firstError.message);
   }
 
   const overridesByBusinessId = new Map(
-    ((overridesResult.data ?? []) as BusinessOverrideRow[]).map((override) => [override.business_id, override])
+    ((overrideRowsResult.data ?? []) as BusinessOverrideRow[]).map((override) => [override.business_id, override])
   );
 
   const data = {
@@ -246,7 +282,7 @@ async function fetchDirectoryData(): Promise<DirectoryData> {
       icon: category.icon ?? undefined,
       groupId: category.group_id ?? undefined,
     })),
-    businesses: ((businessesResult.data ?? []) as BusinessRow[]).map((row) =>
+    businesses: businessRows.map((row) =>
       mergeBusinessOverride(mapBusinessRow(row), overridesByBusinessId.get(row.id))
     ),
   };

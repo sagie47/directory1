@@ -17,7 +17,6 @@ import {
 import Breadcrumbs from '../components/Breadcrumbs';
 import GalleryLightbox from '../components/GalleryLightbox';
 import { useDirectoryData } from '../directory-data';
-import { getCategoryHeroImage } from '../category-hero-images';
 
 export default function BusinessPage() {
   const { cityId, categoryId, businessId } = useParams<{ cityId: string, categoryId: string, businessId: string }>();
@@ -67,12 +66,7 @@ export default function BusinessPage() {
   const rating = business.rating ?? 0;
   const reviewCount = business.reviewCount ?? 0;
   
-  const heroImageSrc = photos[0] || getCategoryHeroImage({
-    categoryId: business.categoryId,
-    groupId: category.groupId,
-    cityId: business.cityId,
-    businesses: businesses
-  });
+  const heroImageSrc = photos[0];
 
   return (
     <motion.div 
@@ -94,12 +88,14 @@ export default function BusinessPage() {
       {/* Hero Header Section */}
       <div className="relative pt-12 pb-16 lg:pt-20 lg:pb-24 overflow-hidden border-b border-zinc-200 bg-white">
         <div className="absolute inset-0 z-0 bg-white">
-          <img 
-            src={heroImageSrc} 
-            alt="" 
-            className="w-full h-full object-cover opacity-[0.15] mix-blend-luminosity" 
-            aria-hidden="true" 
-          />
+          {heroImageSrc && (
+            <img 
+              src={heroImageSrc} 
+              alt="" 
+              className="w-full h-full object-cover opacity-[0.15] mix-blend-luminosity" 
+              aria-hidden="true" 
+            />
+          )}
           <div className="absolute inset-0 bg-gradient-to-b from-white/40 to-white/95" />
         </div>
 
@@ -165,19 +161,10 @@ export default function BusinessPage() {
             
             {/* Gallery Section */}
             {photos.length > 0 ? (
-              <div className="bg-white border border-zinc-200 p-1.5 rounded-2xl shadow-sm">
+              <div className="bg-white border border-zinc-200 p-1.5 rounded-sm shadow-sm">
                 <GalleryLightbox images={photos} businessName={business.name} />
               </div>
-            ) : (
-              <div className="relative h-64 sm:h-96 w-full overflow-hidden border border-zinc-200 rounded-2xl bg-white shadow-sm">
-                <img 
-                  src={heroImageSrc} 
-                  alt={business.name} 
-                  className="w-full h-full object-cover opacity-90"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#FAFAFA] via-[#FAFAFA]/10 to-transparent" />
-              </div>
-            )}
+            ) : null}
 
             <section>
               <h2 className="text-xl font-black uppercase tracking-tight text-zinc-900 mb-8 flex items-center gap-4">
@@ -341,7 +328,7 @@ export default function BusinessPage() {
             </section>
 
             {mapEmbedUrl && (
-              <section className="bg-white border border-zinc-200 p-1.5 rounded-2xl shadow-sm mt-6">
+              <section className="bg-white border border-zinc-200 p-1.5 rounded-sm shadow-sm mt-6">
                 <div className="relative">
                   <div className="absolute inset-0 border border-zinc-300 z-10 pointer-events-none mix-blend-overlay"></div>
                   <iframe
@@ -358,15 +345,21 @@ export default function BusinessPage() {
               </section>
             )}
 
-            <div className="mt-8 p-8 border border-zinc-200 rounded-2xl bg-zinc-50 shadow-sm">
+            <div className="mt-8 p-8 border border-zinc-200 rounded-sm bg-zinc-50 shadow-sm">
               <div className="bg-white p-6 rounded-xl border border-zinc-200 shadow-sm">
                 <AlertCircle className="w-5 h-5 text-zinc-500 mb-4" />
                 <h4 className="font-black text-sm text-zinc-900 uppercase tracking-widest mb-2">Is this your business?</h4>
                 <p className="text-sm text-zinc-600 mb-6 font-medium leading-relaxed">Claim this page to update your services, hours, and contact info.</p>
-                <Link to="/claim" className="inline-flex items-center justify-between w-full bg-zinc-900 text-white rounded-lg shadow-sm px-4 py-3 font-sans text-xs font-semibold tracking-wide hover:bg-orange-500 hover:-translate-y-0.5 hover:shadow-md transition-all">
-                  <span>Claim Business</span>
-                  <ArrowRight className="w-3 h-3" />
-                </Link>
+                <div className="space-y-3">
+                  <Link to={`/claim?businessId=${encodeURIComponent(business.id)}`} className="inline-flex items-center justify-between w-full bg-zinc-900 text-white rounded-lg shadow-sm px-4 py-3 font-sans text-xs font-semibold tracking-wide hover:bg-orange-500 hover:-translate-y-0.5 hover:shadow-md transition-all">
+                    <span>Claim Business</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </Link>
+                  <Link to="/never-miss-a-lead" className="inline-flex items-center justify-between w-full rounded-lg border border-zinc-200 bg-white px-4 py-3 font-sans text-xs font-semibold tracking-wide text-zinc-900 hover:border-zinc-900 hover:-translate-y-0.5 hover:shadow-md transition-all">
+                    <span>Need help handling leads?</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </Link>
+                </div>
               </div>
             </div>
           </div>

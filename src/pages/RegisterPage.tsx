@@ -1,4 +1,4 @@
-import React, { type FormEvent, useState } from 'react';
+import { type FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, UserPlus, Check } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -7,7 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 export default function RegisterPage() {
   const navigate = useNavigate();
-  const { signUp } = useAuth();
+  const { user, loading: authLoading, error: authError, isConfigured, signUp } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -15,9 +15,19 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate('/account', { replace: true });
+    }
+  }, [authLoading, navigate, user]);
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (authLoading || !isConfigured) {
+      return;
+    }
 
     if (password !== confirmPassword) {
       setError('Passwords do not match');
@@ -48,13 +58,15 @@ export default function RegisterPage() {
     setLoading(false);
   };
 
+  const visibleError = error ?? authError;
+
   if (success) {
     return (
       <div className="bg-[#FAFAFA] min-h-screen py-24 text-zinc-900 font-sans relative overflow-hidden flex flex-col justify-center selection:bg-orange-500/20">
         <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(to right, #d4d4d8 1px, transparent 1px), linear-gradient(to bottom, #d4d4d8 1px, transparent 1px)', backgroundSize: '4rem 4rem' }}></div>
 
         <div className="relative max-w-xl w-full mx-auto px-4 sm:px-6 z-10 text-center">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white border border-zinc-200 p-8 sm:p-12 rounded-3xl shadow-xl text-center relative z-10">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white border border-zinc-200 p-8 sm:p-12 rounded-sm shadow-xl text-center relative z-10">
             <div className="w-16 h-16 bg-emerald-50 text-emerald-500 border border-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
               <Check className="w-8 h-8 text-emerald-500" strokeWidth={2.5} />
             </div>
@@ -96,11 +108,17 @@ export default function RegisterPage() {
           Join the directory to claim your business, respond to reviews, and manage your profile.
         </p>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }} className="bg-white border border-zinc-200 p-8 sm:p-12 rounded-3xl shadow-xl text-left relative z-10">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }} className="bg-white border border-zinc-200 p-8 sm:p-12 rounded-sm shadow-xl text-left relative z-10">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
+            {visibleError && (
               <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-widest">
-                {error}
+                {visibleError}
+              </div>
+            )}
+
+            {!isConfigured && (
+              <div className="bg-amber-50 border border-amber-200 text-amber-700 rounded-xl px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-widest">
+                Authentication is not configured in this environment.
               </div>
             )}
 
@@ -146,7 +164,7 @@ export default function RegisterPage() {
             <div className="pt-6">
               <button 
                 type="submit" 
-                disabled={loading}
+                disabled={loading || authLoading || !isConfigured}
                 className="w-full inline-flex items-center justify-center gap-3 bg-zinc-900 text-white rounded-xl px-8 py-4 font-sans text-sm font-semibold uppercase tracking-widest transition-all shadow-sm hover:bg-orange-500 hover:-translate-y-1 hover:shadow-md active:scale-95 group disabled:opacity-50 disabled:pointer-events-none"
               >
                 {loading ? 'Creating account...' : <>Create Account <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" strokeWidth={2.5} /></>}

@@ -62,7 +62,7 @@ export default function GalleryLightbox({ images, businessName }: GalleryLightbo
 
   return (
     <>
-      <section className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
+      <section className="overflow-hidden rounded-sm border border-zinc-200 bg-white shadow-sm">
         <div className="flex flex-col gap-5 p-5 md:p-6">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>

@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth, UserRole } from '../contexts/AuthContext';
 import { hasApprovedClaim } from '../lib/auth';
@@ -27,14 +27,25 @@ export default function AuthGuard({ children, requireRole, requireApprovedClaim 
 
     setClaimLoading(true);
 
-    hasApprovedClaim(user.id).then((hasClaim) => {
-      if (!isActive) {
-        return;
-      }
+    hasApprovedClaim(user.id)
+      .then((hasClaim) => {
+        if (!isActive) {
+          return;
+        }
 
-      setApprovedClaim(hasClaim);
-      setClaimLoading(false);
-    });
+        setApprovedClaim(hasClaim);
+        setClaimLoading(false);
+      })
+      .catch((claimError) => {
+        console.error('Error checking claim access:', claimError);
+
+        if (!isActive) {
+          return;
+        }
+
+        setApprovedClaim(false);
+        setClaimLoading(false);
+      });
 
     return () => {
       isActive = false;

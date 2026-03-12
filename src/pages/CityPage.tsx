@@ -5,19 +5,8 @@ import BusinessCard from '../components/BusinessCard';
 import Breadcrumbs from '../components/Breadcrumbs';
 import { motion } from 'motion/react';
 import { useDirectoryData } from '../directory-data';
-
-// Import city hero images
-import kelownaHero from '../photos/kelowna.jpg';
-import vernonHero from '../photos/vernon.jpg';
-import summerlandHero from '../photos/summerland.jpg';
-import lakeCountryHero from '../photos/lake-country-header-gillian-min.jpg';
-
-const cityHeroes: Record<string, string> = {
-  kelowna: kelownaHero,
-  vernon: vernonHero,
-  summerland: summerlandHero,
-  'lake-country': lakeCountryHero,
-};
+import { getCityHeroImage } from '../city-hero-images';
+import { businessServesCity } from '../business';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -43,7 +32,7 @@ export default function CityPage() {
     return <Navigate to="/" replace />;
   }
 
-  const cityBusinesses = businesses.filter(b => b.cityId === cityId);
+  const cityBusinesses = businesses.filter((business) => businessServesCity(business, city.id, city.name));
   const featuredBusinesses = cityBusinesses.slice(0, 3);
   
   const popularCategoryIds = ['electricians', 'plumbers', 'hvac-contractors', 'roofing'];
@@ -58,7 +47,7 @@ export default function CityPage() {
     'from-rose-400 to-pink-500'
   ];
 
-  const heroImage = cityHeroes[cityId || ''];
+  const heroImage = getCityHeroImage(cityId);
 
   return (
     <motion.div 
@@ -71,41 +60,43 @@ export default function CityPage() {
       <Breadcrumbs items={[{ label: 'Home', to: '/' }, { label: city.name }]} />
 
       {/* City Hero */}
-      <section className={`relative border-b-2 border-zinc-900 overflow-hidden py-24 md:py-32 ${heroImage ? 'bg-zinc-900 text-white' : 'bg-white text-zinc-900'}`}>
-        {heroImage ? (
+      <section className={`relative border-b-2 border-zinc-900 overflow-hidden py-24 md:py-32 flex items-center bg-zinc-900 text-white`}>
+        {heroImage && (
           <div className="absolute inset-0 z-0">
             <motion.img 
               initial={{ scale: 1.1, opacity: 0 }}
-              animate={{ scale: 1, opacity: 0.8 }}
+              animate={{ scale: 1, opacity: 0.6 }}
               transition={{ duration: 1.5, ease: "easeOut" }}
               src={heroImage}
               alt={city.name}
               className="w-full h-full object-cover"
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/70 via-zinc-900/20 to-transparent z-10"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/90 via-zinc-900/40 to-transparent z-10"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent z-10"></div>
           </div>
-        ) : (
-          <div className="absolute inset-0 z-0 opacity-20" style={{ backgroundImage: 'linear-gradient(to right, #d4d4d8 1px, transparent 1px), linear-gradient(to bottom, #d4d4d8 1px, transparent 1px)', backgroundSize: '4rem 4rem' }}></div>
         )}
         
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row gap-8 items-start md:items-end justify-between">
-            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }} className="max-w-3xl">
-              <div className={`inline-flex items-center gap-2 border-2 px-4 py-2 font-mono text-xs font-bold tracking-[0.15em] mb-8 uppercase backdrop-blur-sm ${heroImage ? 'border-white/20 bg-black/20 text-white' : 'border-zinc-200 bg-white text-zinc-600'}`}>
-                <MapPin className="h-4 w-4 text-orange-500" strokeWidth={2.5} /> Regional Directory
+        <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+          <div className="flex flex-col md:flex-row gap-12 items-start md:items-end justify-between">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="max-w-4xl text-left">
+              <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md text-zinc-100 border border-white/20 font-mono text-[10px] tracking-[0.3em] uppercase px-4 py-2 mb-8 shadow-sm rounded-sm">
+                <MapPin className="w-3.5 h-3.5 text-zinc-300" strokeWidth={1.5} /> Regional Directory
               </div>
-              <h1 className={`text-5xl md:text-7xl font-black uppercase tracking-tighter mb-6 leading-[1.05] ${heroImage ? 'text-white' : 'text-zinc-900'}`}>
-                {city.name}
+              
+              <h1 className="text-6xl md:text-8xl lg:text-[7rem] font-medium tracking-tighter mb-8 leading-[1.05] drop-shadow-2xl uppercase">
+                {city.name} <span className="font-serif italic font-light text-zinc-200 normal-case block md:inline">Directory.</span>
               </h1>
-              <p className={`text-lg md:text-xl font-sans font-medium leading-relaxed max-w-2xl ${heroImage ? 'text-zinc-200' : 'text-zinc-600'}`}>
+
+              <p className="text-xl md:text-2xl text-zinc-300 font-sans max-w-2xl leading-relaxed drop-shadow-md">
                 {city.description}
               </p>
             </motion.div>
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }} className="shrink-0 flex flex-col items-start md:items-end gap-6">
-              <div className={`font-mono text-xs font-bold tracking-[0.2em] text-left md:text-right border-2 p-4 uppercase w-full md:w-auto backdrop-blur-sm ${heroImage ? 'border-white/20 bg-black/20 text-white' : 'border-zinc-200 bg-zinc-50 text-zinc-500'}`}>
-                <div className={heroImage ? 'text-white' : 'text-zinc-900'}>Active Listings: <span className="text-orange-500">{cityBusinesses.length}</span></div>
+
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, delay: 0.2 }} className="shrink-0 flex flex-col items-start md:items-end gap-6">
+              <div className="inline-flex items-center gap-2 bg-orange-500/10 backdrop-blur-md text-orange-500 border border-orange-500/20 font-mono text-[10px] tracking-[0.3em] uppercase px-4 py-2 shadow-sm rounded-sm">
+                Active Listings: {cityBusinesses.length}
               </div>
-              <Link to="/claim" className="inline-flex items-center justify-center gap-3 bg-white text-zinc-900 border-2 border-zinc-900 px-8 py-4 font-sans text-sm font-bold uppercase tracking-wider transition-all group shadow-[4px_4px_0px_0px_rgba(24,24,27,1)] hover:shadow-none hover:translate-x-1 hover:translate-y-1 active:scale-95">
+              <Link to="/claim" className="inline-flex items-center justify-center gap-3 bg-white text-zinc-950 px-8 py-4 font-sans text-sm font-bold uppercase tracking-wider transition-all hover:bg-zinc-100 hover:-translate-y-1 active:scale-95 rounded-md shadow-xl group">
                 List Your Business <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" strokeWidth={2.5} />
               </Link>
             </motion.div>
@@ -127,7 +118,9 @@ export default function CityPage() {
             <div className="flex-1 grid grid-cols-2 lg:grid-cols-4 bg-white relative">
               {popularCategories.map((category, index) => {
                 const IconComponent = (Icons as any)[category.icon] || Icons.Wrench;
-                const count = businesses.filter(b => b.cityId === city.id && b.categoryId === category.id).length;
+                const count = businesses.filter(
+                  (business) => business.categoryId === category.id && businessServesCity(business, city.id, city.name)
+                ).length;
                 const gradient = colorGradients[index % colorGradients.length];
 
                 return (
@@ -178,7 +171,9 @@ export default function CityPage() {
           >
             {otherCategories.map((category) => {
               const IconComponent = (Icons as any)[category.icon] || Icons.Wrench;
-              const count = businesses.filter(b => b.cityId === city.id && b.categoryId === category.id).length;
+              const count = businesses.filter(
+                (business) => business.categoryId === category.id && businessServesCity(business, city.id, city.name)
+              ).length;
               return (
                 <motion.div key={category.id} variants={itemVariants}>
                   <Link 
@@ -225,7 +220,7 @@ export default function CityPage() {
             >
               {featuredBusinesses.map((business) => (
                 <motion.div key={business.id} variants={itemVariants} className="h-full">
-                  <BusinessCard business={business} />
+                  <BusinessCard business={business} contextCityName={city.name} />
                 </motion.div>
               ))}
             </motion.div>

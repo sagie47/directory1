@@ -5,6 +5,14 @@ export const cityAliases: Record<string, string[]> = {
   'west-kelowna': ['west kelowna', 'westbank'],
   'lake-country': ['lake country', 'winfield', 'oyama'],
   summerland: ['summerland'],
+  kamloops: ['kamloops'],
+  'salmon-arm': ['salmon arm'],
+  oliver: ['oliver'],
+  peachland: ['peachland'],
+  osoyoos: ['osoyoos'],
+  armstrong: ['armstrong'],
+  enderby: ['enderby'],
+  revelstoke: ['revelstoke'],
 };
 
 export type CityMatch = {

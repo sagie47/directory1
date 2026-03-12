@@ -128,3 +128,20 @@ export function getBusinessCapabilities(business: Business, limit = 8) {
 
   return getBusinessCategoryTags(business, limit);
 }
+
+function normalizeLocationLabel(value: string) {
+  return value.trim().toLowerCase();
+}
+
+export function businessServesCity(business: Business, cityId: string, cityName: string) {
+  if (business.cityId === cityId) {
+    return true;
+  }
+
+  const target = normalizeLocationLabel(cityName);
+  return (business.serviceAreas ?? []).some((entry) => normalizeLocationLabel(entry) === target);
+}
+
+export function isBusinessBasedInCity(business: Business, cityId: string) {
+  return business.cityId === cityId;
+}
