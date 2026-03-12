@@ -104,7 +104,7 @@ export default function BusinessPage() {
       </div>
 
       {/* Hero Header Section */}
-      <div className="relative overflow-hidden bg-white pt-8 pb-10 sm:pt-10 sm:pb-12 lg:pt-8 lg:pb-0">
+      <div className="relative overflow-hidden border-b border-zinc-200 bg-white pt-5 pb-5 sm:pt-10 sm:pb-12 lg:pt-8 lg:pb-0">
         <div className="absolute inset-0 z-0 bg-white">
           {heroImageSrc && (
             <img 
@@ -172,6 +172,23 @@ export default function BusinessPage() {
                   )}
                 </div>
               </div>
+
+              {(phoneHref || websiteHref) && (
+                <div className={`mt-4 grid gap-2.5 lg:hidden ${phoneHref && websiteHref ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                  {phoneHref && (
+                    <a href={phoneHref} className="flex items-center justify-between w-full rounded-xl border border-zinc-900 bg-zinc-900 px-4 py-3 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] leading-none text-white shadow-sm">
+                      <span>Call Now</span>
+                      <Phone className="h-4 w-4" />
+                    </a>
+                  )}
+                  {websiteHref && (
+                    <a href={websiteHref} target="_blank" rel="noopener noreferrer" className="flex items-center justify-between w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-900 shadow-sm">
+                      <span>Website</span>
+                      <ArrowRight className="h-4 w-4" />
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Quick Actions Desktop */}

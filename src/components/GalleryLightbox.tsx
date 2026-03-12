@@ -135,7 +135,7 @@ export default function GalleryLightbox({ images, businessName }: GalleryLightbo
                   transition={{ duration: 0.2 }}
                   src={images[currentIndex]}
                   alt={`${businessName} image ${currentIndex + 1}`}
-                  className="h-[320px] w-full object-cover md:h-[460px]"
+                  className="h-[260px] w-full object-cover md:h-[460px]"
                   referrerPolicy="no-referrer"
                 />
               </AnimatePresence>
