@@ -169,15 +169,15 @@ export default function BusinessPage() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8 lg:py-24">
-        <div className="grid grid-cols-1 items-start gap-10 sm:gap-12 lg:grid-cols-12 lg:gap-16">
+      <div className="mx-auto max-w-7xl px-0 py-6 sm:px-6 sm:py-12 lg:px-8 lg:py-24">
+        <div className="grid grid-cols-1 items-start gap-8 sm:gap-12 lg:grid-cols-12 lg:gap-16">
           
           {/* Main Content */}
-          <div className="space-y-10 sm:space-y-12 lg:col-span-8 lg:space-y-24">
+          <div className="space-y-8 sm:space-y-12 lg:col-span-8 lg:space-y-24">
             
             {/* Gallery Section */}
             {photos.length > 0 ? (
-              <div className="bg-white border border-zinc-200 p-1.5 rounded-sm shadow-sm">
+              <div className="sm:px-0">
                 <GalleryLightbox images={photos} businessName={business.name} />
               </div>
             ) : null}
