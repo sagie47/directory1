@@ -313,13 +313,14 @@ export default function ForBusinessPage() {
 
           <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-4">
             {operatingPrinciples.map((item, index) => (
-              <FeatureCard
-                icon={item.icon}
-                title={item.title}
-                description={item.description}
-                key={item.title}
-                index={index}
-              />
+              <div key={item.title}>
+                <FeatureCard
+                  icon={item.icon}
+                  title={item.title}
+                  description={item.description}
+                  index={index}
+                />
+              </div>
             ))}
           </div>
         </div>

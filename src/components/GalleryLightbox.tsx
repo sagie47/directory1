@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef, type TouchEvent } from 'react';
 import { X, ChevronLeft, ChevronRight, Expand, Images } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -11,6 +11,7 @@ interface GalleryLightboxProps {
 export default function GalleryLightbox({ images, businessName, mobileFullBleed = false }: GalleryLightboxProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const touchStartXRef = useRef<number | null>(null);
 
   const openLightbox = (index: number) => {
     setCurrentIndex(index);
@@ -28,6 +29,35 @@ export default function GalleryLightbox({ images, businessName, mobileFullBleed 
   const goToNext = useCallback(() => {
     setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
   }, [images.length]);
+
+  const handleTouchStart = (event: TouchEvent<HTMLElement>) => {
+    touchStartXRef.current = event.changedTouches[0]?.clientX ?? null;
+  };
+
+  const handleTouchEnd = (event: TouchEvent<HTMLElement>) => {
+    const touchStartX = touchStartXRef.current;
+    const touchEndX = event.changedTouches[0]?.clientX;
+
+    if (touchStartX === null || touchEndX === undefined) {
+      touchStartXRef.current = null;
+      return;
+    }
+
+    const horizontalDistance = touchStartX - touchEndX;
+
+    if (Math.abs(horizontalDistance) < SWIPE_THRESHOLD) {
+      touchStartXRef.current = null;
+      return;
+    }
+
+    if (horizontalDistance > 0) {
+      goToNext();
+    } else {
+      goToPrevious();
+    }
+
+    touchStartXRef.current = null;
+  };
 
   useEffect(() => {
     if (!isOpen) {
@@ -132,6 +162,12 @@ export default function GalleryLightbox({ images, businessName, mobileFullBleed 
             <div className="absolute bottom-3 left-3 rounded-md bg-black/50 px-2.5 py-1 text-[10px] font-mono uppercase tracking-[0.1em] text-white">
               {currentIndex + 1} / {images.length}
             </div>
+
+            {images.length > 1 && (
+              <div className="absolute bottom-3 right-3 rounded-md bg-black/55 backdrop-blur-sm px-3 py-1.5 text-[10px] font-mono uppercase tracking-[0.12em] text-white md:hidden">
+                Swipe
+              </div>
+            )}
           </div>
 
           {images.length > 1 && !mobileFullBleed && (
@@ -197,7 +233,12 @@ export default function GalleryLightbox({ images, businessName, mobileFullBleed 
               </button>
             </div>
 
-            <div className="flex flex-1 items-center justify-center p-4 md:p-8" onClick={(event) => event.stopPropagation()}>
+            <div
+              className="flex flex-1 items-center justify-center p-4 md:p-8"
+              onClick={(event) => event.stopPropagation()}
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
+            >
               <button
                 type="button"
                 onClick={(event) => {

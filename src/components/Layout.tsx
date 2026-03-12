@@ -1,7 +1,7 @@
-import { Link, NavLink } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { LayoutGrid, Menu, X } from 'lucide-react';
 import { motion } from 'motion/react';
-import { useState, ReactNode } from 'react';
+import { useEffect, useState, ReactNode } from 'react';
 
 import UserMenu from './UserMenu';
 import { useDirectoryData } from '../directory-data';
@@ -15,15 +15,38 @@ const primaryLinks = [
 
 export default function Layout({ children }: { children: ReactNode }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
+  const location = useLocation();
   const { source, businesses, cities, isLoading, error } = useDirectoryData();
+
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [location.pathname]);
+
+
+  useEffect(() => {
+    function handleScroll() {
+      setIsHeaderCollapsed(window.scrollY > 24);
+    }
+
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FAFAFA] font-sans text-zinc-900 selection:bg-zinc-200 selection:text-zinc-900">
-      <header className="sticky top-0 z-50 border-b-2 border-zinc-900 bg-[#FAFAFA]">
-        <div className="border-b border-zinc-900/10 bg-white">
-          <div className="mx-auto flex max-w-[96rem] flex-wrap items-center justify-between gap-2 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500 sm:px-6 lg:px-10">
-            <span className="sm:hidden">Okanagan Trades</span>
-            <span className="hidden sm:inline">Okanagan Valley Contractor Directory</span>
+      <motion.header
+        animate={{ y: 0 }}
+        transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+        className="relative sticky top-0 z-50 border-b-2 border-zinc-900 bg-[#FAFAFA]"
+      >
+        <div className="hidden border-b border-zinc-900/10 bg-white sm:block">
+          <div className="mx-auto flex max-w-[96rem] flex-wrap items-center justify-between gap-2 px-6 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500 lg:px-10">
+            <span>Okanagan Valley Contractor Directory</span>
             <Link to="/for-business" className="hidden transition-colors hover:text-zinc-950 md:inline-flex">
               For Business Owners
             </Link>
@@ -31,14 +54,14 @@ export default function Layout({ children }: { children: ReactNode }) {
         </div>
 
         <div className="mx-auto max-w-[96rem] px-4 sm:px-6 lg:px-10">
-          <div className="grid min-h-[5.25rem] grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:min-h-[6rem] sm:gap-4 lg:grid-cols-[minmax(19rem,1.1fr)_minmax(0,1fr)_auto] lg:gap-8">
-            <Link to="/" className="group flex min-w-0 items-center gap-3 py-4 sm:gap-5 sm:py-5">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center border-2 border-zinc-900 bg-zinc-900 text-white shadow-[4px_4px_0px_0px_rgba(24,24,27,1)] transition-all duration-300 group-hover:-translate-x-0.5 group-hover:-translate-y-0.5 group-hover:shadow-[6px_6px_0px_0px_rgba(24,24,27,1)] sm:h-14 sm:w-14">
-                <LayoutGrid className="h-5 w-5" strokeWidth={2.4} />
+          <div className={`grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 transition-all duration-200 sm:min-h-[6rem] sm:gap-4 lg:grid-cols-[minmax(19rem,1.1fr)_minmax(0,1fr)_auto] lg:gap-8 ${isHeaderCollapsed ? 'min-h-[4rem]' : 'min-h-[4.75rem]'}`}>
+            <Link to="/" className={`group flex min-w-0 items-center gap-3 transition-all duration-200 sm:gap-5 sm:py-5 ${isHeaderCollapsed ? 'py-2' : 'py-3'}`}>
+              <div className={`flex shrink-0 items-center justify-center border-2 border-zinc-900 bg-zinc-900 text-white shadow-[3px_3px_0px_0px_rgba(24,24,27,1)] transition-all duration-300 group-hover:-translate-x-0.5 group-hover:-translate-y-0.5 group-hover:shadow-[6px_6px_0px_0px_rgba(24,24,27,1)] sm:h-14 sm:w-14 sm:shadow-[4px_4px_0px_0px_rgba(24,24,27,1)] ${isHeaderCollapsed ? 'h-9 w-9' : 'h-11 w-11'}`}>
+                <LayoutGrid className={`sm:h-5 sm:w-5 ${isHeaderCollapsed ? 'h-3.5 w-3.5' : 'h-4 w-4'}`} strokeWidth={2.4} />
               </div>
               <div className="min-w-0 space-y-1">
-                <div className="font-sans text-[1.15rem] font-black uppercase tracking-[-0.04em] leading-none text-zinc-950 sm:text-[1.55rem]">Okanagan Trades</div>
-                <div className="font-mono text-[9px] font-bold uppercase tracking-[0.16em] text-zinc-400 transition-colors group-hover:text-orange-600 sm:text-[10px] sm:tracking-[0.24em]">Verified Regional Network</div>
+                <div className={`truncate font-sans font-black uppercase leading-none tracking-[-0.03em] text-zinc-950 transition-all duration-200 sm:text-[1.55rem] ${isHeaderCollapsed ? 'text-[0.94rem]' : 'text-[1.02rem]'}`}>Okanagan Trades</div>
+                <div className={`truncate font-mono text-[10px] font-bold uppercase text-zinc-400 transition-all duration-200 group-hover:text-orange-600 sm:text-[10px] sm:tracking-[0.24em] ${isHeaderCollapsed ? 'tracking-[0.14em]' : 'tracking-[0.18em]'}`}>Verified Regional Network</div>
               </div>
             </Link>
 
@@ -72,7 +95,7 @@ export default function Layout({ children }: { children: ReactNode }) {
               </div>
             </nav>
 
-            <div className="flex items-center justify-end gap-2 py-3 sm:gap-3 sm:py-4 lg:gap-4">
+            <div className={`flex items-center justify-end gap-2 transition-all duration-200 sm:gap-3 sm:py-4 lg:gap-4 ${isHeaderCollapsed ? 'py-1.5' : 'py-2'}`}>
               <div className="hidden items-center gap-3 md:flex">
                 <Link
                   to="/claim-business"
@@ -86,57 +109,71 @@ export default function Layout({ children }: { children: ReactNode }) {
               <button
                 onClick={() => setIsMenuOpen((current) => !current)}
                 aria-label={isMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
-                className="flex h-11 w-11 items-center justify-center border-2 border-zinc-900 bg-white text-zinc-900 transition-all hover:bg-zinc-900 hover:text-white active:scale-95 lg:hidden"
+                aria-expanded={isMenuOpen}
+                aria-controls="mobile-site-navigation"
+                className="flex h-10 w-10 items-center justify-center border-2 border-zinc-900 bg-white text-zinc-900 transition-all hover:bg-zinc-900 hover:text-white active:scale-95 sm:h-11 sm:w-11 lg:hidden"
               >
-                {isMenuOpen ? <X className="h-5 w-5" strokeWidth={2.2} /> : <Menu className="h-5 w-5" strokeWidth={2.2} />}
+                {isMenuOpen ? <X className="h-[18px] w-[18px] sm:h-5 sm:w-5" strokeWidth={2.2} /> : <Menu className="h-[18px] w-[18px] sm:h-5 sm:w-5" strokeWidth={2.2} />}
               </button>
             </div>
           </div>
         </div>
 
         {isMenuOpen && (
-          <div className="border-t-2 border-zinc-900 bg-white lg:hidden">
-            <div className="mx-auto flex max-w-7xl flex-col gap-8 px-4 py-6 sm:px-6">
-              <div className="grid gap-2">
-                {primaryLinks.map((link) => (
-                  <NavLink
-                    key={link.to}
-                    to={link.to}
-                    end={link.end}
-                    className={({ isActive }) =>
-                      `flex min-h-12 items-center justify-between border-2 px-4 py-4 font-sans text-base font-bold uppercase tracking-[0.12em] transition-colors ${
-                        isActive ? 'border-zinc-900 bg-zinc-900 text-white' : 'border-zinc-200 text-zinc-700'
-                      }`
-                    }
+          <>
+            <button
+              type="button"
+              aria-label="Close navigation menu"
+              className="fixed inset-0 z-40 bg-zinc-900/30 lg:hidden"
+              onClick={() => setIsMenuOpen(false)}
+            />
+            <div
+              id="mobile-site-navigation"
+              className="absolute inset-x-0 top-full z-50 border-y-2 border-zinc-900 bg-white shadow-[0_14px_30px_rgba(24,24,27,0.18)] lg:hidden"
+            >
+              <div className="mx-auto flex max-h-[calc(100dvh-8.5rem)] max-w-7xl flex-col gap-8 overflow-y-auto px-4 py-6 sm:px-6">
+                <div className="grid gap-2">
+                  {primaryLinks.map((link) => (
+                    <NavLink
+                      key={link.to}
+                      to={link.to}
+                      end={link.end}
+                      className={({ isActive }) =>
+                        `flex min-h-12 items-center justify-between border-2 px-4 py-4 font-sans text-base font-bold uppercase tracking-[0.12em] transition-colors ${
+                          isActive ? 'border-zinc-900 bg-zinc-900 text-white' : 'border-zinc-200 text-zinc-700'
+                        }`
+                      }
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      {link.label}
+                      <span className="font-mono text-[10px] uppercase tracking-[0.18em] opacity-70">Open</span>
+                    </NavLink>
+                  ))}
+                </div>
+
+                <div className="flex flex-col gap-4 border-t border-zinc-200 pt-5">
+                  <Link
+                    to="/claim-business"
+                    className="inline-flex min-h-12 items-center justify-center border-2 border-zinc-900 bg-zinc-900 px-4 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white shadow-[4px_4px_0px_0px_rgba(24,24,27,1)] transition-all hover:border-orange-500 hover:bg-orange-500 hover:shadow-none"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    {link.label}
-                    <span className="font-mono text-[10px] uppercase tracking-[0.18em] opacity-70">Open</span>
-                  </NavLink>
-                ))}
-              </div>
-
-              <div className="flex flex-col gap-4 border-t border-zinc-200 pt-5">
-                <Link
-                  to="/claim-business"
-                  className="inline-flex min-h-12 items-center justify-center border-2 border-zinc-900 bg-zinc-900 px-4 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white shadow-[4px_4px_0px_0px_rgba(24,24,27,1)] transition-all hover:border-orange-500 hover:bg-orange-500 hover:shadow-none"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Claim Business
-                </Link>
-                <Link
-                  to="/for-business"
-                  className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-600"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  For Business Owners
-                </Link>
-                <UserMenu />
+                    Claim Business
+                  </Link>
+                  <Link
+                    to="/for-business"
+                    className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-600"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    For Business Owners
+                  </Link>
+                  <UserMenu />
+                </div>
               </div>
             </div>
-          </div>
+          </>
         )}
-      </header>
+
+      </motion.header>
 
       {import.meta.env.DEV ? (
         <div className="border-b border-zinc-200 bg-amber-50 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-700 sm:px-6 lg:px-10">
