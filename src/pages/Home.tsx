@@ -160,7 +160,7 @@ export default function Home() {
       </section>
 
       {/* Popular Categories Grid - Overlapping the Hero */}
-      <section className="relative z-20 mb-20 px-4 pt-6 sm:px-6 lg:mb-24 lg:px-10 lg:pt-10">
+      <section className="relative z-20 mb-8 px-4 pt-4 sm:mb-12 sm:px-6 sm:pt-6 lg:mb-16 lg:px-10 lg:pt-10">
         <div className="mx-auto max-w-[96rem] overflow-hidden rounded-xl border-2 border-zinc-900 bg-white shadow-2xl">
           <div className="flex flex-col md:flex-row">
             <div className="relative flex w-full flex-col justify-center overflow-hidden border-b-2 border-zinc-900 bg-zinc-50 p-6 sm:p-8 md:w-72 md:border-b-0 md:border-r-2 lg:p-12 group/core">
@@ -212,9 +212,9 @@ export default function Home() {
       </section>
 
       {/* Featured Businesses Section */}
-      <section className="relative z-10 py-24 bg-zinc-50 text-zinc-900 border-b-2 border-zinc-900">
+      <section className="relative z-10 border-b-2 border-zinc-900 bg-zinc-50 py-12 text-zinc-900 sm:py-16 lg:py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="mb-12 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+          <div className="mb-8 flex flex-col justify-between gap-6 sm:mb-12 sm:flex-row sm:items-end">
             <div>
               <SectionEyebrow
                 icon={Star}
