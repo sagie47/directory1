@@ -2,6 +2,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowRight, MapPin, ChevronRight, LayoutGrid } from 'lucide-react';
 import Breadcrumbs from '../components/Breadcrumbs';
+import Seo from '../components/Seo';
 import { useDirectoryData } from '../directory-data';
 import businessBg from '../photos/millwright-quesnel-2-2024.tmb-1000px.jpg';
 import { createImageFallbackHandler, preferSupabaseImage } from '../supabase-images';
@@ -34,6 +35,12 @@ export default function RegionsPage() {
       transition={{ duration: 0.5 }}
       className="bg-[#FAFAFA] min-h-screen text-zinc-900 font-sans selection:bg-indigo-200 selection:text-indigo-900 overflow-x-hidden"
     >
+      <Seo
+        title={category ? `${category.name} by Region | Okanagan Trades` : 'Regions Directory | Okanagan Trades'}
+        description={category ? `Browse verified ${category.name.toLowerCase()} businesses by region across the Okanagan.` : 'Browse verified contractors and trade businesses by region across the Okanagan Valley.'}
+        path={category ? `/regions?category=${category.id}` : '/regions'}
+      />
+
       {/* Homepage-matched Hero Section */}
       <section className="relative flex items-center overflow-visible bg-zinc-900 pt-24 pb-24 text-white sm:pt-28 sm:pb-32 lg:pt-48 lg:pb-64">
         <div className="absolute inset-0 z-0">

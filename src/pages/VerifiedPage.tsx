@@ -4,6 +4,7 @@ import { motion } from 'motion/react';
 
 import BusinessCard from '../components/BusinessCard';
 import Breadcrumbs from '../components/Breadcrumbs';
+import Seo from '../components/Seo';
 import { useDirectoryData } from '../directory-data';
 import businessBg from '../photos/job-construction-scaled.jpg';
 import { createImageFallbackHandler, preferSupabaseImage } from '../supabase-images';
@@ -188,6 +189,12 @@ export default function VerifiedPage() {
       transition={{ duration: 0.5 }}
       className="bg-[#FAFAFA] min-h-screen text-zinc-900 font-sans selection:bg-indigo-200 selection:text-indigo-900"
     >
+      <Seo
+        title="Verified Businesses | Okanagan Trades"
+        description="Browse verified contractors and trade businesses across the Okanagan Valley with filters for region, trade group, and category."
+        path="/verified"
+      />
+
       {/* Homepage-matched Hero Section */}
       <section className="relative pt-32 pb-48 lg:pt-48 lg:pb-64 flex items-center bg-zinc-900 overflow-visible text-white">
         <div className="absolute inset-0 z-0">

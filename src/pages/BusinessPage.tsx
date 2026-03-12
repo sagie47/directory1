@@ -17,6 +17,7 @@ import {
 } from '../business';
 import Breadcrumbs from '../components/Breadcrumbs';
 import GalleryLightbox from '../components/GalleryLightbox';
+import Seo from '../components/Seo';
 import { useDirectoryData } from '../directory-data';
 
 const INITIAL_MOBILE_REVIEW_COUNT = 1;
@@ -92,6 +93,39 @@ export default function BusinessPage() {
       transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
       className="min-h-screen bg-[#FAFAFA] text-zinc-900 font-sans selection:bg-orange-500/20 selection:text-zinc-900"
     >
+      <Seo
+        title={`${business.name} | ${category.name} in ${city.name} | Okanagan Trades`}
+        description={description}
+        path={`/${city.id}/${category.id}/${business.id}`}
+        type="article"
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'LocalBusiness',
+          name: business.name,
+          description,
+          telephone: business.contact.phone,
+          email: business.contact.email,
+          url: websiteHref,
+          image: photos[0],
+          address: business.contact.address ? {
+            '@type': 'PostalAddress',
+            streetAddress: business.contact.address,
+            addressLocality: city.name,
+            addressRegion: 'BC',
+            addressCountry: 'CA',
+          } : undefined,
+          areaServed: serviceAreas.map((area) => ({
+            '@type': 'Place',
+            name: area,
+          })),
+          aggregateRating: reviewCount > 0 ? {
+            '@type': 'AggregateRating',
+            ratingValue: rating.toFixed(1),
+            reviewCount,
+          } : undefined,
+        }}
+      />
+
       <div className="lg:hidden">
         <Breadcrumbs
           items={[

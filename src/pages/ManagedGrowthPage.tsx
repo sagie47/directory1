@@ -3,6 +3,7 @@ import { ArrowRight, Bell, LineChart, MessageSquare, ShieldCheck, TrendingUp, Wr
 import { motion } from 'motion/react';
 
 import FeatureCard from '../components/FeatureCard';
+import Seo from '../components/Seo';
 import SectionEyebrow from '../components/SectionEyebrow';
 import BusinessFAQ from '../components/BusinessFAQ';
 import growthHero from '../photos/businessown/pr-roofer-1200x700.jpg';
@@ -75,6 +76,12 @@ export default function ManagedGrowthPage() {
       transition={{ duration: 0.5 }}
       className="min-h-screen bg-[#FAFAFA] font-sans text-zinc-900 selection:bg-indigo-200 selection:text-indigo-900"
     >
+      <Seo
+        title="Managed Growth for Trades | Okanagan Trades"
+        description="Ongoing profile, lead-response, and visibility support for Okanagan trade businesses that need execution help."
+        path="/managed-growth"
+      />
+
       {/* Homepage-matched Hero Section */}
       <section className="relative flex items-center overflow-visible bg-zinc-900 pt-24 pb-24 text-white sm:pt-28 sm:pb-32 lg:pt-48 lg:pb-64">
         <div className="absolute inset-0 z-0">

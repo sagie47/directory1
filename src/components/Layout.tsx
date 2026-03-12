@@ -1,10 +1,9 @@
-import { Link, NavLink, useLocation } from 'react-router-dom';
+import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 import { ArrowRight, ChevronRight, LayoutGrid, Menu, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import { useEffect, useState, ReactNode } from 'react';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 
 import UserMenu from './UserMenu';
-import { useDirectoryData } from '../directory-data';
 
 const primaryLinks = [
   { to: '/', label: 'Home', end: true },
@@ -13,39 +12,51 @@ const primaryLinks = [
   { to: '/verified', label: 'Verified' },
 ];
 
+type LayoutChromeContextValue = {
+  isMobileMenuOpen: boolean;
+  isMobileHeaderVisible: boolean;
+  openMobileMenu: () => void;
+};
+
+const LayoutChromeContext = createContext<LayoutChromeContextValue>({
+  isMobileMenuOpen: false,
+  isMobileHeaderVisible: true,
+  openMobileMenu: () => {},
+});
+
+export function useLayoutChrome() {
+  return useContext(LayoutChromeContext);
+}
+
 export default function Layout({ children }: { children: ReactNode }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
   const [isMobileHeaderHidden, setIsMobileHeaderHidden] = useState(false);
   const location = useLocation();
-  const { source, businesses, cities, isLoading, error } = useDirectoryData();
+  const isMobileHeaderVisible = !isMobileHeaderHidden;
+  const mobileHeaderHeight = isHeaderCollapsed ? '4rem' : '4.65rem';
 
   useEffect(() => {
     setIsMenuOpen(false);
   }, [location.pathname]);
 
   useEffect(() => {
-    let lastScrollY = window.scrollY;
-
     function handleScroll() {
       const currentScrollY = window.scrollY;
       const isDesktopViewport = window.innerWidth >= 1024;
 
-      setIsHeaderCollapsed(currentScrollY > 24);
+      setIsHeaderCollapsed(currentScrollY > 0);
 
       if (isDesktopViewport) {
         setIsMobileHeaderHidden(false);
-        lastScrollY = currentScrollY;
         return;
       }
 
-      if (currentScrollY <= 24 || currentScrollY < lastScrollY - 8) {
+      if (currentScrollY <= 4) {
         setIsMobileHeaderHidden(false);
-      } else if (currentScrollY > 80 && currentScrollY > lastScrollY + 8) {
+      } else {
         setIsMobileHeaderHidden(true);
       }
-
-      lastScrollY = currentScrollY;
     }
 
     handleScroll();
@@ -59,18 +70,40 @@ export default function Layout({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (isMenuOpen) {
-      setIsMobileHeaderHidden(false);
-    }
+    document.body.style.overflow = isMenuOpen ? 'hidden' : '';
+
+    return () => {
+      document.body.style.overflow = '';
+    };
   }, [isMenuOpen]);
 
+  useEffect(() => {
+    const root = document.documentElement;
+    const mobileSearchOffset = isMobileHeaderVisible ? mobileHeaderHeight : '0.75rem';
+
+    root.style.setProperty('--mobile-header-height', mobileHeaderHeight);
+    root.style.setProperty('--mobile-search-offset', mobileSearchOffset);
+
+    return () => {
+      root.style.removeProperty('--mobile-header-height');
+      root.style.removeProperty('--mobile-search-offset');
+    };
+  }, [isMobileHeaderVisible, mobileHeaderHeight]);
+
   return (
-    <div className="min-h-screen flex flex-col bg-[#FAFAFA] font-sans text-zinc-900 selection:bg-zinc-200 selection:text-zinc-900">
-      <header className="relative sticky top-0 z-50 border-b-2 border-zinc-900 bg-[#FAFAFA]">
-        <motion.div
-          animate={{ y: isMobileHeaderHidden && !isMenuOpen ? '-100%' : 0 }}
-          transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-        >
+    <LayoutChromeContext.Provider
+      value={{
+        isMobileHeaderVisible,
+        isMobileMenuOpen: isMenuOpen,
+        openMobileMenu: () => setIsMenuOpen(true),
+      }}
+    >
+      <div className="min-h-screen flex flex-col bg-[#FAFAFA] font-sans text-zinc-900 selection:bg-zinc-200 selection:text-zinc-900">
+      <motion.header
+        animate={{ y: isMobileHeaderVisible ? 0 : '-100%' }}
+        transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+        className="fixed inset-x-0 top-0 z-50 border-b-2 border-zinc-900 bg-[#FAFAFA] will-change-transform lg:sticky"
+      >
           <div className="hidden border-b border-zinc-900/10 bg-white sm:block">
             <div className="mx-auto flex max-w-[96rem] flex-wrap items-center justify-between gap-2 px-6 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500 lg:px-10">
               <span>Okanagan Valley Contractor Directory</span>
@@ -81,14 +114,14 @@ export default function Layout({ children }: { children: ReactNode }) {
           </div>
 
           <div className="mx-auto max-w-[96rem] px-4 sm:px-6 lg:px-10">
-            <div className={`grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 transition-all duration-200 sm:min-h-[6rem] sm:gap-4 lg:grid-cols-[minmax(19rem,1.1fr)_minmax(0,1fr)_auto] lg:gap-8 ${isHeaderCollapsed ? 'min-h-[3.75rem]' : 'min-h-[4.35rem] sm:min-h-[6rem]'}`}>
-              <Link to="/" className={`group flex min-w-0 items-center gap-2.5 transition-all duration-200 sm:gap-5 sm:py-5 ${isHeaderCollapsed ? 'py-2' : 'py-2.5 sm:py-5'}`}>
-                <div className={`flex shrink-0 items-center justify-center border-2 border-zinc-900 bg-zinc-900 text-white shadow-[3px_3px_0px_0px_rgba(24,24,27,1)] transition-all duration-300 group-hover:-translate-x-0.5 group-hover:-translate-y-0.5 group-hover:shadow-[6px_6px_0px_0px_rgba(24,24,27,1)] sm:h-14 sm:w-14 sm:shadow-[4px_4px_0px_0px_rgba(24,24,27,1)] ${isHeaderCollapsed ? 'h-9 w-9' : 'h-11 w-11'}`}>
-                  <LayoutGrid className={`sm:h-5 sm:w-5 ${isHeaderCollapsed ? 'h-3.5 w-3.5' : 'h-4 w-4'}`} strokeWidth={2.4} />
+            <div className={`grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 transition-all duration-200 sm:min-h-[6rem] sm:gap-4 lg:grid-cols-[minmax(19rem,1.1fr)_minmax(0,1fr)_auto] lg:gap-8 ${isHeaderCollapsed ? 'min-h-[4rem]' : 'min-h-[4.65rem] sm:min-h-[6rem]'}`}>
+              <Link to="/" className={`group flex min-w-0 items-center gap-3 transition-all duration-200 sm:gap-5 sm:py-5 ${isHeaderCollapsed ? 'py-2' : 'py-2.5 sm:py-5'}`}>
+                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2 border-zinc-900 bg-zinc-900 text-white shadow-[3px_3px_0px_0px_rgba(24,24,27,1)] transition-all duration-300 group-hover:-translate-x-0.5 group-hover:-translate-y-0.5 group-hover:shadow-[6px_6px_0px_0px_rgba(24,24,27,1)] sm:h-14 sm:w-14 sm:rounded-none sm:shadow-[4px_4px_0px_0px_rgba(24,24,27,1)]`}>
+                  <LayoutGrid className={`h-4 w-4 sm:h-5 sm:w-5 ${isHeaderCollapsed ? 'sm:h-[1.125rem] sm:w-[1.125rem]' : ''}`} strokeWidth={2.4} />
                 </div>
-                <div className="min-w-0 space-y-1">
-                  <div className={`truncate font-sans font-black uppercase leading-none tracking-[-0.03em] text-zinc-950 transition-all duration-200 sm:text-[1.55rem] ${isHeaderCollapsed ? 'text-[0.94rem]' : 'text-[1.02rem]'}`}>Okanagan Trades</div>
-                  <div className={`truncate font-mono text-[9px] font-bold uppercase text-zinc-400 transition-all duration-200 group-hover:text-orange-600 sm:text-[10px] sm:tracking-[0.24em] ${isHeaderCollapsed ? 'tracking-[0.14em]' : 'tracking-[0.16em] sm:tracking-[0.18em]'}`}>Verified Regional Network</div>
+                <div className="min-w-0 space-y-0.5">
+                  <div className={`truncate font-sans font-black uppercase leading-none tracking-[-0.03em] text-zinc-950 transition-all duration-200 sm:text-[1.55rem] ${isHeaderCollapsed ? 'text-[0.92rem]' : 'text-[0.98rem]'}`}>Okanagan Trades</div>
+                  <div className={`truncate font-mono text-[8px] font-bold uppercase text-zinc-400 transition-all duration-200 group-hover:text-orange-600 sm:text-[10px] sm:tracking-[0.24em] ${isHeaderCollapsed ? 'tracking-[0.14em]' : 'tracking-[0.14em] sm:tracking-[0.18em]'}`}>Verified Regional Network</div>
                 </div>
               </Link>
 
@@ -122,7 +155,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                 </div>
               </nav>
 
-              <div className={`flex items-center justify-end gap-2 transition-all duration-200 sm:gap-3 sm:py-4 lg:gap-4 ${isHeaderCollapsed ? 'py-1.5' : 'py-1.5 sm:py-2'}`}>
+              <div className={`flex items-center justify-end gap-2 transition-all duration-200 sm:gap-3 sm:py-4 lg:gap-4 ${isHeaderCollapsed ? 'py-1' : 'py-1.5 sm:py-2'}`}>
                 <div className="hidden items-center gap-3 md:flex">
                   <Link
                     to="/claim-business"
@@ -138,15 +171,14 @@ export default function Layout({ children }: { children: ReactNode }) {
                   aria-label={isMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
                   aria-expanded={isMenuOpen}
                   aria-controls="mobile-site-navigation"
-                  className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-zinc-900 bg-white text-zinc-900 transition-all hover:bg-zinc-900 hover:text-white active:scale-95 sm:h-11 sm:w-11 lg:hidden"
+                  className="flex h-10 w-10 items-center justify-center rounded-xl border-2 border-zinc-900 bg-white text-zinc-900 transition-all hover:bg-zinc-900 hover:text-white active:scale-95 sm:h-11 sm:w-11 sm:rounded-full lg:hidden"
                 >
                   {isMenuOpen ? <X className="h-[18px] w-[18px] sm:h-5 sm:w-5" strokeWidth={2.2} /> : <Menu className="h-[18px] w-[18px] sm:h-5 sm:w-5" strokeWidth={2.2} />}
                 </button>
               </div>
             </div>
           </div>
-        </motion.div>
-      </header>
+      </motion.header>
 
       <AnimatePresence>
         {isMenuOpen && (
@@ -155,82 +187,88 @@ export default function Layout({ children }: { children: ReactNode }) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="fixed inset-0 z-40 bg-zinc-950/80 backdrop-blur-md lg:hidden"
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 z-[60] bg-zinc-950/72 lg:hidden"
               onClick={() => setIsMenuOpen(false)}
             />
             <motion.div
               id="mobile-site-navigation"
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed inset-y-0 right-0 z-50 flex w-full max-w-[400px] flex-col overflow-hidden border-l-2 border-zinc-900 bg-white shadow-2xl lg:hidden"
+              initial={{ x: '110%', opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: '110%', opacity: 0 }}
+              transition={{ type: 'spring', damping: 32, stiffness: 320 }}
+              className="fixed inset-0 z-[70] flex w-full flex-col overflow-hidden bg-[#f3f0e9] lg:hidden"
             >
-              <div className="flex items-center justify-between border-b border-zinc-100 bg-[#FAFAFA] px-5 py-4">
-                <div className="font-mono text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
-                  Menu
+              <div className="flex items-center justify-between border-b border-zinc-900/8 bg-white/80 px-5 py-4">
+                <div>
+                  <div className="font-mono text-[8.5px] font-black uppercase tracking-[0.24em] text-zinc-400">
+                    Navigation
+                  </div>
+                  <div className="mt-1 text-sm font-semibold tracking-[-0.02em] text-zinc-900">
+                    Okanagan Trades
+                  </div>
                 </div>
                 <button
                   onClick={() => setIsMenuOpen(false)}
-                  className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-900 shadow-sm transition-all hover:bg-zinc-50 active:scale-90"
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-900/10 bg-white text-zinc-900 shadow-sm transition-all hover:bg-zinc-50 active:scale-90"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
 
-              <div className="relative flex flex-grow flex-col justify-between overflow-hidden px-5 py-5">
-                <div className="pointer-events-none absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(to right, #000 1px, transparent 1px), linear-gradient(to bottom, #000 1px, transparent 1px)', backgroundSize: '1.5rem 1.5rem' }}></div>
+              <div className="relative flex flex-grow flex-col justify-between overflow-y-auto px-5 py-5">
+                <div className="pointer-events-none absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(to right, #000 1px, transparent 1px), linear-gradient(to bottom, #000 1px, transparent 1px)', backgroundSize: '1.35rem 1.35rem' }}></div>
 
-                <nav className="relative z-10 flex flex-col">
+                <nav className="relative z-10 flex flex-col gap-2">
                   {primaryLinks.map((link, idx) => (
                     <NavLink
                       key={link.to}
                       to={link.to}
                       end={link.end}
                       className={({ isActive }) =>
-                        `group flex items-center justify-between border-b border-zinc-100 py-4 transition-all ${
-                          isActive ? 'text-orange-600' : 'text-zinc-900 hover:text-orange-500'
+                        `group flex items-center justify-between rounded-[1.35rem] border px-4 py-4 transition-all ${
+                          isActive
+                            ? 'border-zinc-900/15 bg-white text-zinc-900 shadow-[0_12px_24px_rgba(24,24,27,0.08)]'
+                            : 'border-transparent bg-white/45 text-zinc-700 hover:border-zinc-900/10 hover:bg-white hover:text-zinc-950'
                         }`
                       }
                       onClick={() => setIsMenuOpen(false)}
                     >
                       <div className="flex items-center gap-4">
-                        <span className="font-mono text-[10px] font-black text-zinc-300 transition-colors group-hover:text-orange-400">0{idx + 1}</span>
-                        <span className="font-sans text-xl font-black uppercase leading-none tracking-tighter">{link.label}</span>
+                        <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-zinc-900/10 bg-white/80 font-mono text-[9px] font-black uppercase tracking-[0.16em] text-zinc-500 transition-colors group-hover:text-orange-500">0{idx + 1}</span>
+                        <span className="font-sans text-[1.05rem] font-semibold uppercase leading-none tracking-[-0.03em]">{link.label}</span>
                       </div>
-                      <ChevronRight className="h-5 w-5 -translate-x-2 opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100" />
+                      <ChevronRight className="h-5 w-5 text-zinc-400 transition-all group-hover:translate-x-0.5 group-hover:text-zinc-900" />
                     </NavLink>
                   ))}
                 </nav>
 
-                <div className="relative z-10 mt-5 flex flex-col gap-3">
+                <div className="relative z-10 mt-5 flex flex-col gap-4 border-t border-zinc-900/8 pt-4">
+                    <div className="grid grid-cols-2 gap-3">
                     <Link
                       to="/claim-business"
-                      className="group flex w-full items-center justify-between rounded-xl border border-zinc-900 bg-zinc-900 px-5 py-4 font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-white shadow-[4px_4px_0px_0px_rgba(24,24,27,1)] transition-all hover:translate-x-1 hover:translate-y-1 hover:shadow-none"
+                      className="group flex min-h-12 items-center justify-center gap-2 rounded-[1.15rem] border border-zinc-900 bg-zinc-900 px-3 py-3 text-center font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-white shadow-[0_16px_28px_rgba(24,24,27,0.16)] transition-all hover:-translate-y-0.5 hover:border-orange-500 hover:bg-orange-500"
                       onClick={() => setIsMenuOpen(false)}
                     >
-                      Claim Business
-                      <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+                      <span>Claim</span>
+                      <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                     </Link>
-
-                    <div className="flex flex-col gap-4 border-t border-zinc-100 pt-4">
                       <Link
                         to="/for-business"
-                        className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 transition-colors hover:text-zinc-950"
+                        className="flex min-h-12 items-center justify-center rounded-[1.15rem] border border-zinc-900/10 bg-white/78 px-3 py-3 text-center font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-700 transition-colors hover:border-zinc-900/25 hover:bg-white hover:text-zinc-950"
                         onClick={() => setIsMenuOpen(false)}
                       >
-                        Business Owner Portal
+                        For Business
                       </Link>
-                      <div className="flex items-center justify-between">
-                        <UserMenu />
-                        <div className="font-mono text-[9px] uppercase tracking-widest text-zinc-300">v2.4.0</div>
-                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <UserMenu />
+                      <div className="font-mono text-[9px] uppercase tracking-widest text-zinc-300">v2.4.0</div>
                     </div>
                 </div>
               </div>
 
-              <div className="border-t border-zinc-100 bg-[#FAFAFA] px-5 py-4 font-mono text-[9px] font-bold uppercase tracking-[0.25em] text-zinc-400">
+              <div className="border-t border-zinc-900/8 bg-white/70 px-5 py-4 font-mono text-[9px] font-bold uppercase tracking-[0.25em] text-zinc-400">
                 Precision Operational Network &copy; 2026
               </div>
             </motion.div>
@@ -238,14 +276,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         )}
       </AnimatePresence>
 
-      {import.meta.env.DEV ? (
-        <div className="border-b border-zinc-200 bg-amber-50 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-700 sm:px-6 lg:px-10">
-          Data: {isLoading ? 'loading' : source} | Businesses: {businesses.length} | Cities: {cities.length}
-          {error ? ` | Error: ${error}` : ''}
-        </div>
-      ) : null}
-
-      <main className="flex-grow relative">
+      <main className="relative flex-grow pt-[var(--mobile-header-height,4.65rem)] lg:pt-0">
         {children}
       </main>
 
@@ -299,6 +330,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           </div>
         </div>
       </footer>
-    </div>
+      </div>
+    </LayoutChromeContext.Provider>
   );
 }

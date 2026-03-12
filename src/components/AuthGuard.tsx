@@ -64,7 +64,7 @@ export default function AuthGuard({ children, requireRole, requireApprovedClaim 
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/claim" replace />;
   }
 
   if (requireRole && requireRole.length > 0) {

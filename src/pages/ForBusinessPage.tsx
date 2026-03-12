@@ -3,6 +3,7 @@ import { ArrowRight, Building2, Globe, Phone, TrendingUp, ShieldCheck, Sparkles,
 import { motion } from 'motion/react';
 
 import FeatureCard from '../components/FeatureCard';
+import Seo from '../components/Seo';
 import SectionEyebrow from '../components/SectionEyebrow';
 import BusinessFAQ from '../components/BusinessFAQ';
 import BusinessCTA from '../components/BusinessCTA';
@@ -161,6 +162,12 @@ export default function ForBusinessPage() {
 
   return (
     <div className="bg-[#FAFAFA] text-zinc-900 font-sans selection:bg-indigo-200 selection:text-indigo-900">
+      <Seo
+        title="For Business Owners | Okanagan Trades"
+        description="Explore claim, lead-capture, website, and managed growth options built for Okanagan trade businesses."
+        path="/for-business"
+      />
+
       {/* Homepage-matched Hero Section */}
       <section className="relative flex items-center overflow-visible bg-zinc-900 pt-24 pb-24 text-white sm:pt-28 sm:pb-32 lg:pt-48 lg:pb-64">
         <div className="absolute inset-0 z-0">

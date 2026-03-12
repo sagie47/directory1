@@ -75,8 +75,8 @@ export default function RegisterPage() {
               We've sent a verification link to <strong className="text-zinc-900">{email}</strong>. 
               Click the link to verify your account and sign in.
             </p>
-            <Link to="/login" className="inline-flex items-center justify-center gap-3 w-full bg-zinc-900 text-white rounded-xl px-8 py-4 font-sans text-sm font-semibold uppercase tracking-widest transition-all shadow-sm hover:bg-orange-500 hover:-translate-y-1 hover:shadow-md active:scale-95 group">
-              Back to Sign In <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" strokeWidth={2.5} />
+            <Link to="/claim" className="inline-flex items-center justify-center gap-3 w-full bg-zinc-900 text-white rounded-xl px-8 py-4 font-sans text-sm font-semibold uppercase tracking-widest transition-all shadow-sm hover:bg-orange-500 hover:-translate-y-1 hover:shadow-md active:scale-95 group">
+              Back to Claim <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" strokeWidth={2.5} />
             </Link>
           </motion.div>
         </div>
@@ -174,8 +174,8 @@ export default function RegisterPage() {
             <div className="mt-8 text-center">
               <p className="text-zinc-500 font-mono text-[10px] font-bold uppercase tracking-widest">
                 Already have an account?{' '}
-                <Link to="/login" className="text-zinc-900 hover:text-orange-500 transition-colors">
-                  Sign in here
+                <Link to="/claim" className="text-zinc-900 hover:text-orange-500 transition-colors">
+                  Continue here
                 </Link>
               </p>
             </div>

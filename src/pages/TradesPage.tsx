@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import * as Icons from 'lucide-react';
 import { motion } from 'motion/react';
 import { ArrowRight, LayoutGrid, ChevronRight } from 'lucide-react';
+import Seo from '../components/Seo';
 import { useDirectoryData } from '../directory-data';
 import businessBg from '../photos/1746202255761.jpg';
 import { createImageFallbackHandler, preferSupabaseImage } from '../supabase-images';
@@ -31,6 +32,12 @@ export default function TradesPage() {
       transition={{ duration: 0.5 }}
       className="bg-[#FAFAFA] min-h-screen text-zinc-900 font-sans selection:bg-indigo-200 selection:text-indigo-900 overflow-x-hidden"
     >
+      <Seo
+        title="Trades Directory | Okanagan Trades"
+        description="Explore all trade categories in the Okanagan contractor directory, from electricians and plumbers to roofing, flooring, and more."
+        path="/trades"
+      />
+
       {/* Homepage-matched Hero Section */}
       <section className="relative flex items-center overflow-visible bg-zinc-900 pt-24 pb-24 text-white sm:pt-28 sm:pb-32 lg:pt-48 lg:pb-64">
         <div className="absolute inset-0 z-0">

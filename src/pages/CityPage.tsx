@@ -3,6 +3,7 @@ import { MapPin, ArrowRight, Star } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import BusinessCard from '../components/BusinessCard';
 import Breadcrumbs from '../components/Breadcrumbs';
+import Seo from '../components/Seo';
 import { motion } from 'motion/react';
 import { useDirectoryData } from '../directory-data';
 import { getCityHeroFallbackImage, getCityHeroImage } from '../city-hero-images';
@@ -59,6 +60,30 @@ export default function CityPage() {
       transition={{ duration: 0.5 }}
       className="bg-zinc-50 min-h-screen text-zinc-900 font-sans"
     >
+      <Seo
+        title={`${city.name} Contractors & Trades | Okanagan Trades`}
+        description={city.description ?? `Browse verified contractors and trade businesses serving ${city.name}.`}
+        path={`/${city.id}`}
+        jsonLd={[
+          {
+            '@context': 'https://schema.org',
+            '@type': 'CollectionPage',
+            name: `${city.name} Contractors & Trades`,
+            description: city.description ?? `Browse verified contractors and trade businesses serving ${city.name}.`,
+          },
+          {
+            '@context': 'https://schema.org',
+            '@type': 'ItemList',
+            itemListElement: cityBusinesses.slice(0, 10).map((business, index) => ({
+              '@type': 'ListItem',
+              position: index + 1,
+              url: `/${city.id}/${business.categoryId}/${business.id}`,
+              name: business.name,
+            })),
+          },
+        ]}
+      />
+
       <Breadcrumbs items={[{ label: 'Home', to: '/' }, { label: city.name }]} />
 
       {/* City Hero */}

@@ -75,16 +75,7 @@ export default function UserMenu() {
   }
 
   if (!user) {
-    return (
-      <div className="flex flex-wrap items-center justify-end gap-2 sm:flex-nowrap">
-        <Link
-          to="/login"
-          className="inline-flex items-center justify-center border-2 border-zinc-200 bg-white px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-700 transition-all hover:border-zinc-900 hover:text-zinc-950"
-        >
-          Sign In
-        </Link>
-      </div>
-    );
+    return null;
   }
 
   return (

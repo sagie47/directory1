@@ -1,12 +1,6 @@
 import { createContext, startTransition, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import { Business } from './business';
-import {
-  businesses as localBusinesses,
-  categories as localCategories,
-  categoryGroups as localCategoryGroups,
-  cities as localCities,
-} from './data';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
 
 export type City = {
@@ -74,6 +68,20 @@ type BusinessOverrideRow = {
 };
 
 const PAGE_SIZE = 1000;
+const ACTIVE_CITY_IDS = new Set([
+  'kelowna',
+  'vernon',
+  'penticton',
+  'west-kelowna',
+  'lake-country',
+  'summerland',
+  'kamloops',
+  'salmon-arm',
+  'oliver',
+  'peachland',
+  'osoyoos',
+  'armstrong',
+]);
 
 function isMissingOverridesTable(error: { code?: string; message?: string } | null | undefined) {
   if (!error) {
@@ -85,22 +93,39 @@ function isMissingOverridesTable(error: { code?: string; message?: string } | nu
     || error.message?.includes("Could not find the table 'public.business_overrides'") === true;
 }
 
-const seedCities: City[] = localCities;
+function filterDirectoryData(data: DirectoryData): DirectoryData {
+  return {
+    ...data,
+    cities: data.cities.filter((city) => ACTIVE_CITY_IDS.has(city.id)),
+    businesses: data.businesses.filter((business) => ACTIVE_CITY_IDS.has(business.cityId)),
+  };
+}
 
-const seedCategoryGroups: CategoryGroup[] = localCategoryGroups;
+let seedDataPromise: Promise<DirectoryData> | null = null;
 
-const seedCategories: Category[] = localCategories;
+function loadSeedData() {
+  if (!seedDataPromise) {
+    seedDataPromise = import('./data').then((module) => filterDirectoryData({
+      cities: module.cities,
+      categoryGroups: module.categoryGroups,
+      categories: module.categories,
+      businesses: module.businesses,
+    }));
+  }
 
-const seedData: DirectoryData = {
-  cities: seedCities,
-  categoryGroups: seedCategoryGroups,
-  categories: seedCategories,
-  businesses: localBusinesses,
+  return seedDataPromise;
+}
+
+const emptySeedData: DirectoryData = {
+  cities: [],
+  categoryGroups: [],
+  categories: [],
+  businesses: [],
 };
 
 const DirectoryDataContext = createContext<DirectoryDataContextValue>({
-  ...seedData,
-  isLoading: false,
+  ...emptySeedData,
+  isLoading: true,
   source: 'seed',
   refresh: async () => {},
 });
@@ -232,6 +257,7 @@ async function fetchAllRows<T>(query: (from: number, to: number) => Promise<{ da
 
 async function fetchDirectoryData(): Promise<DirectoryData> {
   if (!supabase) {
+    const seedData = await loadSeedData();
     console.info('[directory-data] Supabase not configured. Using local seed data.', {
       cities: seedData.cities.length,
       categories: seedData.categories.length,
@@ -270,7 +296,7 @@ async function fetchDirectoryData(): Promise<DirectoryData> {
   );
 
   const data = {
-    cities: citiesResult.data ?? seedData.cities,
+    cities: citiesResult.data ?? emptySeedData.cities,
     categoryGroups: (groupResult.data ?? []).map((group) => ({
       id: group.id,
       name: group.name,
@@ -299,18 +325,19 @@ async function fetchDirectoryData(): Promise<DirectoryData> {
     throw new Error('Supabase read succeeded but returned zero businesses.');
   }
 
-  return data;
+  return filterDirectoryData(data);
 }
 
 export function DirectoryDataProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<DirectoryDataState>({
-    ...seedData,
-    isLoading: isSupabaseConfigured(),
+    ...emptySeedData,
+    isLoading: true,
     source: 'seed',
   });
 
   const refresh = async () => {
     if (!isSupabaseConfigured()) {
+      const seedData = await loadSeedData();
       setState({
         ...seedData,
         isLoading: false,
@@ -337,6 +364,7 @@ export function DirectoryDataProvider({ children }: { children: ReactNode }) {
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Unable to load directory data.';
       console.error('[directory-data] Refresh failed. Falling back to local seed data.', error);
+      const seedData = await loadSeedData();
       setState((current) => ({
         ...seedData,
         isLoading: false,
@@ -348,6 +376,24 @@ export function DirectoryDataProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isSupabaseConfigured()) {
+      loadSeedData()
+        .then((seedData) => {
+          setState({
+            ...seedData,
+            isLoading: false,
+            source: 'seed',
+          });
+        })
+        .catch((error: unknown) => {
+          const message = error instanceof Error ? error.message : 'Unable to load seed directory data.';
+          console.error('[directory-data] Seed data load failed.', error);
+          setState({
+            ...emptySeedData,
+            isLoading: false,
+            source: 'seed',
+            error: message,
+          });
+        });
       return;
     }
 
@@ -374,12 +420,32 @@ export function DirectoryDataProvider({ children }: { children: ReactNode }) {
 
         const message = error instanceof Error ? error.message : 'Unable to load directory data.';
         console.error('[directory-data] Initial load failed. Falling back to local seed data.', error);
-        setState(() => ({
-          ...seedData,
-          isLoading: false,
-          source: 'seed',
-          error: message,
-        }));
+        loadSeedData()
+          .then((seedData) => {
+            if (!isActive) {
+              return;
+            }
+
+            setState(() => ({
+              ...seedData,
+              isLoading: false,
+              source: 'seed',
+              error: message,
+            }));
+          })
+          .catch((seedError: unknown) => {
+            if (!isActive) {
+              return;
+            }
+
+            console.error('[directory-data] Seed fallback failed.', seedError);
+            setState(() => ({
+              ...emptySeedData,
+              isLoading: false,
+              source: 'seed',
+              error: message,
+            }));
+          });
       });
 
     return () => {

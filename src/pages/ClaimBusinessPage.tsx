@@ -5,6 +5,7 @@ import businessBg from '../photos/job-construction-scaled.jpg';
 import BusinessFAQ from '../components/BusinessFAQ';
 import BusinessCTA from '../components/BusinessCTA';
 import FeatureCard from '../components/FeatureCard';
+import Seo from '../components/Seo';
 import SectionEyebrow from '../components/SectionEyebrow';
 import { createImageFallbackHandler, preferSupabaseImage } from '../supabase-images';
 
@@ -67,6 +68,12 @@ export default function ClaimBusinessPage() {
 
   return (
     <div className="bg-[#FAFAFA] text-zinc-900 font-sans selection:bg-indigo-200 selection:text-indigo-900">
+      <Seo
+        title="Claim Your Business Profile | Okanagan Trades"
+        description="Claim your trade business profile, verify ownership, and manage how your business appears in the Okanagan directory."
+        path="/claim-business"
+      />
+
       {/* Homepage-matched Hero Section */}
       <section className="relative flex items-center overflow-visible bg-zinc-900 pt-24 pb-24 text-white sm:pt-28 sm:pb-32 lg:pt-48 lg:pb-64">
         <div className="absolute inset-0 z-0">

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, Phone, MessageSquare, Check, Sparkles, LayoutGrid, HelpCircle, Zap, ShieldAlert, Clock, Smartphone } from 'lucide-react';
 import { motion } from 'motion/react';
+import Seo from '../components/Seo';
 import SectionEyebrow from '../components/SectionEyebrow';
 import leadHero from '../photos/businessown/plumbing_career_social jpg.jpg';
 import BusinessFAQ from '../components/BusinessFAQ';
@@ -74,6 +75,12 @@ export default function NeverMissLeadPage() {
       transition={{ duration: 0.5 }}
       className="min-h-screen bg-[#FAFAFA] font-sans text-zinc-900 selection:bg-indigo-200 selection:text-indigo-900"
     >
+      <Seo
+        title="Never Miss a Lead | Okanagan Trades"
+        description="Missed-call text back, AI receptionist, and lead-response workflows for Okanagan trade businesses."
+        path="/never-miss-a-lead"
+      />
+
       {/* Homepage-matched Hero Section */}
       <section className="relative flex items-center overflow-visible bg-zinc-900 pt-24 pb-24 text-white sm:pt-28 sm:pb-32 lg:pt-48 lg:pb-64">
         <div className="absolute inset-0 z-0">

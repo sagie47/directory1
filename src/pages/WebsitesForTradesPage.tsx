@@ -3,6 +3,7 @@ import { ArrowRight, Globe, LayoutTemplate, Smartphone, ShieldCheck, Wrench, Lay
 import { motion } from 'motion/react';
 
 import FeatureCard from '../components/FeatureCard';
+import Seo from '../components/Seo';
 import SectionEyebrow from '../components/SectionEyebrow';
 import BusinessFAQ from '../components/BusinessFAQ';
 import websiteHero from '../photos/businessown/AA_BCConstruction.jpg';
@@ -77,6 +78,12 @@ export default function WebsitesForTradesPage() {
       transition={{ duration: 0.5 }}
       className="min-h-screen bg-[#FAFAFA] font-sans text-zinc-900 selection:bg-indigo-200 selection:text-indigo-900"
     >
+      <Seo
+        title="Websites for Trades | Okanagan Trades"
+        description="Mobile-first trade websites for Okanagan contractors who need stronger credibility and easier lead capture."
+        path="/websites-for-trades"
+      />
+
       {/* Homepage-matched Hero Section */}
       <section className="relative flex items-center overflow-visible bg-zinc-900 pt-24 pb-24 text-white sm:pt-28 sm:pb-32 lg:pt-48 lg:pb-64">
         <div className="absolute inset-0 z-0">

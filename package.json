@@ -15,6 +15,7 @@
     "export:gmaps": "tsx scripts/export-gmaps-scraper-input.ts",
     "enrich:gmaps": "tsx scripts/enrich-gmaps-scraper.ts",
     "generate:descriptions": "tsx scripts/generate-business-descriptions.ts",
+    "generate:sitemap": "tsx scripts/generate-sitemap.ts",
     "export:supabase-seed": "tsx scripts/export-supabase-seed.ts",
     "sync:supabase": "tsx scripts/sync-supabase.ts"
   },

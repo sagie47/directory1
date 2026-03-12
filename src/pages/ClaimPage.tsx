@@ -315,11 +315,11 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
                   </div>
 
                   <div className="flex flex-col gap-4">
-                    <Link 
-                      to="/login" 
+                    <Link
+                      to="/claim"
                       className="w-full inline-flex items-center justify-center gap-3 bg-zinc-900 text-white px-8 py-4 font-sans text-sm font-bold uppercase tracking-wider transition-all hover:bg-zinc-800 active:scale-[0.98] rounded-md shadow-md group"
                     >
-                      Sign In <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                      Continue <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                     </Link>
                     <Link 
                       to="/register" 

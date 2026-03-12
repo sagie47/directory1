@@ -104,11 +104,11 @@ export default function AccountPage() {
             <p className="text-zinc-600 mb-8 font-sans text-lg font-medium leading-relaxed">
               Please sign in to view your account.
             </p>
-            <Link 
-              to="/login" 
+            <Link
+              to="/claim"
               className="inline-flex w-full items-center justify-center gap-3 bg-zinc-900 text-white px-8 py-5 font-sans text-sm font-bold uppercase tracking-wider transition-all hover:bg-orange-500 active:scale-95 group rounded-xl shadow-md hover:shadow-none hover:translate-x-1 hover:translate-y-1 border border-zinc-200"
             >
-              Sign In <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" strokeWidth={2.5} />
+              Continue <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" strokeWidth={2.5} />
             </Link>
           </motion.div>
         </div>

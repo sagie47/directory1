@@ -4,6 +4,7 @@ import { MapPin, ArrowRight, Search } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import BusinessCard from '../components/BusinessCard';
 import Breadcrumbs from '../components/Breadcrumbs';
+import Seo from '../components/Seo';
 import { motion } from 'motion/react';
 import { Business, businessServesCity } from '../business';
 import { getCategoryHeroFallbackImage, getCategoryHeroImage } from '../category-hero-images';
@@ -75,6 +76,30 @@ export default function CategoryPage() {
       transition={{ duration: 0.5 }}
       className="bg-[#FAFAFA] min-h-screen text-zinc-900 font-sans"
     >
+      <Seo
+        title={`${category.name} in ${city.name} | Okanagan Trades`}
+        description={`Browse verified ${category.name.toLowerCase()} professionals in ${city.name}. Compare businesses, reviews, and contact details.`}
+        path={`/${city.id}/${category.id}`}
+        jsonLd={[
+          {
+            '@context': 'https://schema.org',
+            '@type': 'CollectionPage',
+            name: `${category.name} in ${city.name}`,
+            description: `Browse verified ${category.name.toLowerCase()} professionals in ${city.name}.`,
+          },
+          {
+            '@context': 'https://schema.org',
+            '@type': 'ItemList',
+            itemListElement: categoryBusinesses.slice(0, 10).map((business, index) => ({
+              '@type': 'ListItem',
+              position: index + 1,
+              url: `/${city.id}/${category.id}/${business.id}`,
+              name: business.name,
+            })),
+          },
+        ]}
+      />
+
       <Breadcrumbs
         items={[
           { label: 'Home', to: '/' },
