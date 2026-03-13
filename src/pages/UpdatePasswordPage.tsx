@@ -15,13 +15,24 @@ export default function UpdatePasswordPage() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
 
+  const INVALID_RECOVERY_LINK_MESSAGE = 'Invalid or expired recovery link. Please request a new password reset.';
+
   useEffect(() => {
-    // If auth has finished loading and there's no session, the link is invalid
-    if (!authLoading && !session && status !== 'success') {
-      setStatus('error');
-      setErrorMessage('Invalid or expired recovery link. Please request a new password reset.');
+    if (authLoading || status === 'success') {
+      return;
     }
-  }, [authLoading, session, status]);
+
+    if (!session) {
+      setStatus('error');
+      setErrorMessage(INVALID_RECOVERY_LINK_MESSAGE);
+      return;
+    }
+
+    if (errorMessage === INVALID_RECOVERY_LINK_MESSAGE) {
+      setStatus('idle');
+      setErrorMessage('');
+    }
+  }, [authLoading, session, status, errorMessage]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();

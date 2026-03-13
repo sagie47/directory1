@@ -29,7 +29,11 @@ export default function AdminClaimsPage() {
   const [processingId, setProcessingId] = useState<string | null>(null);
 
   const fetchClaims = async () => {
-    if (!supabase) return;
+    if (!supabase) {
+      setLoading(false);
+      setError('Claim management requires a configured Supabase environment.');
+      return;
+    }
     
     setLoading(true);
     try {

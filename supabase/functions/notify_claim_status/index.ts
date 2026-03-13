@@ -47,6 +47,16 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Check dry-run mode BEFORE claiming to avoid marking as sent
+    if (!resendApiKey) {
+      console.log('RESEND_API_KEY is not set. Skipping notification (dry-run mode):', {
+        claimId: record.id,
+        status: record.status,
+        to: record.claimant_email,
+      });
+      return new Response(JSON.stringify({ success: true, message: 'Dry-run: Notification skipped, DB not updated' }), { status: 200 });
+    }
+
     // Atomic claim to prevent race conditions
     const { data: claimResult, error: claimError } = await supabase
       .from('business_claims')

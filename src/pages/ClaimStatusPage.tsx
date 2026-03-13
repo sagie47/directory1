@@ -77,6 +77,10 @@ export default function ClaimStatusPage() {
     }
 
     for (const claim of claims) {
+      if (claim.status === 'revoked') {
+        continue;
+      }
+
       const business = businessesById.get(claim.business_id);
       const recommendation = getOwnerRecommendation({
         business,

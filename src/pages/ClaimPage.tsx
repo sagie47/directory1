@@ -1,6 +1,6 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ArrowRight, ArrowLeft, Search, Check, Building2, MapPin, Zap, LayoutGrid, User, Phone, Mail, ShieldCheck, Plus } from 'lucide-react';
+import { ArrowRight, ArrowLeft, Search, Check, Building2, MapPin, Zap, LayoutGrid, User, Phone, Mail, ShieldCheck, Plus, AlertCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 import GoogleIcon from '../components/GoogleIcon';
 import SectionEyebrow from '../components/SectionEyebrow';
@@ -427,6 +427,20 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
       <main className="py-24 relative">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-[0.03] mix-blend-overlay z-0"></div>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          {error && (
+            <div className="mb-8 bg-red-50 border border-red-200 rounded-md p-4 flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-red-800">{error}</p>
+                <button 
+                  onClick={() => setError(null)}
+                  className="text-xs text-red-600 hover:text-red-700 underline mt-2"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          )}
           {step === 1 ? (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="space-y-12">
               <div className="relative group">
