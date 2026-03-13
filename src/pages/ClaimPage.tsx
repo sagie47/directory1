@@ -142,6 +142,20 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
         }
       }
 
+      const { data: otherApprovedClaim } = await supabase
+        .from('business_claims')
+        .select('id, claimant_name')
+        .eq('business_id', selectedBusiness.id)
+        .eq('status', 'approved')
+        .neq('user_id', user.id)
+        .maybeSingle();
+
+      if (otherApprovedClaim) {
+        setError('This business has already been claimed by another user.');
+        setSubmitting(false);
+        return;
+      }
+
       const { data: rejectedClaim } = await supabase
         .from('business_claims')
         .select('id')
