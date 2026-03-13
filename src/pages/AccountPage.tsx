@@ -14,6 +14,8 @@ export default function AccountPage() {
   const [error, setError] = useState<string | null>(null);
   const [fullName, setFullName] = useState(profile?.full_name || '');
   const [canAccessOwnerDashboard, setCanAccessOwnerDashboard] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     setFullName(profile?.full_name || '');
@@ -71,6 +73,34 @@ export default function AccountPage() {
     setSaving(false);
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 3000);
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!user || !supabase) return;
+    
+    setDeleting(true);
+    setError(null);
+    
+    try {
+      const { error: deleteError } = await supabase.rpc('delete_user_account');
+      
+      if (deleteError) {
+        throw deleteError;
+      }
+      
+      // Clear local session since the account is gone
+      const { error: signOutError } = await supabase.auth.signOut();
+      if (signOutError) {
+        throw signOutError;
+      }
+      setShowDeleteConfirm(false);
+    } catch (err) {
+      console.error('Failed to delete account:', err);
+      setError(err instanceof Error ? err.message : 'Unable to delete account right now.');
+      setShowDeleteConfirm(false);
+    } finally {
+      setDeleting(false);
+    }
   };
 
   if (authLoading) {
@@ -222,6 +252,53 @@ export default function AccountPage() {
                 >
                   Owner Dashboard <ArrowRight className="ml-auto h-5 w-5 text-zinc-400 transition-all group-hover:translate-x-1 group-hover:text-orange-500" strokeWidth={2.5} />
                 </Link>
+              )}
+              {profile?.role === 'admin' && (
+                <Link 
+                  to="/admin/claims" 
+                  className="group flex items-center border-2 border-zinc-200 bg-zinc-50 px-6 py-4 rounded-xl font-sans text-base font-bold text-zinc-900 transition-all hover:border-zinc-900 hover:shadow-[4px_4px_0px_0px_rgba(24,24,27,0.1)]"
+                >
+                  Admin Claim Review <ArrowRight className="ml-auto h-5 w-5 text-zinc-400 transition-all group-hover:translate-x-1 group-hover:text-orange-500" strokeWidth={2.5} />
+                </Link>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-12 pt-10 border-t-2 border-red-100">
+            <h3 className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-red-600 mb-6">Danger Zone</h3>
+            <div className="border-2 border-red-200 bg-red-50 p-6 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+              <div>
+                <h4 className="font-bold text-red-900 text-lg mb-1">Delete Account</h4>
+                <p className="text-red-700 text-sm font-medium">Permanently remove your account and all associated data.</p>
+              </div>
+              
+              {showDeleteConfirm ? (
+                <div className="flex flex-col gap-3">
+                  <p className="text-xs font-bold text-red-900 uppercase tracking-wider">Are you absolutely sure?</p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setShowDeleteConfirm(false)}
+                      disabled={deleting}
+                      className="px-4 py-2 bg-white border-2 border-red-200 text-red-700 font-bold text-xs uppercase tracking-wider rounded-md hover:bg-red-50 transition-colors disabled:opacity-50"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleDeleteAccount}
+                      disabled={deleting}
+                      className="px-4 py-2 bg-red-700 text-white font-bold text-xs uppercase tracking-wider rounded-md hover:bg-red-800 transition-colors shadow-sm disabled:opacity-50"
+                    >
+                      {deleting ? 'Deleting...' : 'Yes, Delete'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="px-6 py-3 bg-white border-2 border-red-200 text-red-700 font-bold text-sm uppercase tracking-wider rounded-xl hover:bg-red-100 hover:border-red-300 transition-all shadow-sm active:scale-95 whitespace-nowrap"
+                >
+                  Delete Account
+                </button>
               )}
             </div>
           </div>

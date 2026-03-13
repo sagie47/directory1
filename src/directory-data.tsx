@@ -27,6 +27,7 @@ type DirectoryData = {
   categoryGroups: CategoryGroup[];
   categories: Category[];
   businesses: Business[];
+  verifiedBusinessIds: Set<string>;
 };
 
 type DirectoryDataState = DirectoryData & {
@@ -83,7 +84,7 @@ const ACTIVE_CITY_IDS = new Set([
   'armstrong',
 ]);
 
-function isMissingOverridesTable(error: { code?: string; message?: string } | null | undefined) {
+function isMissingTableError(error: { code?: string; message?: string } | null | undefined) {
   if (!error) {
     return false;
   }
@@ -110,6 +111,7 @@ function loadSeedData() {
       categoryGroups: module.categoryGroups,
       categories: module.categories,
       businesses: module.businesses,
+      verifiedBusinessIds: new Set<string>(), // Assume none are verified in static seed data
     }));
   }
 
@@ -121,6 +123,7 @@ const emptySeedData: DirectoryData = {
   categoryGroups: [],
   categories: [],
   businesses: [],
+  verifiedBusinessIds: new Set<string>(),
 };
 
 const DirectoryDataContext = createContext<DirectoryDataContextValue>({
@@ -266,7 +269,7 @@ async function fetchDirectoryData(): Promise<DirectoryData> {
     return seedData;
   }
 
-  const [citiesResult, groupResult, categoriesResult, businessRows, overrideRowsResult] = await Promise.all([
+  const [citiesResult, groupResult, categoriesResult, businessRows, overrideRowsResult, verifiedResult] = await Promise.all([
     supabase.from('cities').select('id, name, description').order('name'),
     supabase.from('category_groups').select('id, name, description').order('name'),
     supabase.from('categories').select('id, name, icon, group_id').order('name'),
@@ -283,16 +286,28 @@ async function fetchDirectoryData(): Promise<DirectoryData> {
       };
     }),
     supabase.from('business_overrides').select('business_id, description, contact, service_areas, hours, photos'),
+    supabase.from('verified_businesses').select('business_id'),
   ]);
 
-  const overridesError = isMissingOverridesTable(overrideRowsResult.error) ? null : overrideRowsResult.error;
+  const overridesError = isMissingTableError(overrideRowsResult.error) ? null : overrideRowsResult.error;
+  const verifiedError = isMissingTableError(verifiedResult.error) ? null : verifiedResult.error;
   const firstError = citiesResult.error ?? groupResult.error ?? categoriesResult.error ?? overridesError;
   if (firstError) {
     throw new Error(firstError.message);
   }
 
+  if (verifiedError) {
+    console.warn('[directory-data] verified_businesses read failed; continuing without verified badges.', verifiedError);
+  }
+
   const overridesByBusinessId = new Map(
     ((overrideRowsResult.data ?? []) as BusinessOverrideRow[]).map((override) => [override.business_id, override])
+  );
+  
+  const verifiedBusinessIds = new Set(
+    verifiedError
+      ? []
+      : ((verifiedResult.data ?? []) as { business_id: string }[]).map((row) => row.business_id)
   );
 
   const data = {
@@ -311,6 +326,7 @@ async function fetchDirectoryData(): Promise<DirectoryData> {
     businesses: businessRows.map((row) =>
       mergeBusinessOverride(mapBusinessRow(row), overridesByBusinessId.get(row.id))
     ),
+    verifiedBusinessIds,
   };
 
   console.info('[directory-data] Supabase read completed.', {

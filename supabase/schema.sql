@@ -117,9 +117,10 @@ create table if not exists public.business_claims (
   claimant_phone text,
   relationship_to_business text not null,
   message text,
-  reviewed_by uuid references public.profiles (id),
+  reviewed_by uuid references public.profiles (id) on delete set null,
   reviewed_at timestamptz,
   rejection_reason text,
+  notification_sent_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -131,7 +132,7 @@ create table if not exists public.business_overrides (
   service_areas text[],
   hours jsonb,
   photos text[],
-  updated_by uuid not null references public.profiles (id),
+  updated_by uuid not null references public.profiles (id) on delete cascade,
   updated_at timestamptz not null default now()
 );
 
@@ -219,6 +220,21 @@ for select
 to authenticated
 using (auth.uid() = user_id);
 
+drop policy if exists "claims_select_admin" on public.business_claims;
+create policy "claims_select_admin"
+on public.business_claims
+for select
+to authenticated
+using (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'));
+
+drop policy if exists "claims_update_admin" on public.business_claims;
+create policy "claims_update_admin"
+on public.business_claims
+for update
+to authenticated
+using (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'))
+with check (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'));
+
 drop policy if exists "business_overrides_public_read" on public.business_overrides;
 create policy "business_overrides_public_read"
 on public.business_overrides
@@ -279,3 +295,73 @@ using (
       and bc.status = 'approved'
   )
 );
+
+create or replace function public.delete_user_account()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  -- Ensure the user is authenticated
+  if auth.uid() is null then
+    raise exception 'Not authenticated';
+  end if;
+
+  -- Delete the user from auth.users. 
+  -- Due to foreign key cascades, this will also delete their profile and claims.
+  delete from auth.users where id = auth.uid();
+end;
+$$;
+
+create or replace function public.review_business_claim(
+  p_claim_id uuid,
+  p_status text,
+  p_rejection_reason text default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not exists (
+    select 1
+    from public.profiles
+    where id = auth.uid() and role = 'admin'
+  ) then
+    raise exception 'Not authorized';
+  end if;
+
+  if p_status not in ('approved', 'rejected') then
+    raise exception 'Invalid status';
+  end if;
+
+  if p_status = 'rejected'
+     and nullif(btrim(coalesce(p_rejection_reason, '')), '') is null then
+    raise exception 'Rejection reason required';
+  end if;
+
+  update public.business_claims
+  set status = p_status,
+      reviewed_by = auth.uid(),
+      reviewed_at = now(),
+      rejection_reason = case
+        when p_status = 'rejected' then p_rejection_reason
+        else null
+      end
+  where id = p_claim_id
+    and status = 'pending';
+
+  if not found then
+    raise exception 'Claim not found or no longer pending';
+  end if;
+end;
+$$;
+
+create or replace view public.verified_businesses as
+select distinct business_id
+from public.business_claims
+where status = 'approved';
+
+grant select on public.verified_businesses to anon, authenticated;

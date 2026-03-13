@@ -63,7 +63,7 @@ export default function ContactPage() {
                   <div>
                     <p className="font-mono text-[10px] tracking-[0.1em] text-zinc-500 uppercase mb-1">Email</p>
                     <p className="text-zinc-700 text-sm leading-relaxed font-medium">
-                      info@okanagantrades.com
+                      info@okanagantradesdirectory.com
                     </p>
                   </div>
                 </div>

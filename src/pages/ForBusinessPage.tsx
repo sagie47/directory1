@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Building2, Globe, Phone, TrendingUp, ShieldCheck, Sparkles, Workflow, Wrench, LayoutGrid, Zap, HelpCircle, ArrowUpRight, Check } from 'lucide-react';
+import { ArrowRight, Building2, Globe, Phone, TrendingUp, ShieldCheck, Sparkles, Workflow, Wrench, LayoutGrid, Zap } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useEffect } from 'react';
 
 import FeatureCard from '../components/FeatureCard';
 import Seo from '../components/Seo';
@@ -9,6 +10,7 @@ import BusinessFAQ from '../components/BusinessFAQ';
 import BusinessCTA from '../components/BusinessCTA';
 import businessHero from '../photos/businessown/thumbnail_G74A6639.jpg';
 import { createImageFallbackHandler, preferSupabaseImage } from '../supabase-images';
+import { trackEvent } from '../lib/analytics';
 
 const offerLanes = [
   {
@@ -88,60 +90,10 @@ const operatingPrinciples = [
   },
 ];
 
-const directoryPlans = [
-  {
-    name: 'Free Claim',
-    price: '$0',
-    description: 'Claim your business and clean up the essentials.',
-    cta: 'Claim Free',
-    href: '/claim',
-    features: [
-      'Claim your profile',
-      'Update core business details',
-      'Add photos and service areas',
-      'Access the owner dashboard',
-    ],
-  },
-  {
-    name: 'Verified Profile',
-    price: '$29/mo',
-    description: 'Enhanced directory presence for businesses that want more polish and visibility.',
-    cta: 'Claim and Upgrade',
-    href: '/claim',
-    features: [
-      'Everything in Free Claim',
-      'Verified profile treatment',
-      'Priority placement',
-      'Visibility and performance signals',
-    ],
-  },
-];
-
-const growthServices = [
-  {
-    name: 'Never Miss a Lead',
-    description: 'Operational lead-response system for missed calls and after-hours inquiries.',
-    cta: 'Book a Demo',
-    href: '/never-miss-a-lead',
-  },
-  {
-    name: 'Website Build',
-    description: 'Modern trade websites designed to improve trust and make contact easier.',
-    cta: 'Book a Website Call',
-    href: '/websites-for-trades',
-  },
-  {
-    name: 'Managed Growth',
-    description: 'Done-for-you local growth support for businesses that want ongoing help.',
-    cta: 'Book a Strategy Call',
-    href: '/managed-growth',
-  },
-];
-
 const faqs = [
   {
     question: 'How do I get started?',
-    answer: 'The best first step is to claim your free business profile. This gives you immediate access to your dashboard where you can explore our other growth services.'
+    answer: 'The best first step is to claim your free business profile. Once your ownership request is approved, you can access the dashboard and the next recommended step.'
   },
   {
     question: 'Are there long-term contracts?',
@@ -158,6 +110,10 @@ const faqs = [
 ];
 
 export default function ForBusinessPage() {
+  useEffect(() => {
+    trackEvent('for_business_viewed');
+  }, []);
+
   const businessHeroSrc = preferSupabaseImage('thumbnail_G74A6639.jpg', businessHero);
 
   return (
@@ -212,7 +168,7 @@ export default function ForBusinessPage() {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="mb-10 max-w-2xl text-lg leading-relaxed text-balance text-zinc-300 drop-shadow-md sm:mb-12 sm:text-xl md:text-2xl lg:mb-16"
             >
-              Claim your profile, stop missing leads, improve your online presence, and get help where you actually need it.
+              Claim your profile first. After approval, we can point you to the next practical improvement instead of sending you into a generic services menu.
             </motion.p>
 
             <motion.div 
@@ -223,84 +179,100 @@ export default function ForBusinessPage() {
             >
               <Link
                 to="/claim"
+                onClick={() => trackEvent('for_business_claim_cta_clicked')}
                 className="group flex min-h-12 items-center justify-center gap-3 rounded-sm bg-white px-6 py-4 font-sans text-sm font-bold uppercase tracking-wider text-zinc-950 shadow-2xl transition-all duration-200 hover:bg-zinc-100 active:scale-[0.98] sm:px-10 sm:py-5 lg:px-12 lg:py-6"
               >
                 Claim Your Profile <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" strokeWidth={2.5} />
               </Link>
               <a
                 href="#business-options"
-                className="flex min-h-12 items-center justify-center gap-3 rounded-sm border border-white/20 bg-white/10 px-6 py-4 font-sans text-sm font-bold uppercase tracking-wider text-white backdrop-blur-md transition-all duration-200 hover:bg-white/20 active:scale-[0.98] sm:px-10 sm:py-5 lg:px-12 lg:py-6"
+                className="flex min-h-12 items-center justify-center gap-3 rounded-sm border border-transparent px-6 py-4 font-sans text-sm font-bold uppercase tracking-wider text-zinc-300 transition-all duration-200 hover:text-white active:scale-[0.98] sm:px-10 sm:py-5 lg:px-12 lg:py-6"
               >
-                See Business Options
+                See how we help after you claim
               </a>
             </motion.div>
           </div>
         </div>
       </section>
 
-      <section id="business-options" className="border-b border-zinc-200 bg-zinc-50 py-20 sm:py-24 lg:py-44">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-14 text-center sm:mb-18 lg:mb-24">
-            <SectionEyebrow
-              icon={Workflow}
-              className="mb-6 bg-zinc-900 text-white"
-            >
-              Four Clear Lanes
-            </SectionEyebrow>
-            <h2 className="mb-5 text-3xl font-bold uppercase tracking-tight text-zinc-900 sm:text-4xl md:text-6xl md:mb-6">
-              Choose What You Need
-            </h2>
-            <p className="mx-auto max-w-2xl text-lg font-medium leading-relaxed text-zinc-500 sm:text-xl">
-              Pick the path that matches your current bottleneck. Do not start with a giant mixed service package if you only need one thing solved.
-            </p>
-          </div>
-
-          <div className="grid gap-6 sm:gap-8 md:grid-cols-2 md:gap-10">
-            {offerLanes.map((lane, index) => (
-              <motion.div
-                key={lane.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.08 }}
-                className="group flex flex-col rounded-sm border border-zinc-200 bg-white p-6 shadow-sm transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl sm:p-8 lg:p-16"
+      <section id="business-options" className="border-b border-zinc-200 bg-zinc-50 py-24 sm:py-32 lg:py-44 relative">
+        <div className="absolute inset-0 z-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjMDAwIiBmaWxsLW9wYWNpdHk9IjAuMDIiLz4KPC9zdmc+')] opacity-50 mix-blend-overlay"></div>
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-12 items-center">
+            
+            {/* Soft Modern Light Panel */}
+            <div className="rounded-sm border border-zinc-200 bg-white p-8 shadow-xl shadow-zinc-200/40 sm:p-10 lg:p-16 relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-orange-50/50 rounded-full blur-3xl opacity-50 -z-10 transition-transform duration-1000 group-hover:scale-110"></div>
+              
+              <SectionEyebrow
+                icon={Workflow}
+                className="mb-8 bg-zinc-50 border border-zinc-200 text-zinc-600 shadow-sm"
               >
-                <div className="mb-8 flex items-center justify-between sm:mb-10">
-                  <div className="inline-flex items-center gap-2 rounded-sm border border-zinc-100 bg-zinc-50 px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-500 transition-all duration-500 group-hover:bg-zinc-900 group-hover:text-white sm:px-4 sm:tracking-[0.2em]">
-                    <lane.icon className="h-3.5 w-3.5" strokeWidth={2} />
-                    {lane.eyebrow}
+                What Happens After Claim
+              </SectionEyebrow>
+              
+              <h2 className="mb-6 text-4xl font-bold uppercase tracking-tighter text-zinc-900 sm:text-5xl md:text-6xl leading-[1.05]">
+                Approval first. <br /> <span className="font-serif italic font-light text-zinc-400 normal-case">Then one clear next step.</span>
+              </h2>
+              
+              <div className="space-y-6 text-zinc-500 mb-12">
+                <p className="text-lg font-medium leading-relaxed text-zinc-600">
+                  We do not want this page to feel like a pricing menu. The first useful action is claiming the listing.
+                </p>
+                <p className="text-lg leading-relaxed">
+                  After approval, the app can point a business toward the next practical improvement based on what is already missing: profile basics, a missing website, or lead capture.
+                </p>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-3">
+                {[
+                  { step: '1', title: 'Submit claim' },
+                  { step: '2', title: 'Get verified' },
+                  { step: '3', title: 'See next step' }
+                ].map((item) => (
+                  <div key={item.step} className="group/step rounded-sm border border-zinc-100 bg-zinc-50 p-5 transition-all duration-300 hover:border-orange-200 hover:bg-white hover:shadow-md relative overflow-hidden">
+                    <div className="absolute left-0 top-0 h-full w-1 bg-zinc-100 transition-colors duration-300 group-hover/step:bg-orange-500"></div>
+                    <div className="mb-4 flex h-8 w-8 items-center justify-center rounded-sm bg-white border border-zinc-200 text-sm font-bold text-zinc-400 shadow-sm group-hover/step:border-orange-200 group-hover/step:text-orange-500 transition-colors">
+                      {item.step}
+                    </div>
+                    <p className="font-bold text-zinc-900 tracking-tight">{item.title}</p>
                   </div>
-                  <div className="flex h-10 w-10 items-center justify-center rounded-sm border border-zinc-100 bg-zinc-50 text-zinc-300 transition-all duration-500 group-hover:border-orange-500 group-hover:bg-orange-500 group-hover:text-white sm:h-12 sm:w-12">
-                    <ArrowUpRight className="w-6 h-6" />
-                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Elevated Recommendations Panel */}
+            <div className="rounded-sm border border-zinc-800 bg-zinc-950 p-8 shadow-2xl sm:p-10 lg:p-12 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-[0.03] mix-blend-overlay pointer-events-none"></div>
+              
+              <div className="relative z-10">
+                <div className="mb-8 inline-flex items-center gap-2 rounded-sm border border-zinc-800 bg-zinc-900 px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 shadow-sm">
+                  <Zap className="h-3.5 w-3.5 text-orange-500" /> Recommendations
                 </div>
                 
-                <h3 className="mb-4 text-2xl font-bold uppercase tracking-tight text-zinc-900 transition-colors group-hover:text-orange-600 sm:mb-6 sm:text-3xl lg:text-4xl">
-                  {lane.title}
-                </h3>
-                
-                <p className="mb-8 text-base font-medium leading-relaxed text-zinc-500 sm:mb-10 sm:text-lg lg:text-xl">
-                  {lane.description}
-                </p>
-                
-                <ul className="mb-10 flex-grow space-y-3 sm:mb-12 sm:space-y-4">
-                  {lane.bullets.map((bullet) => (
-                    <li key={bullet} className="flex items-start gap-4">
-                      <div className="mt-1.5 flex h-2 w-2 shrink-0 rounded-sm bg-orange-500"></div>
-                      <span className="font-semibold text-zinc-700 leading-tight">{bullet}</span>
-                    </li>
+                <div className="space-y-4">
+                  {offerLanes.map((lane) => (
+                    <div key={lane.title} className="group relative overflow-hidden rounded-sm border border-zinc-800 bg-zinc-900/50 p-6 transition-all duration-300 hover:border-zinc-700 hover:bg-zinc-900">
+                      <div className="absolute left-0 top-0 h-full w-1 bg-zinc-800 transition-colors duration-300 group-hover:bg-orange-500"></div>
+                      <div className="flex items-center gap-4 mb-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-sm bg-zinc-950 border border-zinc-800 text-zinc-400 group-hover:border-orange-500/30 group-hover:text-orange-400 transition-colors">
+                          <lane.icon className="h-5 w-5" strokeWidth={1.5} />
+                        </div>
+                        <p className="font-bold uppercase tracking-wide text-white">{lane.title}</p>
+                      </div>
+                      <p className="mb-5 text-sm leading-relaxed text-zinc-400">{lane.description}</p>
+                      <Link
+                        to={lane.href}
+                        className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300 transition-colors group-hover:text-orange-400"
+                      >
+                        Learn more <ArrowRight className="h-4 w-4" strokeWidth={2} />
+                      </Link>
+                    </div>
                   ))}
-                </ul>
-                
-                <Link
-                  to={lane.href}
-                  className="group/btn inline-flex min-h-12 items-center justify-center gap-4 rounded-sm bg-zinc-900 px-6 py-4 font-sans text-sm font-bold uppercase tracking-[0.14em] text-white shadow-xl transition-all hover:-translate-y-1 hover:bg-zinc-800 active:scale-95 sm:px-8 sm:py-5 sm:tracking-widest"
-                >
-                  {lane.cta}
-                  <ArrowRight className="h-5 w-5 transition-transform group-hover/btn:translate-x-1" strokeWidth={2.5} />
-                </Link>
-              </motion.div>
-            ))}
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
       </section>
@@ -337,81 +309,34 @@ export default function ForBusinessPage() {
         </div>
       </section>
 
-      <section className="border-b border-zinc-200 bg-zinc-50 py-20 sm:py-24 lg:py-44">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-12 lg:grid-cols-2 lg:gap-20">
-            <div>
-              <SectionEyebrow
-                icon={ShieldCheck}
-                className="mb-8"
-              >
-                Directory Plans
-              </SectionEyebrow>
-              <h2 className="mb-6 text-3xl font-bold uppercase tracking-tight leading-[1.1] text-zinc-900 sm:text-4xl md:text-5xl md:mb-8">
-                Productized <br /> <span className="font-serif italic font-light text-zinc-400 normal-case">Entry Points.</span>
-              </h2>
-              <p className="mb-8 max-w-xl text-lg font-medium leading-relaxed text-zinc-500 sm:mb-10 sm:text-xl md:mb-12">
-                Keep the directory plans simple. This is where businesses claim and improve their presence inside the directory itself.
-              </p>
-
-              <div className="space-y-6 sm:space-y-8">
-                {directoryPlans.map((plan) => (
-                  <div key={plan.name} className="rounded-sm border border-zinc-200 bg-white p-6 shadow-sm transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl sm:p-8 lg:p-10">
-                    <div className="mb-6 flex flex-wrap items-end justify-between gap-4 sm:mb-8">
-                      <div>
-                        <h3 className="text-2xl font-bold uppercase tracking-tight text-zinc-900 sm:text-3xl">{plan.name}</h3>
-                        <p className="mt-2 text-base font-medium text-zinc-500 sm:text-lg">{plan.description}</p>
-                      </div>
-                      <div className="text-3xl font-black tracking-tighter leading-none text-zinc-900 sm:text-4xl">{plan.price}</div>
-                    </div>
-                    <ul className="mb-8 space-y-3 sm:mb-10 sm:space-y-4">
-                      {plan.features.map((feature) => (
-                        <li key={feature} className="flex items-start gap-4">
-                          <Check className="mt-1 h-5 w-5 text-orange-500" strokeWidth={3} />
-                          <span className="font-bold text-zinc-700">{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <Link
-                      to={plan.href}
-                      className="inline-flex min-h-12 items-center gap-4 rounded-sm bg-zinc-900 px-6 py-4 font-sans text-sm font-bold uppercase tracking-[0.14em] text-white shadow-xl transition-all hover:bg-zinc-800 active:scale-95 sm:px-8 sm:tracking-widest"
-                    >
-                      {plan.cta}
-                      <ArrowRight className="h-5 w-5" strokeWidth={2.5} />
-                    </Link>
-                  </div>
-                ))}
+      <section className="border-b border-zinc-200 bg-zinc-50 py-20 sm:py-24 lg:py-36">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+          <div className="rounded-sm border border-zinc-200 bg-white p-8 shadow-sm sm:p-10 lg:p-14">
+            <SectionEyebrow
+              icon={ShieldCheck}
+              className="mb-8"
+            >
+              Start Here
+            </SectionEyebrow>
+            <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:gap-14">
+              <div>
+                <h2 className="mb-6 text-3xl font-bold uppercase tracking-tight leading-[1.05] text-zinc-900 sm:text-4xl md:text-5xl">
+                  Claim First. <br /> <span className="font-serif italic font-light text-zinc-400 normal-case">Then improve what matters.</span>
+                </h2>
+                <p className="max-w-2xl text-lg font-medium leading-relaxed text-zinc-500 sm:text-xl">
+                  The directory claim is the first step. Once your ownership request is approved, we can point you to the next practical improvement based on what your business is missing.
+                </p>
               </div>
-            </div>
 
-            <div>
-              <SectionEyebrow
-                icon={TrendingUp}
-                className="mb-8"
-              >
-                Growth Services
-              </SectionEyebrow>
-              <h2 className="mb-6 text-3xl font-bold uppercase tracking-tight leading-[1.1] text-zinc-900 sm:text-4xl md:text-5xl md:mb-8">
-                High-Intent <br /> <span className="font-serif italic font-light text-zinc-400 normal-case">Service Offers.</span>
-              </h2>
-              <p className="mb-8 max-w-xl text-lg font-medium leading-relaxed text-zinc-500 sm:mb-10 sm:text-xl md:mb-12">
-                Keep service offers separate from the directory plans. These are advisory or done-for-you lanes, not just profile upgrades.
-              </p>
-
-              <div className="space-y-6 sm:space-y-8">
-                {growthServices.map((service) => (
-                  <div key={service.name} className="group rounded-sm border border-zinc-900 bg-zinc-900 p-6 text-white shadow-2xl transition-all duration-500 hover:-translate-y-2 sm:p-8 lg:p-12">
-                    <h3 className="mb-4 text-2xl font-bold uppercase tracking-tight transition-colors group-hover:text-orange-500 sm:text-3xl">{service.name}</h3>
-                    <p className="mt-3 max-w-xl text-base font-medium leading-relaxed text-zinc-400 transition-colors group-hover:text-zinc-300 sm:text-lg">{service.description}</p>
-                    <Link
-                      to={service.href}
-                      className="mt-8 inline-flex min-h-12 items-center gap-4 rounded-sm bg-white px-6 py-4 font-sans text-sm font-bold uppercase tracking-[0.14em] text-zinc-900 shadow-xl transition-all hover:bg-orange-500 hover:text-white active:scale-95 sm:mt-10 sm:px-8 sm:py-5 sm:tracking-widest"
-                    >
-                      {service.cta}
-                      <ArrowRight className="h-5 w-5" strokeWidth={2.5} />
-                    </Link>
-                  </div>
-                ))}
+              <div className="rounded-sm border border-zinc-100 bg-zinc-50 p-6 sm:p-8">
+                <h3 className="mb-4 text-lg font-bold uppercase tracking-wide text-zinc-900">
+                  What you get after approval
+                </h3>
+                <ul className="space-y-3 text-sm text-zinc-700 sm:text-base">
+                  <li>Control over description, phone, website, service areas, and hours</li>
+                  <li>A cleaner post-claim next step instead of a generic business services menu</li>
+                  <li>One recommended improvement based on the listing basics already in place</li>
+                </ul>
               </div>
             </div>
           </div>
@@ -421,8 +346,11 @@ export default function ForBusinessPage() {
       <BusinessFAQ faqs={faqs} />
 
       <BusinessCTA 
-        title={<>Built for <br /> <span className="text-zinc-400 italic font-serif font-light text-balance">Operators.</span></>}
-        description="Claim your profile if you need control. Book a demo if missed calls are costing you jobs. Move into websites or managed growth when the business actually needs it."
+        eyebrow="Claim First"
+        title={<>Ready to take control <br /> <span className="text-zinc-400 italic font-serif font-light text-balance">of your listing?</span></>}
+        description="Start with the claim. We’ll verify ownership first, then point you to the next practical step after approval."
+        ctaText="Claim Your Profile"
+        ctaHref="/claim"
       />
     </div>
   );
