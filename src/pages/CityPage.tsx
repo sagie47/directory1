@@ -27,7 +27,19 @@ const itemVariants = {
 
 export default function CityPage() {
   const { cityId } = useParams<{ cityId: string }>();
-  const { cities, categories, businesses } = useDirectoryData();
+  const { cities, categories, businesses, isLoading } = useDirectoryData();
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center bg-[#FAFAFA] px-6">
+        <div className="text-center">
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-2 border-zinc-200 border-t-zinc-900"></div>
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-500">Loading city</p>
+        </div>
+      </div>
+    );
+  }
+
   const city = cities.find(c => c.id === cityId);
 
   if (!city) {
