@@ -1,11 +1,13 @@
 import { type FormEvent, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Activity, Save, CheckCircle, AlertCircle, User, ArrowRight } from 'lucide-react';
+import { Activity, Save, CheckCircle, AlertCircle, User, ArrowRight, LayoutGrid } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useAuth } from '../contexts/AuthContext';
 import { hasApprovedClaim } from '../lib/auth';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import SectionEyebrow from '../components/SectionEyebrow';
+import businessBg from '../photos/businessown/thumbnail_G74A6639.jpg';
+import { createImageFallbackHandler, preferSupabaseImage } from '../supabase-images';
 
 export default function AccountPage() {
   const { user, profile, loading: authLoading, refreshProfile } = useAuth();
@@ -16,6 +18,12 @@ export default function AccountPage() {
   const [canAccessOwnerDashboard, setCanAccessOwnerDashboard] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const businessBgSrc = preferSupabaseImage('thumbnail_G74A6639.jpg', businessBg);
+
+  const heroItemVariants = {
+    hidden: { opacity: 0, y: 30, filter: 'blur(10px)' },
+    show: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] } }
+  };
 
   useEffect(() => {
     setFullName(profile?.full_name || '');
@@ -121,22 +129,38 @@ export default function AccountPage() {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.5 }}
-        className="bg-[#FAFAFA] min-h-screen py-24 text-zinc-900 font-sans relative selection:bg-indigo-200 selection:text-indigo-900"
+        className="bg-zinc-900 min-h-screen text-white font-sans relative selection:bg-indigo-200 selection:text-indigo-900"
       >
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-[0.03] mix-blend-overlay pointer-events-none"></div>
+        <div className="absolute inset-0 z-0">
+          <motion.img 
+            initial={{ scale: 1.1, opacity: 0 }}
+            animate={{ scale: 1, opacity: 0.5 }}
+            transition={{ duration: 1.5, ease: "easeOut" }}
+            src={businessBgSrc}
+            alt="" 
+            className="w-full h-full object-cover"
+            onError={createImageFallbackHandler(businessBg)}
+          />
+          <div className="absolute inset-0 z-10 bg-gradient-to-r from-zinc-950/90 via-zinc-900/50 to-transparent"></div>
+          <div className="absolute inset-0 z-10 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent"></div>
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-20 mix-blend-overlay z-10"></div>
+        </div>
 
-        <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }} className="border border-zinc-200 bg-white p-8 md:p-12 shadow-xl rounded-sm text-center">
-            <div className="w-16 h-16 bg-zinc-50 border border-zinc-200 rounded-full flex items-center justify-center mx-auto mb-6">
-              <AlertCircle className="w-8 h-8 text-zinc-900" strokeWidth={2.5} />
+        <div className="relative z-20 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 pt-32 pb-24">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="max-w-md">
+            <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md text-zinc-100 border border-white/20 font-mono text-[10px] tracking-[0.3em] uppercase px-4 py-2 mb-8 shadow-sm rounded-sm">
+              <LayoutGrid className="w-3.5 h-3.5 text-zinc-300" />
+              Account
             </div>
-            <h2 className="text-3xl font-bold uppercase tracking-tighter mb-4 text-zinc-900">Sign In Required</h2>
-            <p className="text-zinc-600 mb-8 font-sans text-lg font-medium leading-relaxed">
-              Please sign in to view your account.
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-medium tracking-tighter mb-6 text-white leading-[0.95]">
+              Sign In Required
+            </h1>
+            <p className="text-lg md:text-xl text-zinc-300 font-medium leading-relaxed mb-10 max-w-md">
+              Please sign in to view your account settings and manage your business profile.
             </p>
             <Link
               to="/claim"
-              className="inline-flex w-full items-center justify-center gap-3 bg-zinc-900 text-white px-8 py-5 font-sans text-sm font-bold uppercase tracking-wider transition-all hover:bg-orange-500 active:scale-95 group rounded-xl shadow-md hover:shadow-none hover:translate-x-1 hover:translate-y-1 border border-zinc-200"
+              className="inline-flex items-center justify-center gap-3 bg-zinc-900 text-white px-8 py-5 font-sans text-sm font-bold uppercase tracking-wider transition-all hover:bg-orange-500 active:scale-95 group rounded-xl shadow-md hover:shadow-none hover:translate-x-1 hover:translate-y-1 border border-zinc-200"
             >
               Continue <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" strokeWidth={2.5} />
             </Link>
@@ -152,13 +176,18 @@ export default function AccountPage() {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
-      className="bg-[#FAFAFA] min-h-screen py-24 text-zinc-900 font-sans relative selection:bg-indigo-200 selection:text-indigo-900"
+      className="bg-[#FAFAFA] min-h-screen text-zinc-900 font-sans relative selection:bg-indigo-200 selection:text-indigo-900"
     >
       <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-[0.03] mix-blend-overlay pointer-events-none"></div>
 
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pt-24 pb-16">
         
-        <div className="mb-12">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="mb-12"
+        >
           <SectionEyebrow
             icon={Activity}
             className="mb-6 inline-flex items-center gap-2 border border-zinc-200 bg-white px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600 shadow-sm rounded-sm"
@@ -166,13 +195,13 @@ export default function AccountPage() {
           >
             Account
           </SectionEyebrow>
-          <h1 className="text-5xl md:text-6xl font-bold uppercase tracking-tighter mb-4 text-zinc-900 leading-[0.95]">
+          <h1 className="text-5xl md:text-6xl font-medium uppercase tracking-tighter mb-4 text-zinc-900 leading-[0.95]">
             Your Account
           </h1>
           <p className="text-zinc-600 font-sans font-medium text-lg max-w-xl leading-relaxed">
             Manage your account settings and preferences.
           </p>
-        </div>
+        </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }} className="border border-zinc-200 bg-white p-8 md:p-12 shadow-xl rounded-sm">
           <div className="flex items-center gap-6 mb-10 pb-10 border-b-2 border-zinc-100">

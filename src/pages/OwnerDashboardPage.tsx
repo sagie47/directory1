@@ -1,6 +1,6 @@
 import { type FormEvent, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Activity, Save, AlertCircle, CheckCircle, Check, ArrowRight } from 'lucide-react';
+import { Activity, Save, AlertCircle, CheckCircle, Check, ArrowRight, LayoutGrid } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useAuth } from '../contexts/AuthContext';
 import { useDirectoryData } from '../directory-data';
@@ -8,6 +8,8 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Business, BusinessHours } from '../business';
 import { getOwnerRecommendation } from '../lib/recommendations';
 import { trackEvent } from '../lib/analytics';
+import businessBg from '../photos/businessown/thumbnail_G74A6639.jpg';
+import { createImageFallbackHandler, preferSupabaseImage } from '../supabase-images';
 
 interface BusinessClaim {
   id: string;
@@ -54,6 +56,7 @@ export default function OwnerDashboardPage() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const ownerToolsAvailable = Boolean(supabase && isSupabaseConfigured());
+  const businessBgSrc = preferSupabaseImage('thumbnail_G74A6639.jpg', businessBg);
 
   const [formData, setFormData] = useState({
     description: '',
@@ -301,24 +304,42 @@ export default function OwnerDashboardPage() {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
-      className="bg-[#FAFAFA] min-h-screen py-24 text-zinc-900 font-sans relative"
+      className="bg-zinc-900 min-h-screen text-white font-sans relative"
     >
-      <div className="absolute inset-0 z-0 opacity-50 pointer-events-none" style={{ backgroundImage: 'linear-gradient(to right, #f4f4f5 1px, transparent 1px), linear-gradient(to bottom, #f4f4f5 1px, transparent 1px)', backgroundSize: '4rem 4rem' }}></div>
+      <div className="absolute inset-0 z-0">
+        <motion.img 
+          initial={{ scale: 1.1, opacity: 0 }}
+          animate={{ scale: 1, opacity: 0.4 }}
+          transition={{ duration: 1.5, ease: "easeOut" }}
+          src={businessBgSrc}
+          alt="" 
+          className="w-full h-full object-cover"
+          onError={createImageFallbackHandler(businessBg)}
+        />
+        <div className="absolute inset-0 z-10 bg-gradient-to-r from-zinc-950/90 via-zinc-900/50 to-transparent"></div>
+        <div className="absolute inset-0 z-10 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent"></div>
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-20 mix-blend-overlay z-10"></div>
+      </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pt-24 pb-16">
         
-        <div className="mb-8 flex items-center justify-between">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="mb-8 flex items-start justify-between"
+        >
           <div>
-            <div className="inline-flex items-center gap-2 border border-zinc-200 bg-white text-zinc-600 px-3 py-1.5 font-mono text-[10px] tracking-[0.15em] mb-4 uppercase rounded-sm shadow-sm">
-              <Activity className="h-3.5 w-3.5 text-zinc-400" strokeWidth={1.5} /> Owner Dashboard
+            <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md text-zinc-100 border border-white/20 font-mono text-[10px] tracking-[0.15em] mb-4 uppercase px-4 py-2 rounded-sm shadow-sm">
+              <Activity className="h-3.5 w-3.5 text-zinc-300" strokeWidth={1.5} /> Owner Dashboard
             </div>
             {approvedClaims.length > 1 && (
               <div className="mb-4">
-                <label className="block text-xs font-medium text-zinc-500 mb-2">Select business to manage:</label>
+                <label className="block text-xs font-medium text-zinc-400 mb-2">Select business to manage:</label>
                 <select
                   value={selectedClaimId || ''}
                   onChange={(e) => handleSelectClaim(e.target.value)}
-                  className="border border-zinc-300 rounded-md px-3 py-2 text-sm font-medium text-zinc-900 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  className="border border-white/20 bg-white/10 backdrop-blur-sm rounded-md px-3 py-2 text-sm font-medium text-white bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                 >
                   <option value="" disabled>Select a business...</option>
                   {approvedClaims.map((claim) => {
@@ -332,20 +353,20 @@ export default function OwnerDashboardPage() {
                 </select>
               </div>
             )}
-            <h1 className="text-3xl md:text-4xl font-medium tracking-tight">
+            <h1 className="text-3xl md:text-4xl font-medium tracking-tight text-white">
               {business.name}
             </h1>
-            <p className="text-zinc-500 mt-1">
+            <p className="text-zinc-400 mt-1">
               {city?.name} • {business.categoryId}
             </p>
           </div>
           <Link 
             to={`/${business.cityId}/${business.categoryId}/${business.id}`}
-            className="text-sm text-zinc-500 hover:text-zinc-900 transition-colors"
+            className="text-sm text-zinc-400 hover:text-white transition-colors"
           >
             View Listing →
           </Link>
-        </div>
+        </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">

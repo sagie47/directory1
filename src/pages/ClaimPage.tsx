@@ -392,32 +392,57 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
 
   return (
     <div className="bg-[#FAFAFA] min-h-screen text-zinc-900 font-sans selection:bg-indigo-200 selection:text-indigo-900">
-      <header className="bg-white border-b border-zinc-200 py-16 md:py-24 overflow-hidden relative">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-[0.03] mix-blend-overlay z-0"></div>
+      <header className="bg-zinc-900 border-b border-zinc-800 py-16 md:py-24 overflow-hidden relative">
+        <div className="absolute inset-0 z-0">
+          <motion.img 
+            initial={{ scale: 1.1, opacity: 0 }}
+            animate={{ scale: 1, opacity: 0.45 }}
+            transition={{ duration: 1.5, ease: "easeOut" }}
+            src={businessBgSrc}
+            alt="" 
+            className="w-full h-full object-cover"
+            onError={createImageFallbackHandler(businessBg)}
+          />
+          <div className="absolute inset-0 z-10 bg-gradient-to-r from-zinc-950/90 via-zinc-900/50 to-transparent"></div>
+          <div className="absolute inset-0 z-10 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent"></div>
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-20 mix-blend-overlay z-10"></div>
+        </div>
         
         <div className="relative max-w-[96rem] mx-auto px-4 sm:px-6 lg:px-10 z-10">
           <div className="flex flex-col md:flex-row gap-8 items-start md:items-end justify-between">
             <div className="max-w-3xl">
-              <SectionEyebrow
-                icon={Building2}
-                className="mb-8 inline-flex items-center gap-2 border border-zinc-200 bg-zinc-50 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600 rounded-full shadow-sm"
-                iconClassName="h-3.5 w-3.5 text-zinc-500"
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md text-zinc-100 border border-white/20 font-mono text-[10px] tracking-[0.3em] uppercase px-4 py-2 mb-8 shadow-sm rounded-sm"
               >
+                <Building2 className="w-3.5 h-3.5 text-zinc-300" />
                 Ownership Verification
-              </SectionEyebrow>
-              <h1 className="text-4xl md:text-6xl font-medium tracking-tighter mb-6 leading-none">
+              </motion.div>
+              <motion.h1 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.1 }}
+                className="text-4xl md:text-6xl font-medium tracking-tighter mb-6 leading-none text-white"
+              >
                 {step === 1 ? 'Locate Enterprise.' : 'Verify Assets.'}
-              </h1>
-              <p className="text-lg md:text-xl font-sans leading-relaxed text-zinc-600">
+              </motion.h1>
+              <motion.p 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="text-lg md:text-xl font-sans leading-relaxed text-zinc-300"
+              >
                 {step === 1 
                   ? 'Identify your trade business within the regional infrastructure database.'
                   : 'Establish administrative control through structural documentation.'}
-              </p>
+              </motion.p>
             </div>
             
             <div className="shrink-0">
-              <div className="font-mono text-xs font-bold tracking-[0.2em] text-zinc-500 border border-zinc-200 bg-white rounded-full px-6 py-2 uppercase shadow-sm">
-                Step <span className="text-zinc-900">0{step}</span> / 02
+              <div className="font-mono text-xs font-bold tracking-[0.2em] text-zinc-400 border border-white/10 bg-white/5 backdrop-blur-sm rounded-full px-6 py-2 uppercase shadow-sm">
+                Step <span className="text-white">0{step}</span> / 02
               </div>
             </div>
           </div>
