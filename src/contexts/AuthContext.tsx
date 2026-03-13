@@ -276,7 +276,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setError(null);
 
-      const safeRedirectPath = redirectPath.startsWith('/') ? redirectPath : '/account';
+      const candidateUrl = new URL(redirectPath, window.location.origin);
+      const isSafeInternalPath =
+        redirectPath.startsWith('/') &&
+        !redirectPath.startsWith('//') &&
+        candidateUrl.origin === window.location.origin;
+      const safeRedirectPath = isSafeInternalPath
+        ? `${candidateUrl.pathname}${candidateUrl.search}${candidateUrl.hash}`
+        : '/account';
       const emailRedirectTo = new URL(safeRedirectPath, window.location.origin).toString();
       const { error: magicLinkError } = await supabase.auth.signInWithOtp({
         email: email.trim().toLowerCase(),

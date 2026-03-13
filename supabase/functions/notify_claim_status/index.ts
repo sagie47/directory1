@@ -2,9 +2,25 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const resendApiKey = Deno.env.get('RESEND_API_KEY');
+const webhookSecret = Deno.env.get('WEBHOOK_SECRET');
+
+function escapeHtml(input: string): string {
+  return input
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
 
 serve(async (req) => {
   try {
+    // Authenticate webhook origin
+    const signature = req.headers.get('x-webhook-signature');
+    if (webhookSecret && signature !== webhookSecret) {
+      return new Response(null, { status: 401 });
+    }
+
     const payload = await req.json();
     const { record, old_record } = payload;
 
@@ -21,11 +37,6 @@ serve(async (req) => {
       return new Response(JSON.stringify({ message: 'Ignored: Status did not change to a terminal state' }), { status: 200 });
     }
 
-    // Prevent duplicate sends
-    if (record.notification_sent_at) {
-      return new Response(JSON.stringify({ message: 'Ignored: Notification already sent' }), { status: 200 });
-    }
-
     // Connect to Supabase to mark the notification as sent
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -35,6 +46,23 @@ serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Atomic claim to prevent race conditions
+    const { data: claimResult, error: claimError } = await supabase
+      .from('business_claims')
+      .update({ notification_sent_at: new Date().toISOString() })
+      .eq('id', record.id)
+      .is('notification_sent_at', null)
+      .select('id');
+
+    if (claimError) {
+      console.error('Failed to claim notification:', claimError);
+    }
+
+    // If no row was updated, another worker already claimed this
+    if (!claimResult || claimResult.length === 0) {
+      return new Response(JSON.stringify({ message: 'Ignored: Notification already processed' }), { status: 200 });
+    }
 
     let emailSubject = '';
     let emailHtml = '';
@@ -52,7 +80,7 @@ serve(async (req) => {
       emailHtml = `
         <h2>Claim Status Update</h2>
         <p>Unfortunately, your request to claim the business has been <strong>rejected</strong>.</p>
-        ${record.rejection_reason ? `<p><strong>Reason provided:</strong> ${record.rejection_reason}</p>` : ''}
+        ${record.rejection_reason ? `<p><strong>Reason provided:</strong> ${escapeHtml(record.rejection_reason)}</p>` : ''}
         <p>If you believe this is an error, please reach out to our support team.</p>
       `;
     }
@@ -78,17 +106,9 @@ serve(async (req) => {
         throw new Error(`Resend Error: ${errText}`);
       }
     } else {
-      console.log('RESEND_API_KEY is not set. Simulating email send:', { to: record.claimant_email, subject: emailSubject });
-    }
-
-    // Mark as sent
-    const { error: updateError } = await supabase
-      .from('business_claims')
-      .update({ notification_sent_at: new Date().toISOString() })
-      .eq('id', record.id);
-
-    if (updateError) {
-      console.error('Failed to update notification_sent_at:', updateError);
+      console.log('RESEND_API_KEY is not set. Skipping email send (dry-run mode):', { to: record.claimant_email, subject: emailSubject });
+      // Don't mark as sent in dry-run mode
+      return new Response(JSON.stringify({ success: true, message: 'Dry-run: Notification skipped' }), { status: 200 });
     }
 
     return new Response(JSON.stringify({ success: true, message: 'Notification sent successfully' }), { status: 200 });

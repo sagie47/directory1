@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Activity, Clock, CheckCircle, XCircle, AlertCircle, ArrowRight, Check } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -29,6 +29,10 @@ export default function ClaimStatusPage() {
   const [loading, setLoading] = useState(true);
   const claimsAvailable = Boolean(supabase && isSupabaseConfigured());
   const viewedRecommendationKeys = useRef<Set<string>>(new Set());
+
+  const businessesById = useMemo(() => {
+    return new Map(businesses.map((b) => [b.id, b]));
+  }, [businesses]);
 
   useEffect(() => {
     trackEvent('claim_status_viewed');
@@ -65,7 +69,7 @@ export default function ClaimStatusPage() {
     }
 
     for (const claim of claims) {
-      const business = businesses.find((entry) => entry.id === claim.business_id);
+      const business = businessesById.get(claim.business_id);
       const recommendation = getOwnerRecommendation({
         business,
         claimStatus: claim.status,
@@ -194,7 +198,7 @@ export default function ClaimStatusPage() {
           ) : (
             <div className="space-y-4">
               {claims.map((claim) => {
-                const business = businesses.find((entry) => entry.id === claim.business_id);
+                const business = businessesById.get(claim.business_id);
                 const recommendation = getOwnerRecommendation({
                   business,
                   claimStatus: claim.status,
@@ -207,7 +211,7 @@ export default function ClaimStatusPage() {
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
-                      <h3 className="font-medium text-zinc-900">{business?.name || claim.business_id}</h3>
+                      <h3 className="font-medium text-zinc-900">{business?.name ?? claim.business_id}</h3>
                       <p className="text-sm text-zinc-500 mt-1">
                         Submitted on {new Date(claim.created_at).toLocaleDateString()}
                       </p>

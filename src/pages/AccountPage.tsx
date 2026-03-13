@@ -89,12 +89,17 @@ export default function AccountPage() {
       }
       
       // Clear local session since the account is gone
-      await supabase.auth.signOut();
+      const { error: signOutError } = await supabase.auth.signOut();
+      if (signOutError) {
+        throw signOutError;
+      }
+      setShowDeleteConfirm(false);
     } catch (err) {
       console.error('Failed to delete account:', err);
       setError(err instanceof Error ? err.message : 'Unable to delete account right now.');
-      setDeleting(false);
       setShowDeleteConfirm(false);
+    } finally {
+      setDeleting(false);
     }
   };
 

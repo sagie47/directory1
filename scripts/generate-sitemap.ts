@@ -3,7 +3,7 @@ import path from 'node:path';
 
 import { businesses, cities } from '../src/data';
 
-const SITE_URL = (process.env.SITE_URL || process.env.VITE_SITE_URL || 'http://okanagantradesdirectory.com').replace(/\/$/, '');
+const SITE_URL = (process.env.SITE_URL || process.env.VITE_SITE_URL || 'https://okanagantradesdirectory.com').replace(/\/$/, '');
 
 const ROOT_ROUTES = [
   '/',

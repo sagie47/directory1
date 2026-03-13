@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-route
 import { AnimatePresence } from 'motion/react';
 import Layout from './components/Layout';
 import AuthGuard from './components/AuthGuard';
+import AdminGuard from './components/AdminGuard';
 import { DirectoryDataProvider } from './directory-data';
 
 const Home = lazy(() => import('./pages/Home'));
@@ -33,7 +34,6 @@ const CallRequestedPage = lazy(() => import('./pages/CallRequestedPage'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const UpdatePasswordPage = lazy(() => import('./pages/UpdatePasswordPage'));
 const AdminClaimsPage = lazy(() => import('./pages/AdminClaimsPage'));
-import AdminGuard from './components/AdminGuard';
 
 function ScrollToTop() {
   const location = useLocation();

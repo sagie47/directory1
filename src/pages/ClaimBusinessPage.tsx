@@ -90,7 +90,7 @@ export default function ClaimBusinessPage() {
   const businessBgSrc = preferSupabaseImage('job-construction-scaled.jpg', businessBg);
 
   return (
-    <div className="bg-[#FAFAFA] min-h-screen text-zinc-900 font-sans selection:bg-indigo-200 selection:text-indigo-900">
+    <main className="bg-[#FAFAFA] min-h-screen text-zinc-900 font-sans selection:bg-indigo-200 selection:text-indigo-900">
       <Seo
         title="Claim Your Business Profile | Okanagan Trades"
         description="Claim your trade business profile, verify ownership, and manage how your business appears in the Okanagan directory."
@@ -373,6 +373,6 @@ export default function ClaimBusinessPage() {
           </div>
         </div>
       </section>
-    </div>
+    </main>
   );
 }

@@ -84,7 +84,7 @@ const ACTIVE_CITY_IDS = new Set([
   'armstrong',
 ]);
 
-function isMissingOverridesTable(error: { code?: string; message?: string } | null | undefined) {
+function isMissingTableError(error: { code?: string; message?: string } | null | undefined) {
   if (!error) {
     return false;
   }
@@ -289,8 +289,8 @@ async function fetchDirectoryData(): Promise<DirectoryData> {
     supabase.from('verified_businesses').select('business_id'),
   ]);
 
-  const overridesError = isMissingOverridesTable(overrideRowsResult.error) ? null : overrideRowsResult.error;
-  const verifiedError = isMissingOverridesTable(verifiedResult.error) ? null : verifiedResult.error;
+  const overridesError = isMissingTableError(overrideRowsResult.error) ? null : overrideRowsResult.error;
+  const verifiedError = isMissingTableError(verifiedResult.error) ? null : verifiedResult.error;
   const firstError = citiesResult.error ?? groupResult.error ?? categoriesResult.error ?? overridesError ?? verifiedError;
   if (firstError) {
     throw new Error(firstError.message);

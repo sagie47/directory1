@@ -5,6 +5,8 @@ import { motion } from 'motion/react';
 import { useAuth } from '../contexts/AuthContext';
 import Seo from '../components/Seo';
 
+const REDIRECT_DELAY_MS = 2000;
+
 export default function UpdatePasswordPage() {
   const { updatePassword, session, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -46,7 +48,7 @@ export default function UpdatePasswordPage() {
       setStatus('success');
       setTimeout(() => {
         navigate('/account', { replace: true });
-      }, 2000);
+      }, REDIRECT_DELAY_MS);
     }
   };
 

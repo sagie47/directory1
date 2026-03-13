@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: http://okanagantradesdirectory.com/sitemap.xml
+Sitemap: https://okanagantradesdirectory.com/sitemap.xml

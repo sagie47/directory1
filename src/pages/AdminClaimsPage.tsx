@@ -24,24 +24,30 @@ export default function AdminClaimsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState<Record<string, string>>({});
+  const [claimErrors, setClaimErrors] = useState<Record<string, string>>({});
   const [processingId, setProcessingId] = useState<string | null>(null);
 
   const fetchClaims = async () => {
     if (!supabase) return;
     
     setLoading(true);
-    const { data, error: fetchError } = await supabase
-      .from('business_claims')
-      .select('*')
-      .eq('status', 'pending')
-      .order('created_at', { ascending: true });
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('business_claims')
+        .select('*')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: true });
 
-    if (fetchError) {
-      setError(fetchError.message);
-    } else {
-      setClaims(data || []);
+      if (fetchError) {
+        setError(fetchError.message);
+      } else {
+        setClaims(data || []);
+      }
+    } catch (e: any) {
+      setError(e.message || 'An unexpected error occurred.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -53,9 +59,11 @@ export default function AdminClaimsPage() {
     
     const reason = status === 'rejected' ? rejectionReason[claimId] : null;
     if (status === 'rejected' && (!reason || reason.trim() === '')) {
-      alert('Please provide a rejection reason.');
+      setClaimErrors({ ...claimErrors, [claimId]: 'Please provide a rejection reason.' });
       return;
     }
+    
+    setClaimErrors({ ...claimErrors, [claimId]: '' });
 
     setProcessingId(claimId);
     setError(null);
@@ -164,6 +172,11 @@ export default function AdminClaimsPage() {
                         onChange={(e) => setRejectionReason({ ...rejectionReason, [claim.id]: e.target.value })}
                         className="w-full border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-900 outline-none focus:border-red-400 focus:bg-white rounded-md transition-colors"
                       />
+                      {claimErrors[claim.id] && (
+                        <p className="text-xs text-red-600 font-medium px-1">
+                          {claimErrors[claim.id]}
+                        </p>
+                      )}
                       <button
                         onClick={() => handleAction(claim.id, 'rejected')}
                         disabled={processingId === claim.id}
