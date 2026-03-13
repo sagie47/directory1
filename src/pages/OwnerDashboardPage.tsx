@@ -233,10 +233,10 @@ export default function OwnerDashboardPage() {
 
   if (authLoading || directoryLoading || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA]">
+      <div className="min-h-screen flex items-center justify-center bg-zinc-900">
         <div className="animate-pulse flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-2 border-zinc-300 border-t-zinc-900 rounded-full"></div>
-          <p className="text-zinc-500 text-sm">Loading...</p>
+          <div className="w-8 h-8 border-2 border-zinc-600 border-t-orange-500 rounded-full"></div>
+          <p className="text-zinc-400 text-sm font-mono text-xs uppercase tracking-widest">Loading...</p>
         </div>
       </div>
     );
@@ -249,15 +249,27 @@ export default function OwnerDashboardPage() {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.5 }}
-        className="bg-[#FAFAFA] min-h-screen py-24 text-zinc-900 font-sans relative"
+        className="bg-zinc-900 min-h-screen text-white font-sans relative"
       >
-        <div className="absolute inset-0 z-0 opacity-50 pointer-events-none" style={{ backgroundImage: 'linear-gradient(to right, #f4f4f5 1px, transparent 1px), linear-gradient(to bottom, #f4f4f5 1px, transparent 1px)', backgroundSize: '4rem 4rem' }}></div>
+        <div className="absolute inset-0 z-0">
+          <motion.img 
+            initial={{ scale: 1.1, opacity: 0 }}
+            animate={{ scale: 1, opacity: 0.4 }}
+            transition={{ duration: 1.5, ease: "easeOut" }}
+            src={businessBgSrc}
+            alt="" 
+            className="w-full h-full object-cover"
+            onError={createImageFallbackHandler(businessBg)}
+          />
+          <div className="absolute inset-0 z-10 bg-gradient-to-r from-zinc-950/90 via-zinc-900/50 to-transparent"></div>
+          <div className="absolute inset-0 z-10 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent"></div>
+        </div>
 
-        <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }} className="bg-white border border-zinc-200 p-8 md:p-12 shadow-sm rounded-sm text-center">
+        <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pt-32">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }} className="bg-white/10 backdrop-blur-md border border-white/20 p-8 md:p-12 shadow-sm rounded-sm text-center">
             <AlertCircle className="w-12 h-12 text-amber-500 mx-auto mb-4" strokeWidth={1.5} />
             <h2 className="text-2xl font-medium tracking-tight mb-4">Dashboard Unavailable</h2>
-            <p className="text-zinc-500">
+            <p className="text-zinc-400">
               The owner dashboard requires a configured Supabase environment.
             </p>
           </motion.div>
@@ -273,20 +285,32 @@ export default function OwnerDashboardPage() {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.5 }}
-        className="bg-[#FAFAFA] min-h-screen py-24 text-zinc-900 font-sans relative"
+        className="bg-zinc-900 min-h-screen text-white font-sans relative"
       >
-        <div className="absolute inset-0 z-0 opacity-50 pointer-events-none" style={{ backgroundImage: 'linear-gradient(to right, #f4f4f5 1px, transparent 1px), linear-gradient(to bottom, #f4f4f5 1px, transparent 1px)', backgroundSize: '4rem 4rem' }}></div>
+        <div className="absolute inset-0 z-0">
+          <motion.img 
+            initial={{ scale: 1.1, opacity: 0 }}
+            animate={{ scale: 1, opacity: 0.4 }}
+            transition={{ duration: 1.5, ease: "easeOut" }}
+            src={businessBgSrc}
+            alt="" 
+            className="w-full h-full object-cover"
+            onError={createImageFallbackHandler(businessBg)}
+          />
+          <div className="absolute inset-0 z-10 bg-gradient-to-r from-zinc-950/90 via-zinc-900/50 to-transparent"></div>
+          <div className="absolute inset-0 z-10 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent"></div>
+        </div>
 
-        <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }} className="bg-white border border-zinc-200 p-8 md:p-12 shadow-sm rounded-sm text-center">
+        <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pt-32">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }} className="bg-white/10 backdrop-blur-md border border-white/20 p-8 md:p-12 shadow-sm rounded-sm text-center">
             <AlertCircle className="w-12 h-12 text-amber-500 mx-auto mb-4" strokeWidth={1.5} />
             <h2 className="text-2xl font-medium tracking-tight mb-4">No Approved Claims</h2>
-            <p className="text-zinc-500 mb-6">
+            <p className="text-zinc-400 mb-6">
               You don't have an approved business claim. Claim a business to access the owner dashboard.
             </p>
             <Link 
               to="/claim" 
-              className="inline-block bg-zinc-900 text-white px-6 py-3 font-sans text-sm font-medium hover:bg-zinc-800 transition-colors rounded-sm"
+              className="inline-block bg-zinc-900 text-white px-6 py-3 font-sans text-sm font-medium hover:bg-orange-500 transition-colors rounded-sm"
             >
               Claim a Business
             </Link>
