@@ -337,6 +337,11 @@ begin
     raise exception 'Invalid status';
   end if;
 
+  if p_status = 'rejected'
+     and nullif(btrim(coalesce(p_rejection_reason, '')), '') is null then
+    raise exception 'Rejection reason required';
+  end if;
+
   update public.business_claims
   set status = p_status,
       reviewed_by = auth.uid(),
@@ -347,6 +352,10 @@ begin
       end
   where id = p_claim_id
     and status = 'pending';
+
+  if not found then
+    raise exception 'Claim not found or no longer pending';
+  end if;
 end;
 $$;
 
