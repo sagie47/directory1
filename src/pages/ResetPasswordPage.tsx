@@ -53,7 +53,7 @@ export default function ResetPasswordPage() {
         className="w-full max-w-md bg-white border border-zinc-200 p-10 sm:p-12 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] rounded-sm relative z-10"
       >
         <div className="mb-10">
-          <Link to="/login" className="inline-flex items-center gap-2 text-zinc-500 hover:text-zinc-900 transition-colors text-sm font-medium mb-8 group">
+          <Link to="/claim" className="inline-flex items-center gap-2 text-zinc-500 hover:text-zinc-900 transition-colors text-sm font-medium mb-8 group">
             <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" strokeWidth={2} />
             Back to login
           </Link>

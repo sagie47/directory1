@@ -132,7 +132,7 @@ create table if not exists public.business_overrides (
   service_areas text[],
   hours jsonb,
   photos text[],
-  updated_by uuid not null references public.profiles (id),
+  updated_by uuid not null references public.profiles (id) on delete cascade,
   updated_at timestamptz not null default now()
 );
 
