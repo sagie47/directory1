@@ -117,7 +117,44 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
     try {
       if (!claimsAvailable || !supabase) {
         setError('Claim submission is not available in this environment.');
+        setSubmitting(false);
         return;
+      }
+
+      const { data: existingClaims } = await supabase
+        .from('business_claims')
+        .select('id, status')
+        .eq('user_id', user.id)
+        .eq('business_id', selectedBusiness.id)
+        .in('status', ['pending', 'approved'])
+        .maybeSingle();
+
+      if (existingClaims) {
+        if (existingClaims.status === 'pending') {
+          setError('You already have a pending claim for this business.');
+          setSubmitting(false);
+          return;
+        }
+        if (existingClaims.status === 'approved') {
+          setError('You have already claimed this business.');
+          setSubmitting(false);
+          return;
+        }
+      }
+
+      const { data: rejectedClaim } = await supabase
+        .from('business_claims')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('business_id', selectedBusiness.id)
+        .eq('status', 'rejected')
+        .maybeSingle();
+
+      if (rejectedClaim) {
+        await supabase
+          .from('business_claims')
+          .delete()
+          .eq('id', rejectedClaim.id);
       }
 
       const { error: insertError } = await supabase
@@ -138,6 +175,7 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
         } else {
           setError(insertError.message);
         }
+        setSubmitting(false);
         return;
       }
 

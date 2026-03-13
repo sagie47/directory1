@@ -27,6 +27,7 @@ export default function ClaimStatusPage() {
   const { businesses, isLoading: directoryLoading } = useDirectoryData();
   const [claims, setClaims] = useState<BusinessClaim[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const claimsAvailable = Boolean(supabase && isSupabaseConfigured());
   const viewedRecommendationKeys = useRef<Set<string>>(new Set());
 
@@ -46,16 +47,23 @@ export default function ClaimStatusPage() {
         return;
       }
 
-      const { data, error } = await supabase
-        .from('business_claims')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+      try {
+        const { data, error } = await supabase
+          .from('business_claims')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
 
-      if (!error && data) {
-        setClaims(data as BusinessClaim[]);
+        if (error) {
+          setError(error.message);
+        } else if (data) {
+          setClaims(data as BusinessClaim[]);
+        }
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Failed to load claims');
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     if (user) {
@@ -133,6 +141,30 @@ export default function ClaimStatusPage() {
           <p className="text-zinc-500 text-sm">Loading...</p>
         </div>
       </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="bg-[#FAFAFA] min-h-screen py-24 text-zinc-900 font-sans relative"
+      >
+        <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-red-50 border border-red-200 p-6 rounded-sm text-center">
+            <AlertCircle className="w-10 h-10 text-red-500 mx-auto mb-3" strokeWidth={1.5} />
+            <h2 className="text-xl font-medium tracking-tight mb-2 text-red-900">Error Loading Claims</h2>
+            <p className="text-red-700 text-sm mb-4">{error}</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="text-sm font-medium text-red-600 hover:text-red-700 underline underline-offset-2"
+            >
+              Try again
+            </button>
+          </motion.div>
+        </div>
+      </motion.div>
     );
   }
 
@@ -345,6 +377,23 @@ export default function ClaimStatusPage() {
                           {recommendation.ctaLabel} <ArrowRight className="h-4 w-4" />
                         </Link>
                       )}
+                    </div>
+                  )}
+
+                  {claim.status === 'revoked' && (
+                    <div className="mt-4 pt-4 border-t border-zinc-100">
+                      <p className="text-sm text-red-600 mb-3">
+                        Your claim has been revoked. This may mean the business ownership has been transferred or there was a violation of our terms.
+                      </p>
+                      <p className="text-sm text-zinc-600 mb-4">
+                        Please contact support if you believe this is an error.
+                      </p>
+                      <Link
+                        to="/contact"
+                        className="inline-flex items-center gap-2 text-sm font-medium text-zinc-900 hover:text-orange-600 transition-colors"
+                      >
+                        Contact Support <ArrowRight className="h-4 w-4" />
+                      </Link>
                     </div>
                   )}
                 </div>

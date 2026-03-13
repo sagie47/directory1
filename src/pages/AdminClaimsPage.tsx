@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { motion } from 'motion/react';
 import { CheckCircle, XCircle, ShieldCheck, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -21,6 +21,7 @@ type Claim = {
 export default function AdminClaimsPage() {
   const { profile } = useAuth();
   const [claims, setClaims] = useState<Claim[]>([]);
+  const [businessNames, setBusinessNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState<Record<string, string>>({});
@@ -32,16 +33,29 @@ export default function AdminClaimsPage() {
     
     setLoading(true);
     try {
-      const { data, error: fetchError } = await supabase
-        .from('business_claims')
-        .select('*')
-        .eq('status', 'pending')
-        .order('created_at', { ascending: true });
+      const [claimsResult, businessesResult] = await Promise.all([
+        supabase
+          .from('business_claims')
+          .select('*')
+          .eq('status', 'pending')
+          .order('created_at', { ascending: true }),
+        supabase
+          .from('businesses')
+          .select('id, name')
+      ]);
 
-      if (fetchError) {
-        setError(fetchError.message);
+      if (claimsResult.error) {
+        setError(claimsResult.error.message);
       } else {
-        setClaims(data || []);
+        setClaims(claimsResult.data || []);
+      }
+
+      if (businessesResult.data) {
+        const nameMap: Record<string, string> = {};
+        businessesResult.data.forEach((b) => {
+          nameMap[b.id] = b.name;
+        });
+        setBusinessNames(nameMap);
       }
     } catch (e: any) {
       setError(e.message || 'An unexpected error occurred.');
@@ -126,8 +140,9 @@ export default function AdminClaimsPage() {
                 <div className="grid md:grid-cols-[2fr_1fr] gap-6">
                   <div>
                     <div className="mb-4">
-                      <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-orange-500 mb-1">Target Business ID</p>
-                      <p className="font-sans font-medium text-zinc-900">{claim.business_id}</p>
+                      <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-orange-500 mb-1">Target Business</p>
+                      <p className="font-sans font-medium text-zinc-900 text-lg">{businessNames[claim.business_id] || claim.business_id}</p>
+                      <p className="font-mono text-[10px] text-zinc-400 mt-1">ID: {claim.business_id}</p>
                     </div>
                     <div className="grid grid-cols-2 gap-4 mb-4">
                       <div>

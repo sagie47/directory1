@@ -117,7 +117,7 @@ create table if not exists public.business_claims (
   claimant_phone text,
   relationship_to_business text not null,
   message text,
-  reviewed_by uuid references public.profiles (id),
+  reviewed_by uuid references public.profiles (id) on delete set null,
   reviewed_at timestamptz,
   rejection_reason text,
   notification_sent_at timestamptz,
