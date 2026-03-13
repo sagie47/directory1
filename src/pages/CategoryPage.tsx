@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { MapPin, ArrowRight, Search } from 'lucide-react';
 import * as Icons from 'lucide-react';
@@ -49,23 +49,21 @@ export default function CategoryPage() {
     return <Navigate to="/" replace />;
   }
 
-  const categoryBusinesses = useMemo(() => {
-    const filtered = businesses.filter(
-      (business) => business.categoryId === categoryId && businessServesCity(business, city.id, city.name)
-    ) as Business[];
+  const filteredBusinesses = businesses.filter(
+    (business) => business.categoryId === categoryId && businessServesCity(business, city.id, city.name)
+  ) as Business[];
 
-    return [...filtered].sort((left, right) => {
-      if (sortBy === 'Most Reviewed') {
-        return (right.reviewCount ?? 0) - (left.reviewCount ?? 0);
-      }
+  const categoryBusinesses = [...filteredBusinesses].sort((left, right) => {
+    if (sortBy === 'Most Reviewed') {
+      return (right.reviewCount ?? 0) - (left.reviewCount ?? 0);
+    }
 
-      if (sortBy === 'A-Z') {
-        return left.name.localeCompare(right.name);
-      }
+    if (sortBy === 'A-Z') {
+      return left.name.localeCompare(right.name);
+    }
 
-      return (right.rating ?? 0) - (left.rating ?? 0) || (right.reviewCount ?? 0) - (left.reviewCount ?? 0);
-    });
-  }, [businesses, categoryId, cityId, sortBy]);
+    return (right.rating ?? 0) - (left.rating ?? 0) || (right.reviewCount ?? 0) - (left.reviewCount ?? 0);
+  });
 
   const IconComponent = (Icons as any)[category.icon] || Icons.Wrench;
   const heroImage = getCategoryHeroImage({
