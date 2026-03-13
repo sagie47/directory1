@@ -71,29 +71,34 @@ export default function AdminClaimsPage() {
   const handleAction = async (claimId: string, status: 'approved' | 'rejected') => {
     if (!supabase || !user) return;
     
+    if (processingId) return;
+    
     const reason = status === 'rejected' ? rejectionReason[claimId] : null;
     if (status === 'rejected' && (!reason || reason.trim() === '')) {
-      setClaimErrors({ ...claimErrors, [claimId]: 'Please provide a rejection reason.' });
+      setClaimErrors(prev => ({ ...prev, [claimId]: 'Please provide a rejection reason.' }));
       return;
     }
     
-    setClaimErrors({ ...claimErrors, [claimId]: '' });
+    setClaimErrors(prev => ({ ...prev, [claimId]: '' }));
 
     setProcessingId(claimId);
     setError(null);
 
-    const { error: updateError } = await supabase.rpc('review_business_claim', {
-      p_claim_id: claimId,
-      p_status: status,
-      p_rejection_reason: reason,
-    });
+    try {
+      const { error: updateError } = await supabase.rpc('review_business_claim', {
+        p_claim_id: claimId,
+        p_status: status,
+        p_rejection_reason: reason,
+      });
 
-    if (updateError) {
-      setError(updateError.message);
-    } else {
-      setClaims(claims.filter(c => c.id !== claimId));
+      if (updateError) {
+        setError(updateError.message);
+      } else {
+        setClaims(prev => prev.filter(c => c.id !== claimId));
+      }
+    } finally {
+      setProcessingId(null);
     }
-    setProcessingId(null);
   };
 
   if (loading) {
