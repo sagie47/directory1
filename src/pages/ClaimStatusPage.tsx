@@ -328,31 +328,21 @@ export default function ClaimStatusPage() {
                   )}
                   
                   {claim.status === 'approved' && (
-                    <div className="mt-4 pt-4 border-t border-zinc-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="mt-4 pt-4 border-t border-zinc-100">
+                      <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                        <div className="flex items-center gap-2 text-green-700 font-medium mb-1">
+                          <CheckCircle className="h-5 w-5" />
+                          <span>Your claim has been approved!</span>
+                        </div>
+                        <p className="text-sm text-green-600">You now have access to manage this business listing.</p>
+                      </div>
                       <Link 
                         to="/owner/dashboard" 
-                        className="inline-block bg-zinc-900 text-white px-4 py-2 text-sm font-medium hover:bg-zinc-800 transition-colors rounded-sm"
+                        className="inline-flex items-center justify-center gap-2 w-full sm:w-auto bg-zinc-900 text-white px-6 py-3 text-sm font-medium hover:bg-zinc-800 transition-colors rounded-sm"
                       >
-                        Go to Dashboard
+                        Go to Owner Dashboard
+                        <ArrowRight className="h-4 w-4" />
                       </Link>
-                      {recommendation.href && (
-                        <div className="text-sm text-zinc-500">
-                          <span className="mr-2">Next step:</span>
-                          <Link 
-                            to={recommendation.href}
-                            onClick={() => trackEvent('claim_status_recommendation_clicked', {
-                              claimId: claim.id,
-                              businessId: claim.business_id,
-                              claimStatus: claim.status,
-                              recommendationType: recommendation.type,
-                              ctaTarget: recommendation.href,
-                            })}
-                            className="font-medium text-zinc-900 hover:text-orange-600 underline underline-offset-4 decoration-zinc-300 hover:decoration-orange-600 transition-all"
-                          >
-                            {recommendation.title}
-                          </Link>
-                        </div>
-                      )}
                     </div>
                   )}
                   

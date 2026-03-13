@@ -45,6 +45,8 @@ function hasBusinessHours(hours: BusinessHours) {
 export default function OwnerDashboardPage() {
   const { user, loading: authLoading } = useAuth();
   const { businesses, cities, isLoading: directoryLoading, refresh } = useDirectoryData();
+  const [approvedClaims, setApprovedClaims] = useState<BusinessClaim[]>([]);
+  const [selectedClaimId, setSelectedClaimId] = useState<string | null>(null);
   const [approvedClaim, setApprovedClaim] = useState<BusinessClaim | null>(null);
   const [business, setBusiness] = useState<Business | null>(null);
   const [loading, setLoading] = useState(true);
@@ -109,47 +111,23 @@ export default function OwnerDashboardPage() {
         .select('*')
         .eq('user_id', user.id)
         .eq('status', 'approved')
-        .order('updated_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .order('updated_at', { ascending: false });
 
-      if (!claimsData) {
+      if (!claimsData || claimsData.length === 0) {
         setLoading(false);
         return;
       }
 
-      setApprovedClaim(claimsData as BusinessClaim);
-
-      const businessData = businesses.find(
-        b => b.id === (claimsData as BusinessClaim).business_id
-      );
-      setBusiness(businessData || null);
-
-      const { data: overrideData } = await supabase
-        .from('business_overrides')
-        .select('*')
-        .eq('business_id', (claimsData as BusinessClaim).business_id)
-        .maybeSingle();
-
-      if (overrideData) {
-        const o = overrideData as BusinessOverride;
-        setFormData({
-          description: o.description || businessData?.description || '',
-          phone: o.contact?.phone || businessData?.contact?.phone || '',
-          website: o.contact?.website || businessData?.contact?.website || '',
-          email: o.contact?.email || businessData?.contact?.email || '',
-          serviceAreas: o.service_areas?.join(', ') || businessData?.serviceAreas?.join(', ') || '',
-          hours: normalizeHours(o.hours || businessData?.hours),
-        });
+      setApprovedClaims(claimsData as BusinessClaim[]);
+      
+      if (claimsData.length === 1) {
+        setSelectedClaimId(claimsData[0].id);
+        setApprovedClaim(claimsData[0] as BusinessClaim);
+        loadBusinessForClaim(claimsData[0] as BusinessClaim);
       } else {
-        setFormData({
-          description: businessData?.description || '',
-          phone: businessData?.contact?.phone || '',
-          website: businessData?.contact?.website || '',
-          email: businessData?.contact?.email || '',
-          serviceAreas: businessData?.serviceAreas?.join(', ') || '',
-          hours: normalizeHours(businessData?.hours),
-        });
+        setSelectedClaimId(null);
+        setApprovedClaim(null);
+        setBusiness(null);
       }
 
       setLoading(false);
@@ -157,6 +135,51 @@ export default function OwnerDashboardPage() {
 
     fetchData();
   }, [businesses, directoryLoading, ownerToolsAvailable, user]);
+
+  const loadBusinessForClaim = async (claim: BusinessClaim) => {
+    if (!supabase) return;
+
+    const businessData = businesses.find(b => b.id === claim.business_id);
+    setBusiness(businessData || null);
+
+    const { data: overrideData } = await supabase
+      .from('business_overrides')
+      .select('*')
+      .eq('business_id', claim.business_id)
+      .maybeSingle();
+
+    if (overrideData) {
+      const o = overrideData as BusinessOverride;
+      setFormData({
+        description: o.description || businessData?.description || '',
+        phone: o.contact?.phone || businessData?.contact?.phone || '',
+        website: o.contact?.website || businessData?.contact?.website || '',
+        email: o.contact?.email || businessData?.contact?.email || '',
+        serviceAreas: o.service_areas?.join(', ') || businessData?.serviceAreas?.join(', ') || '',
+        hours: normalizeHours(o.hours || businessData?.hours),
+      });
+    } else {
+      setFormData({
+        description: businessData?.description || '',
+        phone: businessData?.contact?.phone || '',
+        website: businessData?.contact?.website || '',
+        email: businessData?.contact?.email || '',
+        serviceAreas: businessData?.serviceAreas?.join(', ') || '',
+        hours: normalizeHours(businessData?.hours),
+      });
+    }
+
+    setLoading(false);
+  };
+
+  const handleSelectClaim = (claimId: string) => {
+    const claim = approvedClaims.find(c => c.id === claimId);
+    if (claim) {
+      setSelectedClaimId(claimId);
+      setApprovedClaim(claim);
+      loadBusinessForClaim(claim);
+    }
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -289,6 +312,26 @@ export default function OwnerDashboardPage() {
             <div className="inline-flex items-center gap-2 border border-zinc-200 bg-white text-zinc-600 px-3 py-1.5 font-mono text-[10px] tracking-[0.15em] mb-4 uppercase rounded-sm shadow-sm">
               <Activity className="h-3.5 w-3.5 text-zinc-400" strokeWidth={1.5} /> Owner Dashboard
             </div>
+            {approvedClaims.length > 1 && (
+              <div className="mb-4">
+                <label className="block text-xs font-medium text-zinc-500 mb-2">Select business to manage:</label>
+                <select
+                  value={selectedClaimId || ''}
+                  onChange={(e) => handleSelectClaim(e.target.value)}
+                  className="border border-zinc-300 rounded-md px-3 py-2 text-sm font-medium text-zinc-900 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                >
+                  <option value="" disabled>Select a business...</option>
+                  {approvedClaims.map((claim) => {
+                    const b = businesses.find(bus => bus.id === claim.business_id);
+                    return (
+                      <option key={claim.id} value={claim.id}>
+                        {b?.name || claim.business_id}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+            )}
             <h1 className="text-3xl md:text-4xl font-medium tracking-tight">
               {business.name}
             </h1>

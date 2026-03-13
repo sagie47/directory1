@@ -19,6 +19,8 @@ import Breadcrumbs from '../components/Breadcrumbs';
 import GalleryLightbox from '../components/GalleryLightbox';
 import Seo from '../components/Seo';
 import { useDirectoryData } from '../directory-data';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 const INITIAL_MOBILE_REVIEW_COUNT = 1;
 const MOBILE_REVIEW_BATCH_SIZE = 2;
@@ -26,6 +28,8 @@ const MOBILE_REVIEW_BATCH_SIZE = 2;
 export default function BusinessPage() {
   const { cityId, categoryId, businessId } = useParams<{ cityId: string, categoryId: string, businessId: string }>();
   const { cities, categories, businesses, isLoading, verifiedBusinessIds } = useDirectoryData();
+  const { user } = useAuth();
+  const [isOwner, setIsOwner] = useState(false);
   
   const city = cities.find(c => c.id === cityId);
   const category = categories.find(c => c.id === categoryId);
@@ -37,6 +41,27 @@ export default function BusinessPage() {
   );
 
   const isVerified = business ? verifiedBusinessIds.has(business.id) : false;
+
+  useEffect(() => {
+    const checkOwnership = async () => {
+      if (!business || !user || !supabase || !isSupabaseConfigured()) {
+        setIsOwner(false);
+        return;
+      }
+
+      const { data } = await supabase
+        .from('business_claims')
+        .select('id')
+        .eq('business_id', business.id)
+        .eq('user_id', user.id)
+        .eq('status', 'approved')
+        .maybeSingle();
+
+      setIsOwner(!!data);
+    };
+
+    checkOwnership();
+  }, [business, user]);
 
   if (isLoading && !business) {
     return (
@@ -479,6 +504,7 @@ export default function BusinessPage() {
               </section>
             )}
 
+            {!isVerified && (
             <div className="mt-8 p-8 border border-zinc-200 rounded-sm bg-zinc-50 shadow-sm">
               <div className="bg-white p-6 rounded-xl border border-zinc-200 shadow-sm">
                 <AlertCircle className="w-5 h-5 text-zinc-500 mb-4" />
@@ -496,6 +522,27 @@ export default function BusinessPage() {
                 </div>
               </div>
             </div>
+            )}
+
+            {isVerified && (
+            <div className="mt-8 p-8 border border-orange-200 rounded-sm bg-orange-50 shadow-sm">
+              <div className="bg-white p-6 rounded-xl border border-orange-100 shadow-sm">
+                <CheckCircle className="w-5 h-5 text-orange-500 mb-4" />
+                <h4 className="font-black text-sm text-zinc-900 uppercase tracking-widest mb-2">Verified Business</h4>
+                {isOwner ? (
+                  <>
+                    <p className="text-sm text-zinc-600 mb-6 font-medium leading-relaxed">You are the verified owner of this business. Manage your listing from the owner dashboard.</p>
+                    <Link to="/owner/dashboard" className="inline-flex items-center justify-between w-full bg-orange-500 text-white rounded-lg shadow-sm px-4 py-3 font-sans text-xs font-semibold tracking-wide hover:bg-orange-600 hover:-translate-y-0.5 hover:shadow-md transition-all">
+                      <span>Owner Dashboard</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </Link>
+                  </>
+                ) : (
+                  <p className="text-sm text-zinc-600 font-medium leading-relaxed">This business has been verified as legitimately operated.</p>
+                )}
+              </div>
+            </div>
+            )}
           </div>
         </div>
       </div>
