@@ -220,6 +220,16 @@ for select
 to authenticated
 using (auth.uid() = user_id);
 
+drop policy if exists "claims_delete_rejected_self" on public.business_claims;
+create policy "claims_delete_rejected_self"
+on public.business_claims
+for delete
+to authenticated
+using (
+  auth.uid() = user_id
+  and status in ('rejected', 'revoked')
+);
+
 drop policy if exists "claims_select_admin" on public.business_claims;
 create policy "claims_select_admin"
 on public.business_claims

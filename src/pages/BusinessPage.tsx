@@ -479,6 +479,7 @@ export default function BusinessPage() {
               </section>
             )}
 
+            {!isVerified && (
             <div className="mt-8 p-8 border border-zinc-200 rounded-sm bg-zinc-50 shadow-sm">
               <div className="bg-white p-6 rounded-xl border border-zinc-200 shadow-sm">
                 <AlertCircle className="w-5 h-5 text-zinc-500 mb-4" />
@@ -496,6 +497,21 @@ export default function BusinessPage() {
                 </div>
               </div>
             </div>
+            )}
+
+            {isVerified && (
+            <div className="mt-8 p-8 border border-orange-200 rounded-sm bg-orange-50 shadow-sm">
+              <div className="bg-white p-6 rounded-xl border border-orange-100 shadow-sm">
+                <CheckCircle className="w-5 h-5 text-orange-500 mb-4" />
+                <h4 className="font-black text-sm text-zinc-900 uppercase tracking-widest mb-2">Verified Business</h4>
+                <p className="text-sm text-zinc-600 mb-6 font-medium leading-relaxed">This business has been verified. If you're the owner, you can manage your listing from the owner dashboard.</p>
+                <Link to="/owner/dashboard" className="inline-flex items-center justify-between w-full bg-orange-500 text-white rounded-lg shadow-sm px-4 py-3 font-sans text-xs font-semibold tracking-wide hover:bg-orange-600 hover:-translate-y-0.5 hover:shadow-md transition-all">
+                  <span>Owner Dashboard</span>
+                  <ArrowRight className="w-3 h-3" />
+                </Link>
+              </div>
+            </div>
+            )}
           </div>
         </div>
       </div>
