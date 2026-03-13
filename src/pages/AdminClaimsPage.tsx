@@ -37,29 +37,32 @@ export default function AdminClaimsPage() {
     
     setLoading(true);
     try {
-      const [claimsResult, businessesResult] = await Promise.all([
-        supabase
-          .from('business_claims')
-          .select('*')
-          .eq('status', 'pending')
-          .order('created_at', { ascending: true }),
-        supabase
-          .from('businesses')
-          .select('id, name')
-      ]);
+      const claimsResult = await supabase
+        .from('business_claims')
+        .select('*')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: true });
 
       if (claimsResult.error) {
         setError(claimsResult.error.message);
       } else {
         setClaims(claimsResult.data || []);
-      }
+        
+        if (claimsResult.data && claimsResult.data.length > 0) {
+          const businessIds = [...new Set(claimsResult.data.map(c => c.business_id))];
+          const businessesResult = await supabase
+            .from('businesses')
+            .select('id, name')
+            .in('id', businessIds);
 
-      if (businessesResult.data) {
-        const nameMap: Record<string, string> = {};
-        businessesResult.data.forEach((b) => {
-          nameMap[b.id] = b.name;
-        });
-        setBusinessNames(nameMap);
+          if (businessesResult.data) {
+            const nameMap: Record<string, string> = {};
+            businessesResult.data.forEach((b) => {
+              nameMap[b.id] = b.name;
+            });
+            setBusinessNames(nameMap);
+          }
+        }
       }
     } catch (e: any) {
       setError(e.message || 'An unexpected error occurred.');
