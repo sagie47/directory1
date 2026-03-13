@@ -278,7 +278,8 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
               animate={{ scale: 1, opacity: 0.6 }}
               transition={{ duration: 2, ease: "easeOut" }}
               src={businessBgSrc}
-              alt="Business Background" 
+              alt=""
+              aria-hidden="true"
               className="w-full h-full object-cover"
               onError={createImageFallbackHandler(businessBg)}
             />

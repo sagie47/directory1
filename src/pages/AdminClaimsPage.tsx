@@ -19,7 +19,7 @@ type Claim = {
 };
 
 export default function AdminClaimsPage() {
-  const { profile } = useAuth();
+  const { user } = useAuth();
   const [claims, setClaims] = useState<Claim[]>([]);
   const [businessNames, setBusinessNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -69,7 +69,7 @@ export default function AdminClaimsPage() {
   }, []);
 
   const handleAction = async (claimId: string, status: 'approved' | 'rejected') => {
-    if (!supabase || !profile) return;
+    if (!supabase || !user) return;
     
     const reason = status === 'rejected' ? rejectionReason[claimId] : null;
     if (status === 'rejected' && (!reason || reason.trim() === '')) {
@@ -82,15 +82,11 @@ export default function AdminClaimsPage() {
     setProcessingId(claimId);
     setError(null);
 
-    const { error: updateError } = await supabase
-      .from('business_claims')
-      .update({
-        status,
-        reviewed_by: profile.id,
-        reviewed_at: new Date().toISOString(),
-        rejection_reason: reason,
-      })
-      .eq('id', claimId);
+    const { error: updateError } = await supabase.rpc('review_business_claim', {
+      p_claim_id: claimId,
+      p_status: status,
+      p_rejection_reason: reason,
+    });
 
     if (updateError) {
       setError(updateError.message);

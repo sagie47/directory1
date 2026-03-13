@@ -52,19 +52,12 @@
 - Current live total after recent Serper fills: `1452` businesses in [src/data.ts](/workspaces/directory1/src/data.ts)
 
 ## VPS
-- SSH target: `root@187.124.76.197`
+- SSH target: See internal ops runbook
 - Docker is installed on the VPS
-- VPS scraper workspace: `/root/gmaps-scraper`
-- Files on VPS:
-  - `/root/gmaps-scraper/vernon-queries.txt`
-  - `/root/gmaps-scraper/vernon.log`
-  - expected output: `/root/gmaps-scraper/vernon-results.json`
-- A detached Vernon scraper job was started with:
-  - `docker run --rm -v /root/gmaps-scraper:/work gosom/google-maps-scraper -input /work/vernon-queries.txt -results /work/vernon-results.json -json -lang en -c 1`
+- VPS scraper workspace: See internal ops runbook
+- Files on VPS: See internal ops runbook
+- Operational details: See internal ops runbook
 
 ## Operational Notes
-- Prefer city-by-city scraper jobs.
-- Prefer separate jobs at `-c 1` instead of higher concurrency.
-- Scraper output is NDJSON, not a JSON array.
-- The GitHub repo clone on the VPS did not contain the real working tree; use this local workspace as source of truth.
-- Root password was shared in chat and should be rotated.
+- See internal ops runbook for privileged access details
+- Credentials were rotated; refer to internal security log.

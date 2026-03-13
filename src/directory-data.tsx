@@ -291,9 +291,13 @@ async function fetchDirectoryData(): Promise<DirectoryData> {
 
   const overridesError = isMissingTableError(overrideRowsResult.error) ? null : overrideRowsResult.error;
   const verifiedError = isMissingTableError(verifiedResult.error) ? null : verifiedResult.error;
-  const firstError = citiesResult.error ?? groupResult.error ?? categoriesResult.error ?? overridesError ?? verifiedError;
+  const firstError = citiesResult.error ?? groupResult.error ?? categoriesResult.error ?? overridesError;
   if (firstError) {
     throw new Error(firstError.message);
+  }
+
+  if (verifiedError) {
+    console.warn('[directory-data] verified_businesses read failed; continuing without verified badges.', verifiedError);
   }
 
   const overridesByBusinessId = new Map(
@@ -301,7 +305,9 @@ async function fetchDirectoryData(): Promise<DirectoryData> {
   );
   
   const verifiedBusinessIds = new Set(
-    ((verifiedResult.data ?? []) as { business_id: string }[]).map((row) => row.business_id)
+    verifiedError
+      ? []
+      : ((verifiedResult.data ?? []) as { business_id: string }[]).map((row) => row.business_id)
   );
 
   const data = {

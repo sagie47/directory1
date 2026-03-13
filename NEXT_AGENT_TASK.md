@@ -10,13 +10,11 @@ Read [AGENT_HANDOFF.md](/workspaces/directory1/AGENT_HANDOFF.md) first.
 
 ## Vernon Status
 
-- VPS: `root@187.124.76.197`
-- Vernon files on VPS:
-  - `/root/gmaps-scraper/vernon-results.json`
-  - `/root/gmaps-scraper/vernon.log`
+- VPS: See internal ops runbook
+- Vernon files on VPS: See internal ops runbook
 - The scraper process is no longer running.
 - The Vernon results file is usable and had about `510` NDJSON rows when last checked.
-- The Vernon log showed successful jobs and `0` failures in the tail checked, but no explicit final “all jobs finished” marker.
+- The Vernon log showed successful jobs and `0` failures in the tail checked, but no explicit final "all jobs finished" marker.
 
 ## Vernon Merge
 
@@ -43,20 +41,9 @@ Generate or use the Kelowna query file:
 node --import tsx/esm scripts/export-gmaps-scraper-input.ts --city kelowna
 ```
 
-Put the query file onto the VPS at:
+Put the query file onto the VPS at: See internal ops runbook
 
-```text
-/root/gmaps-scraper/kelowna-queries.txt
-```
-
-Start the scraper on the VPS with low concurrency:
-
-```bash
-docker run --rm -v /root/gmaps-scraper:/work gosom/google-maps-scraper \
-  -input /work/kelowna-queries.txt \
-  -results /work/kelowna-results.json \
-  -json -lang en -c 1
-```
+Start the scraper on the VPS with low concurrency: See internal ops runbook
 
 Prefer detached execution with `nohup` or similar.
 
@@ -70,4 +57,4 @@ Prefer detached execution with `nohup` or similar.
 
 ## Important Note
 
-- The root password was shared in chat and should be rotated.
+- Credentials were rotated; refer to internal security log.

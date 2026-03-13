@@ -314,6 +314,42 @@ begin
 end;
 $$;
 
+create or replace function public.review_business_claim(
+  p_claim_id uuid,
+  p_status text,
+  p_rejection_reason text default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not exists (
+    select 1
+    from public.profiles
+    where id = auth.uid() and role = 'admin'
+  ) then
+    raise exception 'Not authorized';
+  end if;
+
+  if p_status not in ('approved', 'rejected') then
+    raise exception 'Invalid status';
+  end if;
+
+  update public.business_claims
+  set status = p_status,
+      reviewed_by = auth.uid(),
+      reviewed_at = now(),
+      rejection_reason = case
+        when p_status = 'rejected' then p_rejection_reason
+        else null
+      end
+  where id = p_claim_id
+    and status = 'pending';
+end;
+$$;
+
 create or replace view public.verified_businesses as
 select distinct business_id
 from public.business_claims
