@@ -28,8 +28,19 @@ const itemVariants = {
 
 export default function CategoryPage() {
   const { cityId, categoryId } = useParams<{ cityId: string, categoryId: string }>();
-  const { cities, categories, businesses } = useDirectoryData();
+  const { cities, categories, businesses, isLoading } = useDirectoryData();
   const [sortBy, setSortBy] = useState('Highest Rated');
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center bg-[#FAFAFA] px-6">
+        <div className="text-center">
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-2 border-zinc-200 border-t-zinc-900"></div>
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-500">Loading category</p>
+        </div>
+      </div>
+    );
+  }
   
   const city = cities.find(c => c.id === cityId);
   const category = categories.find(c => c.id === categoryId);
