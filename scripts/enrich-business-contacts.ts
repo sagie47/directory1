@@ -102,8 +102,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..');
 const defaultOutputDir = path.join(repoRoot, 'generated', 'business-contact-enrichment');
 const defaultStateFile = 'domain-results.json';
-const DIRECTORY_BASE_URL = 'https://okanagantradesdirectory.com';
-const USER_AGENT = 'OkanaganTradesContactCrawler/1.0 (+https://okanagantrades.com)';
+const DIRECTORY_BASE_URL = 'http://okanagantradesdirectory.com';
+const USER_AGENT = 'OkanaganTradesContactCrawler/1.0 (+http://okanagantradesdirectory.com)';
 const CONTACT_PAGE_HINTS = [
   '/contact',
   '/contact-us',

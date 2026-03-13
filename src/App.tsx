@@ -30,6 +30,10 @@ const WebsitesForTradesPage = lazy(() => import('./pages/WebsitesForTradesPage')
 const ManagedGrowthPage = lazy(() => import('./pages/ManagedGrowthPage'));
 const BookCallPage = lazy(() => import('./pages/BookCallPage'));
 const CallRequestedPage = lazy(() => import('./pages/CallRequestedPage'));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
+const UpdatePasswordPage = lazy(() => import('./pages/UpdatePasswordPage'));
+const AdminClaimsPage = lazy(() => import('./pages/AdminClaimsPage'));
+import AdminGuard from './components/AdminGuard';
 
 function ScrollToTop() {
   const location = useLocation();
@@ -61,6 +65,8 @@ function AnimatedRoutes() {
           <Route index element={<Home />} />
           <Route path="signup" element={<Navigate to="/claim" replace />} />
           <Route path="register" element={<RegisterPage />} />
+          <Route path="reset-password" element={<ResetPasswordPage />} />
+          <Route path="update-password" element={<UpdatePasswordPage />} />
           <Route path="claim" element={<ClaimPage />} />
           <Route path="claim-business" element={<ClaimBusinessPage />} />
           <Route path="for-business" element={<ForBusinessPage />} />
@@ -102,6 +108,14 @@ function AnimatedRoutes() {
               <AuthGuard requireApprovedClaim>
                 <OwnerDashboardPage />
               </AuthGuard>
+            }
+          />
+          <Route
+            path="admin/claims"
+            element={
+              <AdminGuard>
+                <AdminClaimsPage />
+              </AdminGuard>
             }
           />
 

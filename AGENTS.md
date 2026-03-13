@@ -15,6 +15,8 @@ This document outlines the conventions, commands, and rules for AI coding agents
 - `src/components/` - Reusable UI components (e.g., `BusinessCard.tsx`).
 - `src/contexts/` - React Context providers (e.g., `AuthContext.tsx`).
 - `src/lib/` - Third-party integrations and singletons (e.g., `supabase.ts`, `auth.ts`).
+- `src/lib/analytics.ts` - Lightweight browser analytics helpers (e.g., `trackEvent`).
+- `src/lib/recommendations.ts` - Rule-based owner recommendation logic for claim and dashboard flows.
 - `src/data.ts` - Seeded and static directory content.
 - `src/business.ts` - Core business logic, type definitions, and helper utilities.
 - `scripts/` - Node scripts (via `tsx`) for data fetching, generation, and DB synchronization.
@@ -92,6 +94,7 @@ Always use the `@/` alias (which resolves to the project root) for absolute path
 - **Early Returns:** Handle loading, error, and empty states at the top of your component using early returns. Avoid deeply nesting conditional logic in the main return statement.
 - **List Keys:** Use stable, unique IDs for the `key` prop when mapping arrays. Do NOT use array indices for keys unless the list is completely static.
 - **Memoization:** Strategically use `useMemo` for heavy computations or filtering arrays, and `useCallback` for functions passed as props to child components.
+- **Shared Decision Logic:** Put reusable recommendation or routing heuristics in `src/lib/` helpers instead of duplicating conditional CTA logic across multiple pages.
 
 ### Styling (Tailwind v4)
 - Exclusively use **Tailwind CSS v4** utility classes for styling. Do not use inline `style={{}}` unless dynamically calculating values that Tailwind cannot handle.
@@ -109,6 +112,7 @@ Always use the `@/` alias (which resolves to the project root) for absolute path
 - **Async Operations:** Wrap all asynchronous data fetching (e.g., Supabase queries) in `try...catch` blocks.
 - **User Feedback:** Log errors to `console.error` and ensure a user-friendly error message is displayed in the UI when things fail. Avoid blank screens on failure.
 - **Security:** External links must use `<a target="_blank" rel="noopener noreferrer">` to prevent reverse tabnabbing attacks. Never hardcode API keys or sensitive endpoints; rely on `import.meta.env`.
+- **Browser Globals:** When writing browser integrations such as `window.dataLayer`, initialize the value on `window` before mutating it. Example: `window.dataLayer = window.dataLayer || []; window.dataLayer.push(...)`.
 - **Fallbacks:** Render fallback UI (`return null;` or a skeleton component) when required data is not available yet.
 
 ## 7. AI Agent Execution Rules

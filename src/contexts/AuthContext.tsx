@@ -28,6 +28,8 @@ interface AuthContextType {
   ) => Promise<{ error: Error | null; session: Session | null; user: User | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  resetPassword: (email: string) => Promise<{ error: Error | null }>;
+  updatePassword: (password: string) => Promise<{ error: Error | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -265,6 +267,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const resetPassword = async (email: string) => {
+    if (!supabase) {
+      return { error: new Error('Supabase not configured') };
+    }
+
+    try {
+      setError(null);
+
+      const redirectTo = new URL('/update-password', window.location.origin).toString();
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+        email.trim().toLowerCase(),
+        { redirectTo }
+      );
+
+      if (resetError) {
+        setError(resetError.message);
+      }
+
+      return { error: resetError };
+    } catch (resetError) {
+      const normalizedError = resetError instanceof Error ? resetError : new Error('Unable to request password reset right now.');
+      setError(normalizedError.message);
+      return { error: normalizedError };
+    }
+  };
+
+  const updatePassword = async (password: string) => {
+    if (!supabase) {
+      return { error: new Error('Supabase not configured') };
+    }
+
+    try {
+      setError(null);
+
+      const { error: updateError } = await supabase.auth.updateUser({
+        password,
+      });
+
+      if (updateError) {
+        setError(updateError.message);
+      }
+
+      return { error: updateError };
+    } catch (updateError) {
+      const normalizedError = updateError instanceof Error ? updateError : new Error('Unable to update password right now.');
+      setError(normalizedError.message);
+      return { error: normalizedError };
+    }
+  };
+
   const signOut = async () => {
     if (!supabase) {
       return;
@@ -294,6 +346,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signUp,
         signOut,
         refreshProfile,
+        resetPassword,
+        updatePassword,
       }}
     >
       {children}

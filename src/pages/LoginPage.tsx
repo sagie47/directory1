@@ -125,8 +125,11 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <div className="mb-2">
+              <div className="mb-2 flex items-center justify-between">
                 <label className="block font-mono text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Password</label>
+                <Link to="/reset-password" className="font-mono text-[10px] font-bold text-zinc-500 hover:text-zinc-900 transition-colors uppercase tracking-widest">
+                  Forgot password?
+                </Link>
               </div>
               <input 
                 type="password" 

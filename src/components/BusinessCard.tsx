@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Star, ArrowRight, MapPin, Globe, Phone, Image as ImageIcon } from 'lucide-react';
+import { Star, ArrowRight, MapPin, Globe, Phone, Image as ImageIcon, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Business, getBusinessCategoryTags, getBusinessServiceAreas, getPhoneHref, getWebsiteHref, getBusinessPhotos, getBusinessReviews } from '../business';
 import { useDirectoryData } from '../directory-data';
@@ -11,7 +11,8 @@ interface BusinessCardProps {
 }
 
 export default function BusinessCard({ business, contextCityName }: BusinessCardProps) {
-  const { categories, cities } = useDirectoryData();
+  const { categories, cities, verifiedBusinessIds } = useDirectoryData();
+  const isVerified = verifiedBusinessIds.has(business.id);
   const category = categories.find(c => c.id === business.categoryId);
   const city = cities.find(c => c.id === business.cityId);
   const serviceAreas = getBusinessServiceAreas(business, city?.name ?? 'Local area');
@@ -107,11 +108,18 @@ export default function BusinessCard({ business, contextCityName }: BusinessCard
 
         {/* Title & City */}
         <div className="mb-5">
-          <Link to={`/${business.cityId}/${business.categoryId}/${business.id}`} className="block">
-            <h3 className="text-xl font-bold text-zinc-900 tracking-tight leading-[1.2] mb-2 group-hover:text-orange-600 transition-colors line-clamp-2">
-              {business.name}
-            </h3>
-          </Link>
+          <div className="flex items-start gap-2 mb-2">
+            <Link to={`/${business.cityId}/${business.categoryId}/${business.id}`} className="block">
+              <h3 className="text-xl font-bold text-zinc-900 tracking-tight leading-[1.2] group-hover:text-orange-600 transition-colors line-clamp-2">
+                {business.name}
+              </h3>
+            </Link>
+            {isVerified && (
+              <div title="Verified Business" className="mt-1 flex-shrink-0 text-orange-500">
+                <CheckCircle className="h-4 w-4" fill="currentColor" stroke="white" strokeWidth={2} />
+              </div>
+            )}
+          </div>
           <div className="flex items-center gap-2 text-zinc-500">
             <MapPin className="h-3.5 w-3.5 shrink-0" />
             <span className="font-sans text-sm font-medium truncate">{locationSummary}</span>

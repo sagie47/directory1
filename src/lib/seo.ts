@@ -1,7 +1,7 @@
 export const SITE_NAME = 'Okanagan Trades';
 export const DEFAULT_SEO_TITLE = 'Okanagan Trades | Verified Contractors Across the Okanagan';
 export const DEFAULT_SEO_DESCRIPTION = 'Find verified contractors, trades, and service professionals across the Okanagan Valley by region, trade, and business.';
-export const DEFAULT_SITE_URL = 'https://okanagantrades.com';
+export const DEFAULT_SITE_URL = 'http://okanagantradesdirectory.com';
 
 export function getSiteUrl() {
   const configuredSiteUrl = import.meta.env.VITE_SITE_URL;

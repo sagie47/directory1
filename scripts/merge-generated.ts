@@ -204,9 +204,10 @@ async function main() {
     String(left.name).localeCompare(String(right.name)),
   );
 
-  const serializedBusinesses = `export const businesses = ${formatValue(mergedBusinesses, 0)};\n`;
+  const serializedBusinesses = `export const businesses: Business[] = ${formatValue(mergedBusinesses, 0)};\n`;
   const currentData = await readFile(dataFile, 'utf8');
-  const exportStart = currentData.indexOf('export const businesses = [');
+  const exportMatch = currentData.match(/export const businesses(?::\s*Business\[\])?\s*=\s*\[/);
+  const exportStart = exportMatch ? exportMatch.index : -1;
   const exportEnd = currentData.lastIndexOf('];');
 
   if (exportStart === -1 || exportEnd === -1 || exportEnd < exportStart) {

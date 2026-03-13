@@ -120,6 +120,7 @@ create table if not exists public.business_claims (
   reviewed_by uuid references public.profiles (id),
   reviewed_at timestamptz,
   rejection_reason text,
+  notification_sent_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -219,6 +220,21 @@ for select
 to authenticated
 using (auth.uid() = user_id);
 
+drop policy if exists "claims_select_admin" on public.business_claims;
+create policy "claims_select_admin"
+on public.business_claims
+for select
+to authenticated
+using (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'));
+
+drop policy if exists "claims_update_admin" on public.business_claims;
+create policy "claims_update_admin"
+on public.business_claims
+for update
+to authenticated
+using (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'))
+with check (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'));
+
 drop policy if exists "business_overrides_public_read" on public.business_overrides;
 create policy "business_overrides_public_read"
 on public.business_overrides
@@ -279,3 +295,28 @@ using (
       and bc.status = 'approved'
   )
 );
+
+create or replace function public.delete_user_account()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  -- Ensure the user is authenticated
+  if auth.uid() is null then
+    raise exception 'Not authenticated';
+  end if;
+
+  -- Delete the user from auth.users. 
+  -- Due to foreign key cascades, this will also delete their profile and claims.
+  delete from auth.users where id = auth.uid();
+end;
+$$;
+
+create or replace view public.verified_businesses as
+select distinct business_id
+from public.business_claims
+where status = 'approved';
+
+grant select on public.verified_businesses to anon, authenticated;

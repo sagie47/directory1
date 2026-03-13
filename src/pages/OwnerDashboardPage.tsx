@@ -1,11 +1,13 @@
 import { type FormEvent, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Activity, Save, AlertCircle, CheckCircle } from 'lucide-react';
+import { Activity, Save, AlertCircle, CheckCircle, Check, ArrowRight } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useAuth } from '../contexts/AuthContext';
 import { useDirectoryData } from '../directory-data';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { Business, BusinessHours } from '../business';
+import { getOwnerRecommendation } from '../lib/recommendations';
+import { trackEvent } from '../lib/analytics';
 
 interface BusinessClaim {
   id: string;
@@ -36,6 +38,10 @@ const defaultHours: BusinessHours = {
   sunday: '',
 };
 
+function hasBusinessHours(hours: BusinessHours) {
+  return Object.values(hours).some((value) => Boolean(value?.trim()));
+}
+
 export default function OwnerDashboardPage() {
   const { user, loading: authLoading } = useAuth();
   const { businesses, cities, isLoading: directoryLoading, refresh } = useDirectoryData();
@@ -55,6 +61,20 @@ export default function OwnerDashboardPage() {
     serviceAreas: '',
     hours: { ...defaultHours },
   });
+
+  useEffect(() => {
+    trackEvent('owner_dashboard_viewed');
+  }, []);
+
+  useEffect(() => {
+    if (business) {
+      const rec = getOwnerRecommendation({
+        business,
+        claimStatus: 'approved',
+      });
+      trackEvent('owner_dashboard_recommendation_viewed', { type: rec.type });
+    }
+  }, [business]);
 
   const normalizeHours = (hours?: BusinessHours) => {
     const normalized = { ...defaultHours };
@@ -284,8 +304,10 @@ export default function OwnerDashboardPage() {
           </Link>
         </div>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }} className="bg-white border border-zinc-200 p-8 md:p-12 shadow-sm rounded-sm">
-          <form onSubmit={handleSubmit} className="space-y-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }} className="bg-white border border-zinc-200 p-8 md:p-12 shadow-sm rounded-sm">
+              <form onSubmit={handleSubmit} className="space-y-8">
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm rounded-sm">
                 {error}
@@ -385,11 +407,65 @@ export default function OwnerDashboardPage() {
               </button>
             </div>
 
-            <p className="text-xs text-zinc-400 pt-4 border-t border-zinc-100">
-              Note: Only the fields above can be edited. Other business information is sourced from public records.
-            </p>
-          </form>
-        </motion.div>
+              <p className="text-xs text-zinc-400 pt-4 border-t border-zinc-100">
+                Note: Only the fields above can be edited. Other business information is sourced from public records.
+              </p>
+            </form>
+          </motion.div>
+        </div>
+
+        <div className="space-y-6">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }} className="bg-white border border-zinc-200 p-6 shadow-sm rounded-sm">
+            <h3 className="font-medium text-zinc-900 mb-4 text-lg">Profile Completeness</h3>
+            <ul className="space-y-3">
+              <li className="flex items-center gap-3 text-sm">
+                <Check className={`h-4 w-4 ${formData.description && formData.description.length > 10 ? 'text-green-500' : 'text-zinc-300'}`} />
+                <span className={formData.description && formData.description.length > 10 ? 'text-zinc-700' : 'text-zinc-500'}>Business description</span>
+              </li>
+              <li className="flex items-center gap-3 text-sm">
+                <Check className={`h-4 w-4 ${formData.phone ? 'text-green-500' : 'text-zinc-300'}`} />
+                <span className={formData.phone ? 'text-zinc-700' : 'text-zinc-500'}>Phone number</span>
+              </li>
+              <li className="flex items-center gap-3 text-sm">
+                <Check className={`h-4 w-4 ${formData.website ? 'text-green-500' : 'text-zinc-300'}`} />
+                <span className={formData.website ? 'text-zinc-700' : 'text-zinc-500'}>Website</span>
+              </li>
+              <li className="flex items-center gap-3 text-sm">
+                <Check className={`h-4 w-4 ${formData.serviceAreas && formData.serviceAreas.length > 0 ? 'text-green-500' : 'text-zinc-300'}`} />
+                <span className={formData.serviceAreas && formData.serviceAreas.length > 0 ? 'text-zinc-700' : 'text-zinc-500'}>Service areas</span>
+              </li>
+              <li className="flex items-center gap-3 text-sm">
+                <Check className={`h-4 w-4 ${hasBusinessHours(formData.hours) ? 'text-green-500' : 'text-zinc-300'}`} />
+                <span className={hasBusinessHours(formData.hours) ? 'text-zinc-700' : 'text-zinc-500'}>Business hours</span>
+              </li>
+            </ul>
+          </motion.div>
+
+          {(() => {
+            const rec = getOwnerRecommendation({
+              business,
+              claimStatus: 'approved',
+            });
+            return (
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }} className="bg-white border border-zinc-200 p-6 shadow-sm rounded-sm relative overflow-hidden">
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-zinc-900"></div>
+                <h3 className="text-xs font-mono uppercase tracking-widest text-zinc-500 mb-3">Next Step</h3>
+                <h4 className="font-bold text-zinc-900 mb-2 text-lg">{rec.title}</h4>
+                <p className="text-sm text-zinc-500 mb-6 leading-relaxed">{rec.description}</p>
+                {rec.href && rec.ctaLabel && (
+                  <Link 
+                    to={rec.href}
+                    onClick={() => trackEvent('owner_dashboard_recommendation_clicked', { type: rec.type })}
+                    className="inline-flex w-full items-center justify-center gap-2 bg-zinc-900 text-white px-4 py-3 text-sm font-medium hover:bg-zinc-800 transition-colors rounded-sm"
+                  >
+                    {rec.ctaLabel} <ArrowRight className="h-4 w-4" />
+                  </Link>
+                )}
+              </motion.div>
+            );
+          })()}
+        </div>
+      </div>
 
       </div>
     </motion.div>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
-import { MapPin, Star, Phone, Globe, Mail, Clock, Check, ArrowRight, AlertCircle, Image as ImageIcon, Navigation } from 'lucide-react';
+import { MapPin, Star, Phone, Globe, Mail, Clock, Check, ArrowRight, AlertCircle, Image as ImageIcon, Navigation, CheckCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 import {
   getBusinessCapabilities,
@@ -25,7 +25,7 @@ const MOBILE_REVIEW_BATCH_SIZE = 2;
 
 export default function BusinessPage() {
   const { cityId, categoryId, businessId } = useParams<{ cityId: string, categoryId: string, businessId: string }>();
-  const { cities, categories, businesses, isLoading } = useDirectoryData();
+  const { cities, categories, businesses, isLoading, verifiedBusinessIds } = useDirectoryData();
   
   const city = cities.find(c => c.id === cityId);
   const category = categories.find(c => c.id === categoryId);
@@ -35,6 +35,8 @@ export default function BusinessPage() {
       && candidate.cityId === cityId
       && candidate.categoryId === categoryId,
   );
+
+  const isVerified = business ? verifiedBusinessIds.has(business.id) : false;
 
   if (isLoading && !business) {
     return (
@@ -182,9 +184,17 @@ export default function BusinessPage() {
                 </span>
               </div>
               
-              <h1 className="mb-3 text-4xl font-black uppercase leading-[1.05] tracking-tighter text-zinc-900 md:text-5xl lg:text-6xl">
-                {business.name}
-              </h1>
+              <div className="flex items-center gap-4 mb-3">
+                <h1 className="text-4xl font-black uppercase leading-[1.05] tracking-tighter text-zinc-900 md:text-5xl lg:text-6xl">
+                  {business.name}
+                </h1>
+                {isVerified && (
+                  <div title="Verified Business" className="flex items-center gap-1.5 bg-orange-50 text-orange-600 border border-orange-200 px-3 py-1.5 rounded-full shadow-sm mt-1 shrink-0">
+                    <CheckCircle className="h-4 w-4" fill="currentColor" stroke="white" strokeWidth={2} />
+                    <span className="font-mono text-[10px] font-bold uppercase tracking-widest hidden sm:inline">Verified</span>
+                  </div>
+                )}
+              </div>
               
               <div className="flex flex-wrap items-center gap-x-8 gap-y-4 text-sm font-mono tracking-wide text-zinc-500">
                 <div className="flex items-center gap-2">
