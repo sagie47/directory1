@@ -14,6 +14,7 @@
     "enrich:serper": "tsx scripts/enrich-serper.ts",
     "export:gmaps": "tsx scripts/export-gmaps-scraper-input.ts",
     "enrich:gmaps": "tsx scripts/enrich-gmaps-scraper.ts",
+    "enrich:contacts": "node --import tsx/esm scripts/enrich-business-contacts.ts",
     "generate:descriptions": "tsx scripts/generate-business-descriptions.ts",
     "generate:sitemap": "tsx scripts/generate-sitemap.ts",
     "export:supabase-seed": "tsx scripts/export-supabase-seed.ts",
