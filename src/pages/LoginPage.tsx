@@ -1,16 +1,17 @@
 import { type FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, ShieldCheck, Zap } from 'lucide-react';
+import { ArrowRight, MailCheck, ShieldCheck } from 'lucide-react';
 import { motion } from 'motion/react';
 import GoogleIcon from '../components/GoogleIcon';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { user, loading: authLoading, error: authError, isConfigured, signIn, signInWithGoogle } = useAuth();
+  const { user, loading: authLoading, error: authError, isConfigured, signIn, signInWithGoogle, signInWithMagicLink } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -27,6 +28,7 @@ export default function LoginPage() {
     }
 
     setError(null);
+    setMagicLinkSent(false);
     setLoading(true);
 
     const { error } = await signIn(email, password);
@@ -39,12 +41,41 @@ export default function LoginPage() {
     }
   };
 
+
+
+  const handleMagicLinkSignIn = async () => {
+    if (authLoading || !isConfigured) {
+      return;
+    }
+
+    if (!email.trim()) {
+      setError('Enter your email to get a secure sign-in link.');
+      return;
+    }
+
+    setError(null);
+    setMagicLinkSent(false);
+    setLoading(true);
+
+    const { error: magicLinkError } = await signInWithMagicLink(email, '/account');
+
+    if (magicLinkError) {
+      setError(magicLinkError.message);
+      setLoading(false);
+      return;
+    }
+
+    setMagicLinkSent(true);
+    setLoading(false);
+  };
+
   const handleGoogleSignIn = async () => {
     if (authLoading || !isConfigured) {
       return;
     }
 
     setError(null);
+    setMagicLinkSent(false);
     setLoading(true);
 
     const { error } = await signInWithGoogle('/account');
@@ -83,6 +114,13 @@ export default function LoginPage() {
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }} className="bg-white border border-zinc-200 p-8 sm:p-12 rounded-sm shadow-xl text-left relative z-10">
           <div className="space-y-6">
+            {magicLinkSent && (
+              <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-widest inline-flex items-center gap-2">
+                <MailCheck className="w-4 h-4" />
+                Magic link sent. Check your inbox to continue.
+              </div>
+            )}
+
             {visibleError && (
               <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-widest">
                 {visibleError}
@@ -138,9 +176,21 @@ export default function LoginPage() {
               />
             </div>
 
-            <div className="pt-6">
-              <button 
-                type="submit" 
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={handleMagicLinkSignIn}
+                disabled={loading || authLoading || !isConfigured}
+                className="w-full inline-flex items-center justify-center gap-3 bg-zinc-100 text-zinc-900 border border-zinc-200 rounded-xl px-8 py-4 font-sans text-sm font-semibold uppercase tracking-widest transition-all shadow-sm hover:bg-zinc-200 hover:-translate-y-1 hover:shadow-md active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+              >
+                <MailCheck className="h-5 w-5" strokeWidth={2.5} />
+                {loading ? 'Sending magic link...' : 'Email Me a Magic Link'}
+              </button>
+            </div>
+
+            <div className="pt-1">
+              <button
+                type="submit"
                 disabled={loading || authLoading || !isConfigured}
                 className="w-full inline-flex items-center justify-center gap-3 bg-zinc-900 text-white rounded-xl px-8 py-4 font-sans text-sm font-semibold uppercase tracking-widest transition-all shadow-sm hover:bg-orange-500 hover:-translate-y-1 hover:shadow-md active:scale-95 group disabled:opacity-50 disabled:pointer-events-none"
               >

@@ -21,6 +21,7 @@ interface AuthContextType {
   error: string | null;
   isConfigured: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signInWithMagicLink: (email: string, redirectPath?: string) => Promise<{ error: Error | null }>;
   signInWithGoogle: (redirectPath?: string) => Promise<{ error: Error | null }>;
   signUp: (
     email: string,
@@ -265,6 +266,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const signInWithMagicLink = async (email: string, redirectPath = '/account') => {
+    if (!supabase) {
+      return { error: new Error('Supabase not configured') };
+    }
+
+    try {
+      setError(null);
+
+      const safeRedirectPath = redirectPath.startsWith('/') ? redirectPath : '/account';
+      const emailRedirectTo = new URL(safeRedirectPath, window.location.origin).toString();
+      const { error: magicLinkError } = await supabase.auth.signInWithOtp({
+        email: email.trim().toLowerCase(),
+        options: {
+          emailRedirectTo,
+        },
+      });
+
+      if (magicLinkError) {
+        setError(magicLinkError.message);
+      }
+
+      return { error: magicLinkError };
+    } catch (magicLinkError) {
+      const normalizedError = magicLinkError instanceof Error ? magicLinkError : new Error('Unable to send a magic link right now.');
+      setError(normalizedError.message);
+      return { error: normalizedError };
+    }
+  };
+
   const signOut = async () => {
     if (!supabase) {
       return;
@@ -290,6 +320,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         error,
         isConfigured: configured,
         signIn,
+        signInWithMagicLink,
         signInWithGoogle,
         signUp,
         signOut,
