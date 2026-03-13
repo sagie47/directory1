@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { MapPin, ArrowRight, Search } from 'lucide-react';
 import * as Icons from 'lucide-react';
@@ -28,8 +28,19 @@ const itemVariants = {
 
 export default function CategoryPage() {
   const { cityId, categoryId } = useParams<{ cityId: string, categoryId: string }>();
-  const { cities, categories, businesses } = useDirectoryData();
+  const { cities, categories, businesses, isLoading } = useDirectoryData();
   const [sortBy, setSortBy] = useState('Highest Rated');
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center bg-[#FAFAFA] px-6">
+        <div className="text-center">
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-2 border-zinc-200 border-t-zinc-900"></div>
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-500">Loading category</p>
+        </div>
+      </div>
+    );
+  }
   
   const city = cities.find(c => c.id === cityId);
   const category = categories.find(c => c.id === categoryId);
@@ -38,23 +49,21 @@ export default function CategoryPage() {
     return <Navigate to="/" replace />;
   }
 
-  const categoryBusinesses = useMemo(() => {
-    const filtered = businesses.filter(
-      (business) => business.categoryId === categoryId && businessServesCity(business, city.id, city.name)
-    ) as Business[];
+  const filteredBusinesses = businesses.filter(
+    (business) => business.categoryId === categoryId && businessServesCity(business, city.id, city.name)
+  ) as Business[];
 
-    return [...filtered].sort((left, right) => {
-      if (sortBy === 'Most Reviewed') {
-        return (right.reviewCount ?? 0) - (left.reviewCount ?? 0);
-      }
+  const categoryBusinesses = [...filteredBusinesses].sort((left, right) => {
+    if (sortBy === 'Most Reviewed') {
+      return (right.reviewCount ?? 0) - (left.reviewCount ?? 0);
+    }
 
-      if (sortBy === 'A-Z') {
-        return left.name.localeCompare(right.name);
-      }
+    if (sortBy === 'A-Z') {
+      return left.name.localeCompare(right.name);
+    }
 
-      return (right.rating ?? 0) - (left.rating ?? 0) || (right.reviewCount ?? 0) - (left.reviewCount ?? 0);
-    });
-  }, [businesses, categoryId, cityId, sortBy]);
+    return (right.rating ?? 0) - (left.rating ?? 0) || (right.reviewCount ?? 0) - (left.reviewCount ?? 0);
+  });
 
   const IconComponent = (Icons as any)[category.icon] || Icons.Wrench;
   const heroImage = getCategoryHeroImage({
