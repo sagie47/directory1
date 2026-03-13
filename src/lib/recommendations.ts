@@ -53,15 +53,15 @@ export function getOwnerRecommendation({ business, claimStatus }: Recommendation
       return {
         type: 'complete_profile',
         title: 'Complete Your Profile',
-        description: 'You’ll be able to complete this after approval.'
+        description: 'You will be able to complete this after approval. Make sure your claim is approved to unlock profile management.'
       };
     }
 
     return {
       type: 'complete_profile',
       title: 'Complete Your Profile',
-      description: 'Your profile is still missing core business details.',
-      href: '/owner/dashboard',
+      description: 'Your profile is still missing core business details. Complete these to improve customer trust.',
+      href: business ? `/owner/dashboard/${business.id}` : '/owner/dashboard',
       ctaLabel: 'Update Profile'
     };
   }
@@ -69,8 +69,8 @@ export function getOwnerRecommendation({ business, claimStatus }: Recommendation
   if (!hasWebsite) {
     return {
       type: 'website_fix',
-      title: 'Missing Website',
-      description: 'You do not have a website listed. Your website may be making it harder for customers to contact you.',
+      title: 'Add a Website',
+      description: 'You do not have a website listed. A professional website builds credibility and makes it easier for customers to contact you.',
       href: '/websites-for-trades',
       ctaLabel: 'Explore Websites'
     };
@@ -79,8 +79,8 @@ export function getOwnerRecommendation({ business, claimStatus }: Recommendation
   if (claimStatus === 'approved') {
     return {
       type: 'lead_capture',
-      title: 'Capture More Leads',
-      description: 'If you miss calls while on jobs, lead capture is the next best fit.',
+      title: 'Never Miss a Lead',
+      description: 'If you miss calls while on jobs, our AI receptionist can help you capture every opportunity.',
       href: '/never-miss-a-lead',
       ctaLabel: 'View Lead Capture'
     };
@@ -88,8 +88,8 @@ export function getOwnerRecommendation({ business, claimStatus }: Recommendation
 
   return {
     type: 'listing_upgrade',
-    title: 'Keep Your Listing Working Harder',
-    description: 'Your profile basics are in place. The next step is improving how customers discover and contact your business.',
+    title: 'Grow Your Business',
+    description: 'Your profile basics are in place. Explore additional services to help you grow.',
     href: '/for-business',
     ctaLabel: 'See Business Options'
   };

@@ -1,6 +1,6 @@
-import { type FormEvent, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Activity, Save, AlertCircle, CheckCircle, Check, ArrowRight, LayoutGrid } from 'lucide-react';
+import { type FormEvent, useEffect, useState, useMemo } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { Activity, Save, AlertCircle, CheckCircle, Check, ArrowRight, LayoutGrid, Globe, Phone, Clock, MapPin, CheckSquare, Square } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useAuth } from '../contexts/AuthContext';
 import { useDirectoryData } from '../directory-data';
@@ -45,6 +45,7 @@ function hasBusinessHours(hours: BusinessHours) {
 }
 
 export default function OwnerDashboardPage() {
+  const { businessId: urlBusinessId } = useParams<{ businessId?: string }>();
   const { user, loading: authLoading } = useAuth();
   const { businesses, cities, isLoading: directoryLoading, refresh } = useDirectoryData();
   const [approvedClaims, setApprovedClaims] = useState<BusinessClaim[]>([]);
@@ -57,6 +58,22 @@ export default function OwnerDashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const ownerToolsAvailable = Boolean(supabase && isSupabaseConfigured());
   const businessBgSrc = preferSupabaseImage('thumbnail_G74A6639.jpg', businessBg);
+
+  const profileCompleteness = useMemo(() => {
+    if (!business) return { score: 0, items: [] };
+    
+    const items = [
+      { key: 'description', label: 'Business description', complete: Boolean(business.description && business.description.length > 20) },
+      { key: 'phone', label: 'Phone number', complete: Boolean(business.contact?.phone) },
+      { key: 'website', label: 'Website', complete: Boolean(business.contact?.website) },
+      { key: 'serviceAreas', label: 'Service areas', complete: Boolean(business.serviceAreas && business.serviceAreas.length > 0) },
+      { key: 'hours', label: 'Business hours', complete: hasBusinessHours(business.hours) },
+    ];
+    
+    const score = Math.round((items.filter(i => i.complete).length / items.length) * 100);
+    
+    return { score, items };
+  }, [business]);
 
   const [formData, setFormData] = useState({
     description: '',
@@ -123,7 +140,15 @@ export default function OwnerDashboardPage() {
 
       setApprovedClaims(claimsData as BusinessClaim[]);
       
-      if (claimsData.length === 1) {
+      const targetClaim = urlBusinessId 
+        ? claimsData.find(c => c.business_id === urlBusinessId)
+        : null;
+
+      if (targetClaim) {
+        setSelectedClaimId(targetClaim.id);
+        setApprovedClaim(targetClaim as BusinessClaim);
+        loadBusinessForClaim(targetClaim as BusinessClaim);
+      } else if (claimsData.length === 1) {
         setSelectedClaimId(claimsData[0].id);
         setApprovedClaim(claimsData[0] as BusinessClaim);
         loadBusinessForClaim(claimsData[0] as BusinessClaim);
@@ -137,7 +162,7 @@ export default function OwnerDashboardPage() {
     };
 
     fetchData();
-  }, [businesses, directoryLoading, ownerToolsAvailable, user]);
+  }, [businesses, directoryLoading, ownerToolsAvailable, user, urlBusinessId]);
 
   const loadBusinessForClaim = async (claim: BusinessClaim) => {
     if (!supabase) return;
@@ -391,6 +416,43 @@ export default function OwnerDashboardPage() {
             View Listing →
           </Link>
         </motion.div>
+
+        {profileCompleteness.score < 100 && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="mb-8"
+          >
+            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-sm p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-medium text-white">Profile Completeness</h2>
+                <span className="text-2xl font-bold text-orange-500">{profileCompleteness.score}%</span>
+              </div>
+              <div className="w-full bg-zinc-800 h-2 rounded-full mb-4 overflow-hidden">
+                <div 
+                  className="h-full bg-orange-500 transition-all duration-500" 
+                  style={{ width: `${profileCompleteness.score}%` }}
+                />
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                {profileCompleteness.items.map((item) => (
+                  <div 
+                    key={item.key}
+                    className={`flex items-center gap-2 text-sm ${item.complete ? 'text-green-400' : 'text-zinc-400'}`}
+                  >
+                    {item.complete ? (
+                      <CheckSquare className="h-4 w-4" />
+                    ) : (
+                      <Square className="h-4 w-4" />
+                    )}
+                    <span className="truncate">{item.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">

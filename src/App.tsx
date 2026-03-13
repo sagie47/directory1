@@ -111,6 +111,14 @@ function AnimatedRoutes() {
             }
           />
           <Route
+            path="owner/dashboard/:businessId"
+            element={
+              <AuthGuard requireApprovedClaim>
+                <OwnerDashboardPage />
+              </AuthGuard>
+            }
+          />
+          <Route
             path="admin/claims"
             element={
               <AdminGuard>

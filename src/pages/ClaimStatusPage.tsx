@@ -337,7 +337,7 @@ export default function ClaimStatusPage() {
                         <p className="text-sm text-green-600">You now have access to manage this business listing.</p>
                       </div>
                       <Link 
-                        to="/owner/dashboard" 
+                        to={`/owner/dashboard/${claim.business_id}`}
                         className="inline-flex items-center justify-center gap-2 w-full sm:w-auto bg-zinc-900 text-white px-6 py-3 text-sm font-medium hover:bg-zinc-800 transition-colors rounded-sm"
                       >
                         Go to Owner Dashboard
