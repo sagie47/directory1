@@ -2,6 +2,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { ArrowRight, MapPin, ChevronRight, LayoutGrid } from 'lucide-react';
 import Breadcrumbs from '../components/Breadcrumbs';
+import MobileDirectorySearch from '../components/MobileDirectorySearch';
 import Seo from '../components/Seo';
 import { useDirectoryData } from '../directory-data';
 import businessBg from '../photos/millwright-quesnel-2-2024.tmb-1000px.jpg';
@@ -40,6 +41,8 @@ export default function RegionsPage() {
         description={category ? `Browse verified ${category.name.toLowerCase()} businesses by region across the Okanagan.` : 'Browse verified contractors and trade businesses by region across the Okanagan Valley.'}
         path={category ? `/regions?category=${category.id}` : '/regions'}
       />
+
+      <MobileDirectorySearch cities={cities} />
 
       {/* Homepage-matched Hero Section */}
       <section className="relative flex items-center overflow-visible bg-zinc-900 pt-24 pb-24 text-white sm:pt-28 sm:pb-32 lg:pt-48 lg:pb-64">
