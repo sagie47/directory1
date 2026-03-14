@@ -15,6 +15,7 @@ interface MobileDirectorySearchProps {
   initialQuery?: string;
   initialCityId?: string;
   inlineClassName?: string;
+  inlineMode?: 'pill' | 'bar';
 }
 
 const mobileSearchTransition = {
@@ -27,6 +28,7 @@ export default function MobileDirectorySearch({
   initialQuery = '',
   initialCityId = '',
   inlineClassName = '',
+  inlineMode = 'pill',
 }: MobileDirectorySearchProps) {
   const navigate = useNavigate();
   const { isMobileMenuOpen } = useLayoutChrome();
@@ -73,13 +75,19 @@ export default function MobileDirectorySearch({
 
   const compactSearchLabel = query.trim() || 'Search contractors';
   const selectedCityName = cities.find((city) => city.id === cityId)?.name ?? 'All Okanagan';
+  const inlineContainerClassName = inlineMode === 'bar'
+    ? 'mx-auto w-full max-w-7xl bg-zinc-50 px-4 py-3 sm:px-6 md:hidden lg:px-8'
+    : 'mx-auto w-full max-w-7xl px-4 pt-3 sm:px-6 md:hidden lg:px-8';
+  const inlineButtonClassName = inlineMode === 'bar'
+    ? 'flex w-full min-w-0 items-center gap-3 rounded-2xl border border-zinc-200/80 bg-white px-3 py-2.5 text-left shadow-[0_2px_10px_rgba(24,24,27,0.05)]'
+    : 'flex w-full min-w-0 items-center gap-3 rounded-[2rem] border border-zinc-200 bg-white px-4 py-3 text-left shadow-[0_8px_24px_rgba(24,24,27,0.08)]';
 
   return (
     <>
-      <div className={`mx-auto w-full max-w-7xl px-4 pt-3 sm:px-6 md:hidden lg:px-8 ${inlineClassName}`}>
+      <div className={`${inlineContainerClassName} ${inlineClassName}`}>
         <button
           type="button"
-          className="flex w-full min-w-0 items-center gap-3 rounded-[2rem] border border-zinc-200 bg-white px-4 py-3 text-left shadow-[0_8px_24px_rgba(24,24,27,0.08)]"
+          className={inlineButtonClassName}
           onClick={() => setIsMobileSearchOpen(true)}
           aria-label="Open mobile search"
         >
