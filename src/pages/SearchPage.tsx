@@ -4,6 +4,7 @@ import {ArrowRight, Search} from 'lucide-react';
 import {motion} from 'motion/react';
 
 import Breadcrumbs from '../components/Breadcrumbs';
+import MobileDirectorySearch from '../components/MobileDirectorySearch';
 import BusinessCard from '../components/BusinessCard';
 import {Business} from '../business';
 import {useDirectoryData} from '../directory-data';
@@ -109,6 +110,7 @@ export default function SearchPage() {
       className="bg-[#FAFAFA] min-h-screen py-16"
     >
       <Breadcrumbs items={[{ label: 'Home', to: '/' }, { label: 'Search' }]} />
+      <MobileDirectorySearch cities={cities} initialQuery={rawQuery} initialCityId={inferredCityId} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-12 border-b border-zinc-200 pb-6">
           <div className="inline-flex items-center gap-2 border border-zinc-200 bg-white text-zinc-600 px-3 py-1.5 font-mono text-[10px] tracking-[0.15em] mb-6 rounded-sm uppercase">
