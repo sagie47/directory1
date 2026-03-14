@@ -14,6 +14,7 @@ interface MobileDirectorySearchProps {
   cities: CityOption[];
   initialQuery?: string;
   initialCityId?: string;
+  inlineClassName?: string;
 }
 
 const mobileSearchTransition = {
@@ -25,12 +26,14 @@ export default function MobileDirectorySearch({
   cities,
   initialQuery = '',
   initialCityId = '',
+  inlineClassName = '',
 }: MobileDirectorySearchProps) {
   const navigate = useNavigate();
   const { isMobileMenuOpen } = useLayoutChrome();
   const [query, setQuery] = useState(initialQuery);
   const [cityId, setCityId] = useState(initialCityId);
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const [showCompactSearch, setShowCompactSearch] = useState(false);
 
   useEffect(() => {
     setQuery(initialQuery);
@@ -39,6 +42,19 @@ export default function MobileDirectorySearch({
   useEffect(() => {
     setCityId(initialCityId);
   }, [initialCityId]);
+
+  useEffect(() => {
+    function handleScroll() {
+      setShowCompactSearch(window.scrollY > 28);
+    }
+
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
 
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -60,8 +76,29 @@ export default function MobileDirectorySearch({
 
   return (
     <>
+      <div className={`mx-auto w-full max-w-7xl px-4 pt-3 sm:px-6 md:hidden lg:px-8 ${inlineClassName}`}>
+        <button
+          type="button"
+          className="flex w-full min-w-0 items-center gap-3 rounded-[2rem] border border-zinc-200 bg-white px-4 py-3 text-left shadow-[0_8px_24px_rgba(24,24,27,0.08)]"
+          onClick={() => setIsMobileSearchOpen(true)}
+          aria-label="Open mobile search"
+        >
+          <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-white shadow-sm">
+            <Search className="h-4 w-4" strokeWidth={2.3} />
+          </span>
+          <div className="min-w-0 flex flex-1 items-center gap-2 overflow-hidden">
+            <p className="truncate font-sans text-[14px] font-medium tracking-[-0.02em] text-zinc-900">{compactSearchLabel}</p>
+            {cityId ? (
+              <span className="shrink-0 rounded-full bg-zinc-100 px-2.5 py-1 font-mono text-[8px] font-bold uppercase tracking-[0.16em] text-zinc-500">
+                {selectedCityName}
+              </span>
+            ) : null}
+          </div>
+        </button>
+      </div>
+
       <AnimatePresence>
-        {!isMobileMenuOpen ? (
+        {(showCompactSearch || isMobileSearchOpen) && !isMobileMenuOpen ? (
           <motion.div
             initial={{ opacity: 0, y: -10, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
