@@ -107,10 +107,16 @@ export default function SearchPage() {
       animate={{opacity: 1, y: 0}}
       exit={{opacity: 0, y: -20}}
       transition={{duration: 0.4, ease: 'easeOut'}}
-      className="bg-[#FAFAFA] min-h-screen py-16"
+      className="bg-[#FAFAFA] min-h-screen pt-0 pb-16"
     >
+      <MobileDirectorySearch
+        cities={cities}
+        initialQuery={rawQuery}
+        initialCityId={inferredCityId}
+        inlineMode="bar"
+        inlineClassName="border-b border-zinc-200"
+      />
       <Breadcrumbs items={[{ label: 'Home', to: '/' }, { label: 'Search' }]} />
-      <MobileDirectorySearch cities={cities} initialQuery={rawQuery} initialCityId={inferredCityId} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-12 border-b border-zinc-200 pb-6">
           <div className="inline-flex items-center gap-2 border border-zinc-200 bg-white text-zinc-600 px-3 py-1.5 font-mono text-[10px] tracking-[0.15em] mb-6 rounded-sm uppercase">
