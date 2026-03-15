@@ -68,7 +68,7 @@ type BusinessOverrideRow = {
   photos: unknown;
 };
 
-const PAGE_SIZE = 1000;
+const PAGE_SIZE = 200;
 const ACTIVE_CITY_IDS = new Set([
   'kelowna',
   'vernon',
