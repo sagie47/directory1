@@ -205,7 +205,10 @@ export default function LoginPage() {
             <div className="mt-8 text-center">
               <p className="text-zinc-500 font-mono text-[10px] font-bold uppercase tracking-widest">
                 Don't have an account?{' '}
-                <Link to="/register" className="text-zinc-900 hover:text-orange-500 transition-colors">
+                <Link
+                  to={`/register${redirectTo !== '/account' ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`}
+                  className="text-zinc-900 hover:text-orange-500 transition-colors"
+                >
                   Create account
                 </Link>
               </p>

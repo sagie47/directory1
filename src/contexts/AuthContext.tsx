@@ -156,6 +156,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const initAuth = async () => {
       try {
+        const currentUrl = new URL(window.location.href);
+        const authCode = currentUrl.searchParams.get('code');
+
+        if (authCode) {
+          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(authCode);
+
+          if (exchangeError) {
+            throw exchangeError;
+          }
+
+          currentUrl.searchParams.delete('code');
+          currentUrl.searchParams.delete('type');
+          currentUrl.searchParams.delete('error');
+          currentUrl.searchParams.delete('error_code');
+          currentUrl.searchParams.delete('error_description');
+          window.history.replaceState({}, document.title, `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`);
+        }
+
         const { data, error: sessionError } = await supabase.auth.getSession();
 
         if (sessionError) {
