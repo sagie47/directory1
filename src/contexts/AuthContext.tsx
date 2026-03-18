@@ -48,6 +48,25 @@ function buildFallbackProfile(user: User): Profile {
   };
 }
 
+function isDuplicateOrConsumedPkceError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error ?? '');
+  const normalizedMessage = message.toLowerCase();
+
+  return normalizedMessage.includes('already been used')
+    || normalizedMessage.includes('invalid flow state')
+    || normalizedMessage.includes('code verifier')
+    || normalizedMessage.includes('both auth code and code verifier should be non-empty');
+}
+
+function clearAuthCallbackParams(currentUrl: URL) {
+  currentUrl.searchParams.delete('code');
+  currentUrl.searchParams.delete('type');
+  currentUrl.searchParams.delete('error');
+  currentUrl.searchParams.delete('error_code');
+  currentUrl.searchParams.delete('error_description');
+  window.history.replaceState({}, document.title, `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`);
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -163,15 +182,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(authCode);
 
           if (exchangeError) {
-            throw exchangeError;
+            if (isDuplicateOrConsumedPkceError(exchangeError)) {
+              console.warn('[auth] PKCE code was already consumed before manual exchange; continuing with restored session.', exchangeError);
+            } else {
+              throw exchangeError;
+            }
           }
 
-          currentUrl.searchParams.delete('code');
-          currentUrl.searchParams.delete('type');
-          currentUrl.searchParams.delete('error');
-          currentUrl.searchParams.delete('error_code');
-          currentUrl.searchParams.delete('error_description');
-          window.history.replaceState({}, document.title, `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`);
+          clearAuthCallbackParams(currentUrl);
         }
 
         const { data, error: sessionError } = await supabase.auth.getSession();
@@ -186,6 +204,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.error('Error restoring auth session:', sessionError);
 
         if (!mountedRef.current) {
+          return;
+        }
+
+        if (isDuplicateOrConsumedPkceError(sessionError)) {
+          console.warn('[auth] Ignoring duplicate PKCE callback error while restoring session.', sessionError);
+          setError(null);
+          setLoading(false);
           return;
         }
 
