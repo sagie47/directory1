@@ -15,7 +15,6 @@ import SectionEyebrow from '@/src/components/SectionEyebrow';
 import Seo from '@/src/components/Seo';
 import { useDirectoryData } from '@/src/directory-data';
 import { useAuth } from '@/src/contexts/AuthContext';
-import { getBusinessListingPath } from '@/src/lib/ownerProfile';
 import { supabase } from '@/src/lib/supabase';
 
 type ClaimStatus = 'pending' | 'approved' | 'rejected' | 'revoked';
@@ -95,6 +94,16 @@ function formatDate(value: string) {
 
 function formatRelationship(value: string) {
   return value.replace(/_/g, ' ');
+}
+
+function getBusinessListingPath(
+  business?: { cityId: string; categoryId: string; id: string } | null,
+) {
+  if (!business) {
+    return undefined;
+  }
+
+  return `/${business.cityId}/${business.categoryId}/${business.id}`;
 }
 
 export default function AdminClaimsPage() {
