@@ -2,14 +2,13 @@ import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronDown, User, LogOut, Building } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { hasApprovedClaim } from '../lib/auth';
 
 export default function UserMenu() {
-  const { user, profile, loading, signOut } = useAuth();
+  const { user, profile, loading, signOut, hasApprovedClaim } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
-  const [canAccessOwnerDashboard, setCanAccessOwnerDashboard] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const canAccessOwnerDashboard = hasApprovedClaim || profile?.role === 'admin';
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -21,46 +20,6 @@ export default function UserMenu() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  useEffect(() => {
-    let isActive = true;
-
-    if (!user) {
-      setCanAccessOwnerDashboard(false);
-      return () => {
-        isActive = false;
-      };
-    }
-
-    if (profile?.role === 'admin') {
-      setCanAccessOwnerDashboard(true);
-      return () => {
-        isActive = false;
-      };
-    }
-
-    hasApprovedClaim(user.id)
-      .then((hasClaim) => {
-        if (!isActive) {
-          return;
-        }
-
-        setCanAccessOwnerDashboard(hasClaim);
-      })
-      .catch((claimError) => {
-        console.error('Error checking owner dashboard access:', claimError);
-
-        if (!isActive) {
-          return;
-        }
-
-        setCanAccessOwnerDashboard(false);
-      });
-
-    return () => {
-      isActive = false;
-    };
-  }, [profile?.role, user]);
 
   const handleSignOut = async () => {
     await signOut();

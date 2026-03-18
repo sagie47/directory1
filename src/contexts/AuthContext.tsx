@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { hasApprovedClaim as checkApprovedClaim } from '../lib/auth';
 
 export type UserRole = 'consumer' | 'business_owner' | 'admin';
 
@@ -31,6 +32,7 @@ interface AuthContextType {
   refreshProfile: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
   updatePassword: (password: string) => Promise<{ error: Error | null }>;
+  hasApprovedClaim: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -55,6 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const configured = isSupabaseConfigured();
   const mountedRef = useRef(true);
   const profileRequestRef = useRef(0);
+  const [approvedClaim, setApprovedClaim] = useState(false);
 
   const fetchProfile = useCallback(async (authUser: User) => {
     if (!supabase) {
@@ -110,6 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (!nextUser) {
       setProfile(null);
+      setApprovedClaim(false);
       setLoading(false);
       return;
     }
@@ -123,12 +127,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       void loadProfile(nextUser);
+      void checkApprovedClaim(nextUser.id).then((hasClaim) => {
+        if (mountedRef.current) {
+          setApprovedClaim(hasClaim);
+        }
+      });
     }, 0);
   }, [loadProfile]);
 
   const refreshProfile = async () => {
     if (user) {
       await loadProfile(user);
+      const hasClaim = await checkApprovedClaim(user.id);
+      if (mountedRef.current) {
+        setApprovedClaim(hasClaim);
+      }
     }
   };
 
@@ -363,6 +376,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setError(null);
       await supabase.auth.signOut();
       setProfile(null);
+      setApprovedClaim(false);
     } catch (signOutError) {
       console.error('Error signing out:', signOutError);
       setError(signOutError instanceof Error ? signOutError.message : 'Unable to sign out right now.');
@@ -386,6 +400,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         refreshProfile,
         resetPassword,
         updatePassword,
+        hasApprovedClaim: approvedClaim,
       }}
     >
       {children}

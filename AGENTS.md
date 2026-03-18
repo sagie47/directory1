@@ -5,9 +5,12 @@ This document outlines the conventions, commands, and rules for AI coding agents
 ## 1. Project Overview & Tech Stack
 - **Framework:** React 19 + Vite 6
 - **Language:** TypeScript (ES2022 target)
+- **Environment:** Node.js (v22+ recommended)
+- **Routing:** React Router v7
 - **Styling:** Tailwind CSS v4, `clsx`, `tailwind-merge`
 - **Icons:** `lucide-react`
 - **Animation:** `motion/react`
+- **AI Integration:** Google GenAI (`@google/genai`)
 - **Backend & Data:** Supabase (Auth & Database), better-sqlite3 (for local ingestion scripts)
 
 ## 2. Directory Structure
@@ -90,7 +93,7 @@ Always use the `@/` alias (which resolves to the project root) for absolute path
 
 ### Component Architecture
 - **Functional Components:** Use function declarations for React components. Do NOT use `React.FC` or class components.
-- **Props:** Destructure props directly in the function signature. Always define an `interface` for props.
+- **Props & Refs:** Destructure props directly in the function signature. Always define an `interface` for props. In React 19, pass `ref` as a standard prop (avoid using `forwardRef`).
 - **Early Returns:** Handle loading, error, and empty states at the top of your component using early returns. Avoid deeply nesting conditional logic in the main return statement.
 - **List Keys:** Use stable, unique IDs for the `key` prop when mapping arrays. Do NOT use array indices for keys unless the list is completely static.
 - **Memoization:** Strategically use `useMemo` for heavy computations or filtering arrays, and `useCallback` for functions passed as props to child components.

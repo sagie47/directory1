@@ -1,5 +1,5 @@
 import { type FormEvent, useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight, MailCheck, ShieldCheck } from 'lucide-react';
 import { motion } from 'motion/react';
 import GoogleIcon from '../components/GoogleIcon';
@@ -13,12 +13,15 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+  const rawRedirect = searchParams.get('redirect') || '/account';
+  const redirectTo = rawRedirect.startsWith('/') && !rawRedirect.startsWith('//') ? rawRedirect : '/account';
 
   useEffect(() => {
     if (!authLoading && user) {
-      navigate('/account', { replace: true });
+      navigate(redirectTo, { replace: true });
     }
-  }, [authLoading, navigate, user]);
+  }, [authLoading, navigate, redirectTo, user]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -37,7 +40,7 @@ export default function LoginPage() {
       setError(error.message);
       setLoading(false);
     } else {
-      navigate('/account');
+      navigate(redirectTo);
     }
   };
 
@@ -55,7 +58,7 @@ export default function LoginPage() {
     setMagicLinkSent(false);
     setLoading(true);
 
-    const { error: magicLinkError } = await signInWithMagicLink(email, '/account');
+    const { error: magicLinkError } = await signInWithMagicLink(email, redirectTo);
 
     if (magicLinkError) {
       setError(magicLinkError.message);
@@ -76,7 +79,7 @@ export default function LoginPage() {
     setMagicLinkSent(false);
     setLoading(true);
 
-    const { error } = await signInWithGoogle('/account');
+    const { error } = await signInWithGoogle(redirectTo);
 
     if (error) {
       setError(error.message);

@@ -31,6 +31,7 @@ const WebsitesForTradesPage = lazy(() => import('./pages/WebsitesForTradesPage')
 const ManagedGrowthPage = lazy(() => import('./pages/ManagedGrowthPage'));
 const BookCallPage = lazy(() => import('./pages/BookCallPage'));
 const CallRequestedPage = lazy(() => import('./pages/CallRequestedPage'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const UpdatePasswordPage = lazy(() => import('./pages/UpdatePasswordPage'));
 const AdminClaimsPage = lazy(() => import('./pages/AdminClaimsPage'));
@@ -64,6 +65,7 @@ function AnimatedRoutes() {
           {/* Public routes */}
           <Route index element={<Home />} />
           <Route path="signup" element={<Navigate to="/claim" replace />} />
+          <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
           <Route path="reset-password" element={<ResetPasswordPage />} />
           <Route path="update-password" element={<UpdatePasswordPage />} />

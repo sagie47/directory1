@@ -1,5 +1,5 @@
 import { type FormEvent, useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight, UserPlus, Check } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -14,12 +14,15 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [searchParams] = useSearchParams();
+  const rawRedirect = searchParams.get('redirect') || '/account';
+  const redirectTo = rawRedirect.startsWith('/') && !rawRedirect.startsWith('//') ? rawRedirect : '/account';
 
   useEffect(() => {
     if (!authLoading && user) {
-      navigate('/account', { replace: true });
+      navigate(redirectTo, { replace: true });
     }
-  }, [authLoading, navigate, user]);
+  }, [authLoading, navigate, redirectTo, user]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -50,7 +53,7 @@ export default function RegisterPage() {
     }
 
     if (session) {
-      navigate('/account', { replace: true });
+      navigate(redirectTo, { replace: true });
       return;
     }
 
@@ -174,8 +177,8 @@ export default function RegisterPage() {
             <div className="mt-8 text-center">
               <p className="text-zinc-500 font-mono text-[10px] font-bold uppercase tracking-widest">
                 Already have an account?{' '}
-                <Link to="/claim" className="text-zinc-900 hover:text-orange-500 transition-colors">
-                  Continue here
+                <Link to={`/login${redirectTo !== '/account' ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`} className="text-zinc-900 hover:text-orange-500 transition-colors">
+                  Sign in
                 </Link>
               </p>
             </div>

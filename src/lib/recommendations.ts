@@ -22,6 +22,16 @@ interface RecommendationContext {
 }
 
 export function getOwnerRecommendation({ business, claimStatus }: RecommendationContext): RecommendationResult {
+  if (claimStatus === 'revoked') {
+    return {
+      type: 'none',
+      title: 'Claim Revoked',
+      description: 'Your claim for this business has been revoked. Please contact support if you believe this is an error.',
+      href: '/contact',
+      ctaLabel: 'Contact Support'
+    };
+  }
+
   if (claimStatus === 'rejected') {
     return {
       type: 'retry_claim',

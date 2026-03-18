@@ -1,55 +1,26 @@
 import { type FormEvent, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Activity, Save, CheckCircle, AlertCircle, User, ArrowRight } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useAuth } from '../contexts/AuthContext';
-import { hasApprovedClaim } from '../lib/auth';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import SectionEyebrow from '../components/SectionEyebrow';
 
 export default function AccountPage() {
-  const { user, profile, loading: authLoading, refreshProfile } = useAuth();
+  const { user, profile, loading: authLoading, refreshProfile, hasApprovedClaim } = useAuth();
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fullName, setFullName] = useState(profile?.full_name || '');
-  const [canAccessOwnerDashboard, setCanAccessOwnerDashboard] = useState(false);
+  const canAccessOwnerDashboard = hasApprovedClaim || profile?.role === 'admin';
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [searchParams] = useSearchParams();
+  const wasDenied = searchParams.get('denied') === '1';
 
   useEffect(() => {
     setFullName(profile?.full_name || '');
   }, [profile?.full_name]);
-
-  useEffect(() => {
-    let isActive = true;
-
-    if (!user) {
-      setCanAccessOwnerDashboard(false);
-      return () => {
-        isActive = false;
-      };
-    }
-
-    if (profile?.role === 'admin') {
-      setCanAccessOwnerDashboard(true);
-      return () => {
-        isActive = false;
-      };
-    }
-
-    hasApprovedClaim(user.id).then((hasClaim) => {
-      if (!isActive) {
-        return;
-      }
-
-      setCanAccessOwnerDashboard(hasClaim);
-    });
-
-    return () => {
-      isActive = false;
-    };
-  }, [profile?.role, user]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -175,6 +146,12 @@ export default function AccountPage() {
         </div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }} className="border border-zinc-200 bg-white p-8 md:p-12 shadow-xl rounded-sm">
+          {wasDenied && (
+            <div className="mb-8 border-2 border-amber-200 bg-amber-50 rounded-xl p-4 font-mono text-xs font-bold uppercase tracking-wider text-amber-800 flex items-start gap-3">
+              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+              <span>You do not have permission to access that page.</span>
+            </div>
+          )}
           <div className="flex items-center gap-6 mb-10 pb-10 border-b-2 border-zinc-100">
             <div className="w-20 h-20 border border-zinc-200 bg-zinc-50 flex items-center justify-center rounded-sm shadow-md">
               <User className="w-10 h-10 text-zinc-900" strokeWidth={1.5} />

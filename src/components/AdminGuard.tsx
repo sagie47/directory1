@@ -19,7 +19,7 @@ export default function AdminGuard({ children }: { children: ReactNode }) {
   }
 
   if (!user || profile?.role !== 'admin') {
-    return <Navigate to="/account" replace />;
+    return <Navigate to="/account?denied=1" replace />;
   }
 
   return <>{children}</>;
