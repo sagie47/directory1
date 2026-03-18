@@ -269,6 +269,8 @@ export default function ClaimBusinessPage() {
                     alt=""
                     aria-hidden="true"
                     className="h-full w-full object-cover"
+                    loading="lazy"
+                    decoding="async"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent" />
                   <div className="absolute inset-x-0 bottom-0 p-6 text-white">
@@ -338,6 +340,8 @@ export default function ClaimBusinessPage() {
                   alt=""
                   aria-hidden="true"
                   className="h-full w-full object-cover"
+                  loading="lazy"
+                  decoding="async"
                 />
                 <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/20 via-zinc-950/10 to-transparent" />
                 <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/18 to-transparent" />

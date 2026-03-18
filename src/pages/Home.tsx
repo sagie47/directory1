@@ -1,7 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Search, MapPin, ArrowRight, ChevronRight, Menu, SlidersHorizontal, X, Zap, Star } from 'lucide-react';
-import * as Icons from 'lucide-react';
 import BusinessCard from '../components/BusinessCard';
 import FeatureCard from '../components/FeatureCard';
 import { useLayoutChrome } from '../components/Layout';
@@ -10,6 +9,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import heroImage from '../photos/2024_active_transportation_construction_hintringer_63.jpg';
 import businessBg from '../photos/job-construction-scaled.jpg';
 import { useDirectoryData } from '../directory-data';
+import { getLucideIcon } from '../lib/lucideIconMap';
 import { createImageFallbackHandler, preferSupabaseImage } from '../supabase-images';
 
 const containerVariants = {
@@ -383,7 +383,7 @@ export default function Home() {
             
             <div className="flex-1 grid grid-cols-2 lg:grid-cols-4 bg-white relative">
               {popularCategories.map((category, index) => {
-                const IconComponent = (Icons as any)[category.icon] || Icons.Wrench;
+                const IconComponent = getLucideIcon(category.icon);
                 // Assign a unique vibrant color pair for each card's hover state
                 const colorGradients = [
                   'from-amber-400 to-orange-500', 
@@ -538,7 +538,7 @@ export default function Home() {
             className="grid grid-cols-1 gap-0 sm:grid-cols-2 sm:gap-x-8 sm:gap-y-4 lg:grid-cols-3"
           >
             {otherCategories.map((category) => {
-              const IconComponent = (Icons as any)[category.icon] || Icons.Wrench;
+              const IconComponent = getLucideIcon(category.icon);
               const count = businesses.filter((business) => business.categoryId === category.id).length;
 
               return (
@@ -612,7 +612,7 @@ export default function Home() {
                 { title: 'Lead Alerts', desc: 'Get notified of inquiries immediately.', icon: 'Bell' },
                 { title: 'Scale Faster', desc: 'Upgrade for premium visibility & placement.', icon: 'TrendingUp' }
               ].map((item, i) => {
-                const IconComponent = (Icons as any)[item.icon] || Icons.CheckCircle2;
+                const IconComponent = getLucideIcon(item.icon);
                 return (
                   <div key={i}>
                     <FeatureCard

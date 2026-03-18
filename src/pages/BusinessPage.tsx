@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link, Navigate } from 'react-router-dom';
+import { useParams, Link, Navigate, useLocation } from 'react-router-dom';
 import { MapPin, Star, Phone, Globe, Mail, Clock, Check, ArrowRight, AlertCircle, Image as ImageIcon, Navigation, CheckCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 import {
+  type Business,
   getBusinessCapabilities,
   getBusinessCategoryTags,
   getBusinessDescription,
@@ -27,20 +28,67 @@ const MOBILE_REVIEW_BATCH_SIZE = 2;
 
 export default function BusinessPage() {
   const { cityId, categoryId, businessId } = useParams<{ cityId: string, categoryId: string, businessId: string }>();
+  const location = useLocation();
   const { cities, categories, businesses, isLoading, verifiedBusinessIds } = useDirectoryData();
   const { user } = useAuth();
   const [isOwner, setIsOwner] = useState(false);
+  const [fallbackBusiness, setFallbackBusiness] = useState<Business | null>(null);
+  const [isFallbackBusinessLoading, setIsFallbackBusinessLoading] = useState(false);
+  const [visibleMobileReviewCount, setVisibleMobileReviewCount] = useState(INITIAL_MOBILE_REVIEW_COUNT);
   
-  const city = cities.find(c => c.id === cityId);
-  const category = categories.find(c => c.id === categoryId);
-  const business = businesses.find(
+  const matchedBusiness = businesses.find(
     (candidate) =>
       candidate.id === businessId
       && candidate.cityId === cityId
       && candidate.categoryId === categoryId,
   );
+  const business = matchedBusiness ?? fallbackBusiness;
+  const city = cities.find((candidate) => candidate.id === (business?.cityId ?? cityId));
+  const category = categories.find((candidate) => candidate.id === (business?.categoryId ?? categoryId));
+  const canonicalPath = business ? `/${business.cityId}/${business.categoryId}/${business.id}` : null;
 
   const isVerified = business ? verifiedBusinessIds.has(business.id) : false;
+
+  useEffect(() => {
+    let isActive = true;
+
+    if (!businessId || isLoading || matchedBusiness) {
+      setFallbackBusiness(null);
+      setIsFallbackBusinessLoading(false);
+      return () => {
+        isActive = false;
+      };
+    }
+
+    setIsFallbackBusinessLoading(true);
+
+    import('../data')
+      .then((module) => {
+        if (!isActive) {
+          return;
+        }
+
+        const seedBusiness = module.businesses.find((candidate) => candidate.id === businessId) ?? null;
+        setFallbackBusiness(seedBusiness);
+      })
+      .catch((error: unknown) => {
+        if (!isActive) {
+          return;
+        }
+
+        console.error('[business-page] Seed fallback lookup failed.', error);
+        setFallbackBusiness(null);
+      })
+      .finally(() => {
+        if (isActive) {
+          setIsFallbackBusinessLoading(false);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [businessId, isLoading, matchedBusiness]);
 
   useEffect(() => {
     const checkOwnership = async () => {
@@ -63,7 +111,15 @@ export default function BusinessPage() {
     checkOwnership();
   }, [business, user]);
 
-  if (isLoading && !business) {
+  useEffect(() => {
+    if (!business) {
+      return;
+    }
+
+    setVisibleMobileReviewCount(INITIAL_MOBILE_REVIEW_COUNT);
+  }, [business?.id]);
+
+  if ((isLoading || isFallbackBusinessLoading) && !business) {
     return (
       <motion.div
         initial={{ opacity: 0 }}
@@ -80,8 +136,37 @@ export default function BusinessPage() {
     );
   }
 
+  if (business && canonicalPath && canonicalPath !== location.pathname) {
+    return <Navigate to={canonicalPath} replace />;
+  }
+
   if (!city || !category || !business) {
-    return <Navigate to="/" replace />;
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.3 }}
+        className="flex min-h-screen items-center justify-center bg-[#FAFAFA] px-6"
+      >
+        <div className="w-full max-w-xl border border-zinc-200 bg-white p-8 text-center shadow-sm">
+          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.24em] text-zinc-400">Listing unavailable</p>
+          <h1 className="mt-4 text-3xl font-bold uppercase tracking-tight text-zinc-900">This business link could not be resolved.</h1>
+          <p className="mt-4 text-base leading-relaxed text-zinc-600">
+            The listing may have moved, been removed, or the URL may be outdated.
+          </p>
+          <div className="mt-8 flex justify-center">
+            <Link
+              to="/search"
+              className="inline-flex items-center gap-3 bg-zinc-900 px-6 py-3 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white transition-colors hover:bg-orange-500"
+            >
+              Search Directory
+              <ArrowRight className="h-4 w-4" strokeWidth={2.2} />
+            </Link>
+          </div>
+        </div>
+      </motion.div>
+    );
   }
 
   const description = getBusinessDescription(business, city.name, category.name);
@@ -97,11 +182,6 @@ export default function BusinessPage() {
   const serviceAreas = getBusinessServiceAreas(business, city.name);
   const rating = business.rating ?? 0;
   const reviewCount = business.reviewCount ?? 0;
-  const [visibleMobileReviewCount, setVisibleMobileReviewCount] = useState(INITIAL_MOBILE_REVIEW_COUNT);
-
-  useEffect(() => {
-    setVisibleMobileReviewCount(INITIAL_MOBILE_REVIEW_COUNT);
-  }, [business.id]);
 
   const visibleMobileReviews = reviews.slice(0, visibleMobileReviewCount);
   const hasMoreMobileReviews = visibleMobileReviewCount < reviews.length;

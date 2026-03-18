@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation, Navigate, Outlet } from 'react-router-dom';
 import { AnimatePresence } from 'motion/react';
 import Layout from './components/Layout';
 import AuthGuard from './components/AuthGuard';
@@ -46,6 +46,14 @@ function ScrollToTop() {
   return null;
 }
 
+function DirectoryDataBoundary() {
+  return (
+    <DirectoryDataProvider>
+      <Outlet />
+    </DirectoryDataProvider>
+  );
+}
+
 function AnimatedRoutes() {
   const location = useLocation();
   
@@ -62,20 +70,50 @@ function AnimatedRoutes() {
     >
       <AnimatePresence mode="wait">
         <Routes location={location}>
-          {/* Public routes */}
-          <Route index element={<Home />} />
+          <Route element={<DirectoryDataBoundary />}>
+            <Route index element={<Home />} />
+            <Route path="claim" element={<ClaimPage />} />
+            <Route path="trades" element={<TradesPage />} />
+            <Route path="regions" element={<RegionsPage />} />
+            <Route path="verified" element={<VerifiedPage />} />
+            <Route path="search" element={<SearchPage />} />
+            <Route
+              path="claim/status"
+              element={
+                <AuthGuard>
+                  <ClaimStatusPage />
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="owner/dashboard"
+              element={
+                <AuthGuard requireApprovedClaim>
+                  <OwnerDashboardPage />
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="admin/claims"
+              element={
+                <AdminGuard>
+                  <AdminClaimsPage />
+                </AdminGuard>
+              }
+            />
+            <Route path=":cityId" element={<CityPage />} />
+            <Route path=":cityId/:categoryId" element={<CategoryPage />} />
+            <Route path=":cityId/:categoryId/:businessId" element={<BusinessPage />} />
+          </Route>
+
+          {/* Public routes without directory data */}
           <Route path="signup" element={<Navigate to="/claim" replace />} />
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
           <Route path="reset-password" element={<ResetPasswordPage />} />
           <Route path="update-password" element={<UpdatePasswordPage />} />
-          <Route path="claim" element={<ClaimPage />} />
           <Route path="claim-business" element={<ClaimBusinessPage />} />
           <Route path="for-business" element={<ForBusinessPage />} />
-          <Route path="trades" element={<TradesPage />} />
-          <Route path="regions" element={<RegionsPage />} />
-          <Route path="verified" element={<VerifiedPage />} />
-          <Route path="search" element={<SearchPage />} />
           <Route path="terms" element={<TermsPage />} />
           <Route path="privacy" element={<PrivacyPage />} />
           <Route path="contact" element={<ContactPage />} />
@@ -97,22 +135,6 @@ function AnimatedRoutes() {
             }
           />
           <Route
-            path="claim/status"
-            element={
-              <AuthGuard>
-                <ClaimStatusPage />
-              </AuthGuard>
-            }
-          />
-          <Route
-            path="owner/dashboard"
-            element={
-              <AuthGuard requireApprovedClaim>
-                <OwnerDashboardPage />
-              </AuthGuard>
-            }
-          />
-          <Route
             path="admin"
             element={
               <AdminGuard>
@@ -120,19 +142,6 @@ function AnimatedRoutes() {
               </AdminGuard>
             }
           />
-          <Route
-            path="admin/claims"
-            element={
-              <AdminGuard>
-                <AdminClaimsPage />
-              </AdminGuard>
-            }
-          />
-
-          {/* City/Category/Business routes */}
-          <Route path=":cityId" element={<CityPage />} />
-          <Route path=":cityId/:categoryId" element={<CategoryPage />} />
-          <Route path=":cityId/:categoryId/:businessId" element={<BusinessPage />} />
         </Routes>
       </AnimatePresence>
     </Suspense>
@@ -152,8 +161,6 @@ function AppShell() {
 
 export default function App() {
   return (
-    <DirectoryDataProvider>
-      <AppShell />
-    </DirectoryDataProvider>
+    <AppShell />
   );
 }

@@ -1,6 +1,5 @@
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { MapPin, ArrowRight, Star } from 'lucide-react';
-import * as Icons from 'lucide-react';
 import BusinessCard from '../components/BusinessCard';
 import Breadcrumbs from '../components/Breadcrumbs';
 import Seo from '../components/Seo';
@@ -8,6 +7,7 @@ import { motion } from 'motion/react';
 import { useDirectoryData } from '../directory-data';
 import { getCityHeroFallbackImage, getCityHeroImage } from '../city-hero-images';
 import { businessServesCity } from '../business';
+import { getLucideIcon } from '../lib/lucideIconMap';
 import { createImageFallbackHandler } from '../supabase-images';
 
 const containerVariants = {
@@ -157,7 +157,7 @@ export default function CityPage() {
             
             <div className="flex-1 grid grid-cols-2 lg:grid-cols-4 bg-white relative">
               {popularCategories.map((category, index) => {
-                const IconComponent = (Icons as any)[category.icon] || Icons.Wrench;
+                const IconComponent = getLucideIcon(category.icon);
                 const count = businesses.filter(
                   (business) => business.categoryId === category.id && businessServesCity(business, city.id, city.name)
                 ).length;
@@ -210,7 +210,7 @@ export default function CityPage() {
             className="grid grid-cols-1 gap-0 sm:grid-cols-2 sm:gap-x-8 sm:gap-y-4 md:grid-cols-3 lg:grid-cols-4"
           >
             {otherCategories.map((category) => {
-              const IconComponent = (Icons as any)[category.icon] || Icons.Wrench;
+              const IconComponent = getLucideIcon(category.icon);
               const count = businesses.filter(
                 (business) => business.categoryId === category.id && businessServesCity(business, city.id, city.name)
               ).length;

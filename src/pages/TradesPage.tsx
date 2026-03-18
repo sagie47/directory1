@@ -1,9 +1,9 @@
 import { Link } from 'react-router-dom';
-import * as Icons from 'lucide-react';
 import { motion } from 'motion/react';
 import { ArrowRight, LayoutGrid, ChevronRight } from 'lucide-react';
 import Seo from '../components/Seo';
 import { useDirectoryData } from '../directory-data';
+import { getLucideIcon } from '../lib/lucideIconMap';
 import businessBg from '../photos/1746202255761.jpg';
 import { createImageFallbackHandler, preferSupabaseImage } from '../supabase-images';
 
@@ -101,7 +101,7 @@ export default function TradesPage() {
           className="grid grid-cols-1 gap-0 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:gap-0 xl:grid-cols-4 lg:border-t lg:border-zinc-200"
         >
           {categories.map((c, i) => {
-            const Icon = (Icons as any)[c.icon] || Icons.Wrench;
+            const Icon = getLucideIcon(c.icon);
             
             return (
               <motion.div
