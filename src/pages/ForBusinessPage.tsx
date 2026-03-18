@@ -218,10 +218,10 @@ export default function ForBusinessPage() {
 
               <div className="space-y-6 text-zinc-500 mb-12">
                 <p className="text-lg font-medium leading-relaxed text-zinc-600">
-                  We do not want this page to feel like a pricing menu. The first useful action is claiming the listing.
+                  Start by claiming the listing. If the public details are wrong, every other marketing fix sits on a weak foundation.
                 </p>
                 <p className="text-lg leading-relaxed">
-                  After approval, the app can point a business toward the next practical improvement based on what is already missing: profile basics, a missing website, or lead capture.
+                  Once ownership is confirmed, we help you fix the next thing that actually moves the needle, whether that is sharper profile details, faster lead response, or a site that does not quietly lose trust.
                 </p>
               </div>
 
@@ -249,6 +249,8 @@ export default function ForBusinessPage() {
                   alt=""
                   aria-hidden="true"
                   className="h-full w-full object-cover opacity-35"
+                  loading="lazy"
+                  decoding="async"
                 />
                 <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/30 via-zinc-950/55 to-zinc-950" />
               </div>
@@ -258,10 +260,10 @@ export default function ForBusinessPage() {
                   <Zap className="h-3.5 w-3.5 text-orange-500" /> Recommendations
                 </div>
                 <p className="max-w-md text-3xl font-bold uppercase tracking-tight text-white sm:text-4xl">
-                  The next move should feel operational, not like sorting through agency packages.
+                  Good businesses do not need more noise. They need the next fix that customers will actually feel.
                 </p>
                 <p className="mt-5 max-w-lg text-base leading-relaxed text-zinc-300 sm:text-lg">
-                  Once the listing is claimed, the platform can push the business toward the one improvement that removes the most friction next.
+                  That is why the path stays tight: clean up the listing, prove ownership, then put attention on the one bottleneck costing you trust, speed, or visibility right now.
                 </p>
               </div>
             </div>
@@ -352,6 +354,8 @@ export default function ForBusinessPage() {
                   alt=""
                   aria-hidden="true"
                   className="h-full w-full object-cover"
+                  loading="lazy"
+                  decoding="async"
                 />
                 <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/28 to-transparent" />
                 <div className="absolute inset-x-0 bottom-0 p-6 text-white sm:p-8">

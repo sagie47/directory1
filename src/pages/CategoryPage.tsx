@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { MapPin, ArrowRight, Search } from 'lucide-react';
-import * as Icons from 'lucide-react';
 import BusinessCard from '../components/BusinessCard';
 import Breadcrumbs from '../components/Breadcrumbs';
 import Seo from '../components/Seo';
@@ -9,6 +8,7 @@ import { motion } from 'motion/react';
 import { Business, businessServesCity } from '../business';
 import { getCategoryHeroFallbackImage, getCategoryHeroImage } from '../category-hero-images';
 import { useDirectoryData } from '../directory-data';
+import { getLucideIcon } from '../lib/lucideIconMap';
 import { createImageFallbackHandler } from '../supabase-images';
 
 const containerVariants = {
@@ -65,7 +65,7 @@ export default function CategoryPage() {
     return (right.rating ?? 0) - (left.rating ?? 0) || (right.reviewCount ?? 0) - (left.reviewCount ?? 0);
   });
 
-  const IconComponent = (Icons as any)[category.icon] || Icons.Wrench;
+  const IconComponent = getLucideIcon(category.icon);
   const heroImage = getCategoryHeroImage({
     categoryId: category.id,
     groupId: category.groupId,
