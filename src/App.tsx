@@ -113,6 +113,14 @@ function AnimatedRoutes() {
             }
           />
           <Route
+            path="admin"
+            element={
+              <AdminGuard>
+                <Navigate to="/admin/claims" replace />
+              </AdminGuard>
+            }
+          />
+          <Route
             path="admin/claims"
             element={
               <AdminGuard>

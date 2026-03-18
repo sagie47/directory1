@@ -462,6 +462,11 @@ using (auth.uid() = id)
 with check (auth.uid() = id);
 ```
 
+Important:
+
+- Self-service profile updates must not allow `role`, `email`, or other admin-controlled fields to change.
+- Enforce that with a database trigger or restricted column update grants, not just client code.
+
 ### Business claims policies
 
 ```sql

@@ -181,11 +181,46 @@ begin
 end;
 $$;
 
+create or replace function public.protect_profile_admin_fields()
+returns trigger
+language plpgsql
+as $$
+begin
+  if auth.uid() is null then
+    return new;
+  end if;
+
+  if new.email is distinct from old.email then
+    raise exception 'Email cannot be changed from the client.';
+  end if;
+
+  if new.role is distinct from old.role then
+    raise exception 'Role cannot be changed from the client.';
+  end if;
+
+  if new.id is distinct from old.id then
+    raise exception 'Profile identity cannot be changed.';
+  end if;
+
+  if new.created_at is distinct from old.created_at then
+    raise exception 'Profile creation timestamp cannot be changed.';
+  end if;
+
+  return new;
+end;
+$$;
+
 drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
 after insert on auth.users
 for each row
 execute function public.handle_new_user();
+
+drop trigger if exists profiles_protect_admin_fields on public.profiles;
+create trigger profiles_protect_admin_fields
+before update on public.profiles
+for each row
+execute function public.protect_profile_admin_fields();
 
 alter table public.profiles enable row level security;
 alter table public.business_claims enable row level security;

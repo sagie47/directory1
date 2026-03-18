@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ChevronDown, User, LogOut, Building } from 'lucide-react';
+import { ChevronDown, User, LogOut, Building, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function UserMenu() {
@@ -75,6 +75,17 @@ export default function UserMenu() {
             >
               <Building className="h-4 w-4" strokeWidth={1.5} />
               Owner Dashboard
+            </Link>
+          )}
+
+          {profile?.role === 'admin' && (
+            <Link
+              to="/admin/claims"
+              className="flex items-center gap-3 px-4 py-2.5 text-sm text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50 transition-colors"
+              onClick={() => setIsOpen(false)}
+            >
+              <ShieldCheck className="h-4 w-4" strokeWidth={1.5} />
+              Claims Admin
             </Link>
           )}
 

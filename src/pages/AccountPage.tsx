@@ -235,7 +235,7 @@ export default function AccountPage() {
                   to="/admin/claims" 
                   className="group flex items-center border-2 border-zinc-200 bg-zinc-50 px-6 py-4 rounded-sm font-sans text-base font-bold text-zinc-900 transition-all hover:border-zinc-900 hover:shadow-[4px_4px_0px_0px_rgba(24,24,27,0.1)]"
                 >
-                  Admin Claim Review <ArrowRight className="ml-auto h-5 w-5 text-zinc-400 transition-all group-hover:translate-x-1 group-hover:text-orange-500" strokeWidth={2.5} />
+                  Claims Admin <ArrowRight className="ml-auto h-5 w-5 text-zinc-400 transition-all group-hover:translate-x-1 group-hover:text-orange-500" strokeWidth={2.5} />
                 </Link>
               )}
             </div>
