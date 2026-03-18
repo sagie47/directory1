@@ -8,8 +8,9 @@ import Seo from '../components/Seo';
 import SectionEyebrow from '../components/SectionEyebrow';
 import BusinessFAQ from '../components/BusinessFAQ';
 import BusinessCTA from '../components/BusinessCTA';
-import businessHero from '../photos/businessown/thumbnail_G74A6639.jpg';
-import { createImageFallbackHandler, preferSupabaseImage } from '../supabase-images';
+import businessHero from '../photos/phoyo/pexels-tima-miroshnichenko-5845916.jpg';
+import businessStoryPhoto from '../photos/phoyo/pexels-cottonbro-7019765.jpg';
+import businessOperationsPhoto from '../photos/phoyo/pexels-tima-miroshnichenko-6170142.jpg';
 import { trackEvent } from '../lib/analytics';
 
 const offerLanes = [
@@ -114,8 +115,6 @@ export default function ForBusinessPage() {
     trackEvent('for_business_viewed');
   }, []);
 
-  const businessHeroSrc = preferSupabaseImage('thumbnail_G74A6639.jpg', businessHero);
-
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -137,10 +136,9 @@ export default function ForBusinessPage() {
             initial={{ scale: 1.1, opacity: 0 }}
             animate={{ scale: 1, opacity: 0.6 }}
             transition={{ duration: 1.5, ease: "easeOut" }}
-            src={businessHeroSrc}
+            src={businessHero}
             alt="Business Owner" 
             className="w-full h-full object-cover"
-            onError={createImageFallbackHandler(businessHero)}
           />
           <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/90 via-zinc-900/40 to-transparent z-10"></div>
           <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent z-10"></div>
@@ -201,26 +199,23 @@ export default function ForBusinessPage() {
         </div>
       </section>
 
-      <section id="business-options" className="border-b border-zinc-200 bg-zinc-50 py-24 sm:py-32 lg:py-44 relative">
+      <section id="business-options" className="relative overflow-hidden border-b border-zinc-200 bg-zinc-50 py-24 sm:py-32 lg:py-44">
         <div className="absolute inset-0 z-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjMDAwIiBmaWxsLW9wYWNpdHk9IjAuMDIiLz4KPC9zdmc+')] opacity-50 mix-blend-overlay"></div>
+        <div className="absolute -left-16 top-24 h-64 w-64 rounded-full bg-orange-500/6 blur-[100px]"></div>
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-12 items-center">
-            
-            {/* Soft Modern Light Panel */}
-            <div className="rounded-sm border border-zinc-200 bg-white p-8 shadow-xl shadow-zinc-200/40 sm:p-10 lg:p-16 relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-orange-50/50 rounded-full blur-3xl opacity-50 -z-10 transition-transform duration-1000 group-hover:scale-110"></div>
-              
+          <div className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
+            <div className="relative overflow-hidden rounded-[2.5rem] border border-zinc-200/80 bg-white p-8 shadow-[0_30px_80px_rgba(24,24,27,0.08)] sm:p-10 lg:p-14">
               <SectionEyebrow
                 icon={Workflow}
                 className="mb-8 bg-zinc-50 border border-zinc-200 text-zinc-600 shadow-sm"
               >
                 What Happens After Claim
               </SectionEyebrow>
-              
-              <h2 className="mb-6 text-4xl font-bold uppercase tracking-tighter text-zinc-900 sm:text-5xl md:text-6xl leading-[1.05]">
+
+              <h2 className="mb-6 text-4xl font-bold uppercase tracking-tighter text-zinc-900 sm:text-5xl md:text-6xl leading-[1.02]">
                 Approval first. <br /> <span className="font-serif italic font-light text-zinc-400 normal-case">Then one clear next step.</span>
               </h2>
-              
+
               <div className="space-y-6 text-zinc-500 mb-12">
                 <p className="text-lg font-medium leading-relaxed text-zinc-600">
                   We do not want this page to feel like a pricing menu. The first useful action is claiming the listing.
@@ -236,9 +231,9 @@ export default function ForBusinessPage() {
                   { step: '2', title: 'Get verified' },
                   { step: '3', title: 'See next step' }
                 ].map((item) => (
-                  <div key={item.step} className="group/step rounded-sm border border-zinc-100 bg-zinc-50 p-5 transition-all duration-300 hover:border-orange-200 hover:bg-white hover:shadow-md relative overflow-hidden">
+                  <div key={item.step} className="group/step relative overflow-hidden rounded-[1.5rem] border border-zinc-200 bg-zinc-50 p-5 transition-all duration-300 hover:border-orange-200 hover:bg-white hover:shadow-md">
                     <div className="absolute left-0 top-0 h-full w-1 bg-zinc-100 transition-colors duration-300 group-hover/step:bg-orange-500"></div>
-                    <div className="mb-4 flex h-8 w-8 items-center justify-center rounded-sm bg-white border border-zinc-200 text-sm font-bold text-zinc-400 shadow-sm group-hover/step:border-orange-200 group-hover/step:text-orange-500 transition-colors">
+                    <div className="mb-4 flex h-9 w-9 items-center justify-center rounded-full bg-white border border-zinc-200 text-sm font-bold text-zinc-400 shadow-sm group-hover/step:border-orange-200 group-hover/step:text-orange-500 transition-colors">
                       {item.step}
                     </div>
                     <p className="font-bold text-zinc-900 tracking-tight">{item.title}</p>
@@ -247,57 +242,126 @@ export default function ForBusinessPage() {
               </div>
             </div>
 
-            {/* Elevated Recommendations Panel */}
-            <div className="rounded-sm border border-zinc-800 bg-zinc-950 p-8 shadow-2xl sm:p-10 lg:p-12 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-[0.03] mix-blend-overlay pointer-events-none"></div>
-              
-              <div className="relative z-10">
-                <div className="mb-8 inline-flex items-center gap-2 rounded-sm border border-zinc-800 bg-zinc-900 px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 shadow-sm">
+            <div className="relative overflow-hidden rounded-[2.75rem] border border-zinc-900/90 bg-zinc-950 shadow-2xl">
+              <div className="absolute inset-0">
+                <img
+                  src={businessStoryPhoto}
+                  alt=""
+                  aria-hidden="true"
+                  className="h-full w-full object-cover opacity-35"
+                />
+                <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/30 via-zinc-950/55 to-zinc-950" />
+              </div>
+
+              <div className="relative z-10 flex min-h-[34rem] flex-col justify-end p-8 sm:p-10 lg:p-12">
+                <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-300 shadow-sm backdrop-blur-sm">
                   <Zap className="h-3.5 w-3.5 text-orange-500" /> Recommendations
                 </div>
-                
-                <div className="space-y-4">
-                  {offerLanes.map((lane) => (
-                    <div key={lane.title} className="group relative overflow-hidden rounded-sm border border-zinc-800 bg-zinc-900/50 p-6 transition-all duration-300 hover:border-zinc-700 hover:bg-zinc-900">
-                      <div className="absolute left-0 top-0 h-full w-1 bg-zinc-800 transition-colors duration-300 group-hover:bg-orange-500"></div>
-                      <div className="flex items-center gap-4 mb-3">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-sm bg-zinc-950 border border-zinc-800 text-zinc-400 group-hover:border-orange-500/30 group-hover:text-orange-400 transition-colors">
-                          <lane.icon className="h-5 w-5" strokeWidth={1.5} />
-                        </div>
-                        <p className="font-bold uppercase tracking-wide text-white">{lane.title}</p>
-                      </div>
-                      <p className="mb-5 text-sm leading-relaxed text-zinc-400">{lane.description}</p>
-                      <Link
-                        to={lane.href}
-                        className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-zinc-300 transition-colors group-hover:text-orange-400"
-                      >
-                        Learn more <ArrowRight className="h-4 w-4" strokeWidth={2} />
-                      </Link>
-                    </div>
-                  ))}
-                </div>
+                <p className="max-w-md text-3xl font-bold uppercase tracking-tight text-white sm:text-4xl">
+                  The next move should feel operational, not like sorting through agency packages.
+                </p>
+                <p className="mt-5 max-w-lg text-base leading-relaxed text-zinc-300 sm:text-lg">
+                  Once the listing is claimed, the platform can push the business toward the one improvement that removes the most friction next.
+                </p>
               </div>
             </div>
-
           </div>
         </div>
       </section>
 
-      <section className="border-b border-zinc-200 bg-white py-20 sm:py-24 lg:py-44">
+      <section className="border-b border-zinc-200 bg-white py-24 sm:py-32 lg:py-40">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-14 text-center sm:mb-18 lg:mb-24">
+          <div className="mb-14 max-w-3xl">
             <SectionEyebrow
-              icon={Sparkles}
+              icon={Building2}
               className="mb-6"
             >
-              The Foundation
+              Business Lanes
             </SectionEyebrow>
-            <h2 className="mb-5 text-3xl font-bold uppercase tracking-tight text-zinc-900 sm:text-4xl md:text-6xl md:mb-6">
-              Our Operating Principles
+            <h2 className="text-3xl font-bold uppercase tracking-tight text-zinc-900 sm:text-4xl md:text-6xl">
+              Four ways we help after the listing is under control.
             </h2>
-            <p className="mx-auto max-w-2xl text-lg font-medium leading-relaxed text-zinc-500 sm:text-xl">
-              The goal is to give trade businesses a clearer next step and a better local operating system.
-            </p>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            {offerLanes.map((lane) => (
+              <article
+                key={lane.title}
+                className="group flex h-full flex-col justify-between rounded-[2rem] border border-zinc-200 bg-zinc-50 p-8 transition-all duration-300 hover:-translate-y-1 hover:border-zinc-300 hover:bg-white hover:shadow-[0_18px_40px_rgba(24,24,27,0.08)] sm:p-9"
+              >
+                <div>
+                  <div className="mb-6 flex items-center gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-zinc-200 bg-white text-zinc-500 transition-colors group-hover:border-orange-200 group-hover:text-orange-500">
+                      <lane.icon className="h-5 w-5" strokeWidth={1.8} />
+                    </div>
+                    <div>
+                      <p className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-zinc-400">{lane.eyebrow}</p>
+                      <h3 className="mt-2 text-2xl font-bold uppercase tracking-tight text-zinc-900">{lane.title}</h3>
+                    </div>
+                  </div>
+                  <p className="max-w-xl text-base leading-relaxed text-zinc-600 sm:text-lg">{lane.description}</p>
+                  <ul className="mt-6 space-y-3 text-sm text-zinc-700 sm:text-base">
+                    {lane.bullets.map((bullet) => (
+                      <li key={bullet} className="flex items-start gap-3">
+                        <span className="mt-2 h-1.5 w-1.5 rounded-full bg-orange-500"></span>
+                        <span>{bullet}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="mt-8">
+                  <Link
+                    to={lane.href}
+                    className="inline-flex items-center gap-3 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-zinc-500 transition-colors group-hover:text-orange-500"
+                  >
+                    {lane.cta}
+                    <ArrowRight className="h-4 w-4" strokeWidth={2.2} />
+                  </Link>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="relative overflow-hidden border-b border-zinc-200 bg-white py-24 sm:py-32 lg:py-44">
+        <div className="absolute inset-y-0 right-0 -z-10 hidden w-[38%] bg-zinc-50 lg:block"></div>
+        <div className="absolute right-[18%] top-24 -z-10 hidden h-56 w-56 rounded-full bg-orange-500/5 blur-[100px] lg:block"></div>
+        <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-16 grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-end lg:gap-16">
+            <div>
+              <SectionEyebrow
+                icon={Sparkles}
+                className="mb-6"
+              >
+                The Foundation
+              </SectionEyebrow>
+              <h2 className="mb-5 text-3xl font-bold uppercase tracking-tight text-zinc-900 sm:text-4xl md:text-6xl md:mb-6">
+                Our Operating Principles
+              </h2>
+              <p className="max-w-2xl text-lg font-medium leading-relaxed text-zinc-500 sm:text-xl">
+                The goal is to give trade businesses a clearer next step and a better local operating system.
+              </p>
+            </div>
+
+            <div className="overflow-hidden rounded-[2.5rem] border border-zinc-200 bg-zinc-100 shadow-[0_28px_60px_rgba(24,24,27,0.1)]">
+              <div className="relative aspect-[16/10]">
+                <img
+                  src={businessOperationsPhoto}
+                  alt=""
+                  aria-hidden="true"
+                  className="h-full w-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/28 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 p-6 text-white sm:p-8">
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-orange-300">Field reality</p>
+                  <p className="mt-3 max-w-md text-2xl font-semibold tracking-tight sm:text-3xl">
+                    Stronger digital operations start with the details crews rarely have time to clean up.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-4">
@@ -317,7 +381,7 @@ export default function ForBusinessPage() {
 
       <section className="border-b border-zinc-200 bg-zinc-50 py-20 sm:py-24 lg:py-36">
         <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-          <div className="rounded-sm border border-zinc-200 bg-white p-8 shadow-sm sm:p-10 lg:p-14">
+          <div className="rounded-[2rem] border border-zinc-200 bg-white p-8 shadow-sm sm:p-10 lg:p-14">
             <SectionEyebrow
               icon={ShieldCheck}
               className="mb-8"
@@ -334,7 +398,7 @@ export default function ForBusinessPage() {
                 </p>
               </div>
 
-              <div className="rounded-sm border border-zinc-100 bg-zinc-50 p-6 sm:p-8">
+              <div className="rounded-[1.75rem] border border-zinc-100 bg-zinc-50 p-6 sm:p-8">
                 <h3 className="mb-4 text-lg font-bold uppercase tracking-wide text-zinc-900">
                   What you get after approval
                 </h3>

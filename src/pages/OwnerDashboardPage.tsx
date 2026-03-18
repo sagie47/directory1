@@ -1,18 +1,29 @@
-import { type FormEvent, useEffect, useState } from 'react';
+import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Activity, Save, AlertCircle, CheckCircle, Check, ArrowRight } from 'lucide-react';
+import {
+  AlertCircle,
+  ArrowRight,
+  CheckCircle2,
+  ExternalLink,
+  Save,
+  ShieldCheck,
+} from 'lucide-react';
 import { motion } from 'motion/react';
-import { useAuth } from '../contexts/AuthContext';
-import { useDirectoryData } from '../directory-data';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { Business, BusinessHours } from '../business';
-import { getOwnerRecommendation } from '../lib/recommendations';
-import { trackEvent } from '../lib/analytics';
+
+import type { Business, BusinessHours } from '@/src/business';
+import OwnerProfileChecklist from '@/src/components/OwnerProfileChecklist';
+import SectionEyebrow from '@/src/components/SectionEyebrow';
+import { useAuth } from '@/src/contexts/AuthContext';
+import { useDirectoryData } from '@/src/directory-data';
+import { trackEvent } from '@/src/lib/analytics';
+import { getBusinessListingPath, getOwnerProfileProgress } from '@/src/lib/ownerProfile';
+import { getOwnerRecommendation } from '@/src/lib/recommendations';
+import { isSupabaseConfigured, supabase } from '@/src/lib/supabase';
 
 interface BusinessClaim {
   id: string;
   business_id: string;
-  status: 'pending' | 'approved' | 'rejected' | 'revoked';
+  status: 'approved';
 }
 
 interface BusinessOverride {
@@ -25,7 +36,6 @@ interface BusinessOverride {
   };
   service_areas?: string[];
   hours?: BusinessHours;
-  photos?: string[];
 }
 
 const defaultHours: BusinessHours = {
@@ -38,15 +48,18 @@ const defaultHours: BusinessHours = {
   sunday: '',
 };
 
-function hasBusinessHours(hours: BusinessHours) {
-  return Object.values(hours).some((value) => Boolean(value?.trim()));
+function normalizeHours(hours?: BusinessHours) {
+  return {
+    ...defaultHours,
+    ...(hours ?? {}),
+  };
 }
 
 export default function OwnerDashboardPage() {
   const { user, loading: authLoading } = useAuth();
   const { businesses, cities, isLoading: directoryLoading, refresh } = useDirectoryData();
   const [approvedClaims, setApprovedClaims] = useState<BusinessClaim[]>([]);
-  const [selectedClaimId, setSelectedClaimId] = useState<string | null>(null);
+  const [selectedClaimId, setSelectedClaimId] = useState<string>('');
   const [approvedClaim, setApprovedClaim] = useState<BusinessClaim | null>(null);
   const [business, setBusiness] = useState<Business | null>(null);
   const [loading, setLoading] = useState(true);
@@ -68,35 +81,35 @@ export default function OwnerDashboardPage() {
     trackEvent('owner_dashboard_viewed');
   }, []);
 
+  async function hydrateClaim(claim: BusinessClaim) {
+    if (!supabase) {
+      return;
+    }
+
+    const matchedBusiness = businesses.find((entry) => entry.id === claim.business_id) ?? null;
+    setApprovedClaim(claim);
+    setSelectedClaimId(claim.id);
+    setBusiness(matchedBusiness);
+
+    const { data: overrideData } = await supabase
+      .from('business_overrides')
+      .select('*')
+      .eq('business_id', claim.business_id)
+      .maybeSingle();
+
+    const override = (overrideData ?? null) as BusinessOverride | null;
+    setFormData({
+      description: override?.description || matchedBusiness?.description || '',
+      phone: override?.contact?.phone || matchedBusiness?.contact?.phone || '',
+      website: override?.contact?.website || matchedBusiness?.contact?.website || '',
+      email: override?.contact?.email || matchedBusiness?.contact?.email || '',
+      serviceAreas: override?.service_areas?.join(', ') || matchedBusiness?.serviceAreas?.join(', ') || '',
+      hours: normalizeHours(override?.hours || matchedBusiness?.hours),
+    });
+  }
+
   useEffect(() => {
-    if (business) {
-      const rec = getOwnerRecommendation({
-        business,
-        claimStatus: 'approved',
-      });
-      trackEvent('owner_dashboard_recommendation_viewed', { type: rec.type });
-    }
-  }, [business]);
-
-  const normalizeHours = (hours?: BusinessHours) => {
-    const normalized = { ...defaultHours };
-
-    if (!hours) {
-      return normalized;
-    }
-
-    for (const [day, value] of Object.entries(hours)) {
-      const normalizedDay = day.toLowerCase() as keyof BusinessHours;
-      if (normalizedDay in normalized) {
-        normalized[normalizedDay] = value;
-      }
-    }
-
-    return normalized;
-  };
-
-  useEffect(() => {
-    const fetchData = async () => {
+    async function fetchClaims() {
       if (directoryLoading) {
         return;
       }
@@ -106,411 +119,336 @@ export default function OwnerDashboardPage() {
         return;
       }
 
-      const { data: claimsData } = await supabase
-        .from('business_claims')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('status', 'approved')
-        .order('updated_at', { ascending: false });
+      try {
+        const { data } = await supabase
+          .from('business_claims')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('status', 'approved')
+          .order('updated_at', { ascending: false });
 
-      if (!claimsData || claimsData.length === 0) {
+        const claimList = (data ?? []) as BusinessClaim[];
+        setApprovedClaims(claimList);
+
+        if (claimList.length > 0) {
+          await hydrateClaim(claimList[0]);
+        }
+      } catch (caughtError) {
+        setError(caughtError instanceof Error ? caughtError.message : 'Failed to load the owner dashboard.');
+      } finally {
         setLoading(false);
-        return;
       }
+    }
 
-      setApprovedClaims(claimsData as BusinessClaim[]);
-      
-      if (claimsData.length === 1) {
-        setSelectedClaimId(claimsData[0].id);
-        setApprovedClaim(claimsData[0] as BusinessClaim);
-        loadBusinessForClaim(claimsData[0] as BusinessClaim);
-      } else {
-        setSelectedClaimId(null);
-        setApprovedClaim(null);
-        setBusiness(null);
-      }
-
-      setLoading(false);
-    };
-
-    fetchData();
+    fetchClaims();
   }, [businesses, directoryLoading, ownerToolsAvailable, user]);
 
-  const loadBusinessForClaim = async (claim: BusinessClaim) => {
-    if (!supabase) return;
+  const city = cities.find((entry) => entry.id === business?.cityId);
+  const listingPath = getBusinessListingPath(business);
+  const formSnapshot = useMemo(() => ({
+    description: formData.description,
+    contact: {
+      phone: formData.phone,
+      website: formData.website,
+      email: formData.email,
+    },
+    serviceAreas: formData.serviceAreas.split(',').map((value) => value.trim()).filter(Boolean),
+    hours: formData.hours,
+  }), [formData]);
+  const progress = useMemo(() => getOwnerProfileProgress(formSnapshot), [formSnapshot]);
+  const recommendation = getOwnerRecommendation({ business: formSnapshot, claimStatus: 'approved' });
 
-    const businessData = businesses.find(b => b.id === claim.business_id);
-    setBusiness(businessData || null);
-
-    const { data: overrideData } = await supabase
-      .from('business_overrides')
-      .select('*')
-      .eq('business_id', claim.business_id)
-      .maybeSingle();
-
-    if (overrideData) {
-      const o = overrideData as BusinessOverride;
-      setFormData({
-        description: o.description || businessData?.description || '',
-        phone: o.contact?.phone || businessData?.contact?.phone || '',
-        website: o.contact?.website || businessData?.contact?.website || '',
-        email: o.contact?.email || businessData?.contact?.email || '',
-        serviceAreas: o.service_areas?.join(', ') || businessData?.serviceAreas?.join(', ') || '',
-        hours: normalizeHours(o.hours || businessData?.hours),
-      });
-    } else {
-      setFormData({
-        description: businessData?.description || '',
-        phone: businessData?.contact?.phone || '',
-        website: businessData?.contact?.website || '',
-        email: businessData?.contact?.email || '',
-        serviceAreas: businessData?.serviceAreas?.join(', ') || '',
-        hours: normalizeHours(businessData?.hours),
-      });
+  useEffect(() => {
+    if (business) {
+      trackEvent('owner_dashboard_recommendation_viewed', { type: recommendation.type });
     }
+  }, [business, recommendation.type]);
 
-    setLoading(false);
-  };
-
-  const handleSelectClaim = (claimId: string) => {
-    const claim = approvedClaims.find(c => c.id === claimId);
-    if (claim) {
-      setSelectedClaimId(claimId);
-      setApprovedClaim(claim);
-      loadBusinessForClaim(claim);
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    if (!user || !approvedClaim || !supabase || !ownerToolsAvailable) {
+      return;
     }
-  };
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!user || !approvedClaim || !supabase || !ownerToolsAvailable) return;
 
     setError(null);
     setSaving(true);
     setSaveSuccess(false);
 
-    const overrideData = {
-      business_id: approvedClaim.business_id,
-      description: formData.description || null,
-      contact: {
-        phone: formData.phone || null,
-        website: formData.website || null,
-        email: formData.email || null,
-      },
-      service_areas: formData.serviceAreas ? formData.serviceAreas.split(',').map(s => s.trim()).filter(Boolean) : [],
-      hours: formData.hours,
-      updated_by: user.id,
-    };
+    try {
+      const { error: upsertError } = await supabase
+        .from('business_overrides')
+        .upsert({
+          business_id: approvedClaim.business_id,
+          description: formData.description || null,
+          contact: {
+            phone: formData.phone || null,
+            website: formData.website || null,
+            email: formData.email || null,
+          },
+          service_areas: formData.serviceAreas.split(',').map((value) => value.trim()).filter(Boolean),
+          hours: formData.hours,
+          updated_by: user.id,
+        }, { onConflict: 'business_id' });
 
-    const { error: upsertError } = await supabase
-      .from('business_overrides')
-      .upsert(overrideData, { onConflict: 'business_id' });
+      if (upsertError) {
+        setError(upsertError.message);
+        return;
+      }
 
-    if (upsertError) {
-      setError(upsertError.message);
+      await refresh();
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : 'Failed to save your changes.');
+    } finally {
       setSaving(false);
-      return;
     }
-
-    await refresh();
-    setSaving(false);
-    setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 3000);
-  };
-
-  const handleHoursChange = (day: keyof BusinessHours, value: string) => {
-    setFormData({
-      ...formData,
-      hours: {
-        ...formData.hours,
-        [day]: value,
-      },
-    });
-  };
+  }
 
   if (authLoading || directoryLoading || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA]">
-        <div className="animate-pulse flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-2 border-zinc-300 border-t-zinc-900 rounded-full"></div>
-          <p className="text-zinc-500 text-sm">Loading...</p>
-        </div>
+      <div className="flex min-h-screen items-center justify-center bg-zinc-50">
+        <div className="h-12 w-12 animate-spin rounded-full border-2 border-zinc-200 border-t-zinc-900" />
       </div>
     );
   }
 
   if (!ownerToolsAvailable) {
     return (
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.5 }}
-        className="bg-[#FAFAFA] min-h-screen py-24 text-zinc-900 font-sans relative"
-      >
-        <div className="absolute inset-0 z-0 opacity-50 pointer-events-none" style={{ backgroundImage: 'linear-gradient(to right, #f4f4f5 1px, transparent 1px), linear-gradient(to bottom, #f4f4f5 1px, transparent 1px)', backgroundSize: '4rem 4rem' }}></div>
-
-        <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }} className="bg-white border border-zinc-200 p-8 md:p-12 shadow-sm rounded-sm text-center">
-            <AlertCircle className="w-12 h-12 text-amber-500 mx-auto mb-4" strokeWidth={1.5} />
-            <h2 className="text-2xl font-medium tracking-tight mb-4">Dashboard Unavailable</h2>
-            <p className="text-zinc-500">
-              The owner dashboard requires a configured Supabase environment.
-            </p>
-          </motion.div>
+      <div className="min-h-screen bg-[#FAFAFA] px-4 py-24">
+        <div className="mx-auto max-w-2xl border-2 border-zinc-900 bg-white p-8 shadow-[8px_8px_0px_0px_rgba(24,24,27,1)] sm:p-10">
+          <h1 className="text-4xl font-bold uppercase tracking-tight text-zinc-950">Owner dashboard is offline.</h1>
+          <p className="mt-4 text-lg leading-8 text-zinc-600">This environment does not have the owner backend configured yet.</p>
         </div>
-      </motion.div>
+      </div>
     );
   }
 
   if (!approvedClaim || !business) {
     return (
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.5 }}
-        className="bg-[#FAFAFA] min-h-screen py-24 text-zinc-900 font-sans relative"
-      >
-        <div className="absolute inset-0 z-0 opacity-50 pointer-events-none" style={{ backgroundImage: 'linear-gradient(to right, #f4f4f5 1px, transparent 1px), linear-gradient(to bottom, #f4f4f5 1px, transparent 1px)', backgroundSize: '4rem 4rem' }}></div>
-
-        <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }} className="bg-white border border-zinc-200 p-8 md:p-12 shadow-sm rounded-sm text-center">
-            <AlertCircle className="w-12 h-12 text-amber-500 mx-auto mb-4" strokeWidth={1.5} />
-            <h2 className="text-2xl font-medium tracking-tight mb-4">No Approved Claims</h2>
-            <p className="text-zinc-500 mb-6">
-              You don't have an approved business claim. Claim a business to access the owner dashboard.
-            </p>
-            <Link 
-              to="/claim" 
-              className="inline-block bg-zinc-900 text-white px-6 py-3 font-sans text-sm font-medium hover:bg-zinc-800 transition-colors rounded-sm"
+      <div className="min-h-screen bg-[#FAFAFA] px-4 py-24">
+        <div className="mx-auto max-w-3xl border-2 border-zinc-900 bg-white p-8 shadow-[8px_8px_0px_0px_rgba(24,24,27,1)] sm:p-10">
+          <SectionEyebrow
+            icon={ShieldCheck}
+            className="inline-flex items-center gap-2 bg-zinc-900 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-white"
+            iconClassName="h-3.5 w-3.5 text-orange-400"
+          >
+            Owner Dashboard
+          </SectionEyebrow>
+          <h1 className="mt-6 text-4xl font-bold uppercase tracking-tight text-zinc-950">No approved claims yet.</h1>
+          <p className="mt-4 max-w-2xl text-lg leading-8 text-zinc-600">Claim a listing first. Once ownership is approved, the dashboard opens automatically for that business.</p>
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <Link
+              to="/claim"
+              className="inline-flex items-center justify-center gap-3 border-2 border-zinc-900 bg-zinc-900 px-6 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white transition-all hover:border-orange-500 hover:bg-orange-500"
             >
-              Claim a Business
+              Start a claim
+              <ArrowRight className="h-4 w-4" strokeWidth={2.6} />
             </Link>
-          </motion.div>
+            <Link
+              to="/claim/status"
+              className="inline-flex items-center justify-center border border-zinc-200 bg-white px-6 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-700 transition-colors hover:bg-zinc-50 hover:text-zinc-950"
+            >
+              View claim status
+            </Link>
+          </div>
         </div>
-      </motion.div>
+      </div>
     );
   }
 
-  const city = cities.find(c => c.id === business.cityId);
-
   return (
-    <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.5 }}
-      className="bg-[#FAFAFA] min-h-screen py-24 text-zinc-900 font-sans relative"
-    >
-      <div className="absolute inset-0 z-0 opacity-50 pointer-events-none" style={{ backgroundImage: 'linear-gradient(to right, #f4f4f5 1px, transparent 1px), linear-gradient(to bottom, #f4f4f5 1px, transparent 1px)', backgroundSize: '4rem 4rem' }}></div>
-
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <div className="inline-flex items-center gap-2 border border-zinc-200 bg-white text-zinc-600 px-3 py-1.5 font-mono text-[10px] tracking-[0.15em] mb-4 uppercase rounded-sm shadow-sm">
-              <Activity className="h-3.5 w-3.5 text-zinc-400" strokeWidth={1.5} /> Owner Dashboard
+    <div className="min-h-screen bg-[#FAFAFA] text-zinc-900 font-sans selection:bg-indigo-200 selection:text-indigo-900">
+      <section className="border-b-2 border-zinc-900 bg-white px-4 py-16 sm:px-6 sm:py-20 lg:px-10 lg:py-24">
+        <div className="mx-auto max-w-[96rem]">
+          <SectionEyebrow
+            icon={ShieldCheck}
+            className="inline-flex items-center gap-2 bg-zinc-900 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-white"
+            iconClassName="h-3.5 w-3.5 text-orange-400"
+          >
+            Owner Dashboard
+          </SectionEyebrow>
+          <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-end">
+            <div>
+              <h1 className="text-5xl font-bold uppercase tracking-tight text-zinc-950 sm:text-6xl lg:text-7xl">{business.name}</h1>
+              <p className="mt-4 text-lg leading-8 text-zinc-600 sm:text-xl">
+                Update the public details customers depend on first: your description, contact info, service area, and hours.
+              </p>
+              <div className="mt-6 flex flex-wrap items-center gap-3 text-sm text-zinc-500">
+                {city ? <span>{city.name}</span> : null}
+                <span>{business.categoryId}</span>
+                {listingPath ? (
+                  <Link to={listingPath} className="inline-flex items-center gap-1.5 font-medium text-zinc-900 underline underline-offset-4 hover:text-orange-600">
+                    View public listing
+                    <ExternalLink className="h-4 w-4" strokeWidth={2.2} />
+                  </Link>
+                ) : null}
+              </div>
             </div>
-            {approvedClaims.length > 1 && (
-              <div className="mb-4">
-                <label className="block text-xs font-medium text-zinc-500 mb-2">Select business to manage:</label>
+            {approvedClaims.length > 1 ? (
+              <div className="border border-zinc-200 bg-zinc-50 p-4">
+                <label className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Manage another listing</label>
                 <select
-                  value={selectedClaimId || ''}
-                  onChange={(e) => handleSelectClaim(e.target.value)}
-                  className="border border-zinc-300 rounded-md px-3 py-2 text-sm font-medium text-zinc-900 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  value={selectedClaimId}
+                  onChange={async (event) => {
+                    const nextClaim = approvedClaims.find((claim) => claim.id === event.target.value);
+                    if (nextClaim) {
+                      setLoading(true);
+                      await hydrateClaim(nextClaim);
+                      setLoading(false);
+                    }
+                  }}
+                  className="mt-3 w-full border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none focus:border-zinc-900"
                 >
-                  <option value="" disabled>Select a business...</option>
                   {approvedClaims.map((claim) => {
-                    const b = businesses.find(bus => bus.id === claim.business_id);
+                    const optionBusiness = businesses.find((entry) => entry.id === claim.business_id);
                     return (
                       <option key={claim.id} value={claim.id}>
-                        {b?.name || claim.business_id}
+                        {optionBusiness?.name ?? claim.business_id}
                       </option>
                     );
                   })}
                 </select>
               </div>
-            )}
-            <h1 className="text-3xl md:text-4xl font-medium tracking-tight">
-              {business.name}
-            </h1>
-            <p className="text-zinc-500 mt-1">
-              {city?.name} • {business.categoryId}
-            </p>
+            ) : null}
           </div>
-          <Link 
-            to={`/${business.cityId}/${business.categoryId}/${business.id}`}
-            className="text-sm text-zinc-500 hover:text-zinc-900 transition-colors"
-          >
-            View Listing →
-          </Link>
         </div>
+      </section>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }} className="bg-white border border-zinc-200 p-8 md:p-12 shadow-sm rounded-sm">
-              <form onSubmit={handleSubmit} className="space-y-8">
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm rounded-sm">
-                {error}
+      <main className="px-4 py-12 sm:px-6 sm:py-14 lg:px-10 lg:py-16">
+        <div className="mx-auto grid max-w-[96rem] gap-8 lg:grid-cols-[minmax(0,1.2fr)_24rem]">
+          <motion.form initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} onSubmit={handleSubmit} className="space-y-6">
+            {error ? (
+              <div className="flex items-start gap-3 border border-rose-200 bg-rose-50 px-4 py-4 text-sm text-rose-700">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                <p>{error}</p>
               </div>
-            )}
-
-            {saveSuccess && (
-              <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 text-sm rounded-sm flex items-center gap-2">
-                <CheckCircle className="h-4 w-4" /> Changes saved successfully!
+            ) : null}
+            {saveSuccess ? (
+              <div className="flex items-start gap-3 border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm text-emerald-700">
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+                <p>Your listing changes were saved.</p>
               </div>
-            )}
+            ) : null}
 
-            <div>
-              <h2 className="text-lg font-medium tracking-tight text-zinc-900 mb-6 border-b border-zinc-100 pb-4">Business Description</h2>
-              <textarea
-                value={formData.description}
-                onChange={(e) => setFormData({...formData, description: e.target.value})}
-                rows={4}
-                className="w-full border border-zinc-200 bg-[#FAFAFA] px-4 py-3 text-sm text-zinc-900 outline-none focus:border-zinc-400 focus:bg-white transition-colors rounded-sm resize-none"
-                placeholder="Describe your business..."
-              />
-            </div>
-
-            <div>
-              <h2 className="text-lg font-medium tracking-tight text-zinc-900 mb-6 border-b border-zinc-100 pb-4">Contact Information</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <section className="border-2 border-zinc-900 bg-white p-6 sm:p-8">
+              <h2 className="text-2xl font-bold tracking-tight text-zinc-950">Public profile</h2>
+              <div className="mt-6 space-y-6">
                 <div>
-                  <label className="block font-sans text-sm font-medium text-zinc-700 mb-2">Phone</label>
-                  <input 
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                    className="w-full border border-zinc-200 bg-[#FAFAFA] px-4 py-3 text-sm text-zinc-900 outline-none focus:border-zinc-400 focus:bg-white transition-colors rounded-sm"
-                    placeholder="(250) 555-0000"
+                  <label className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Business description</label>
+                  <textarea
+                    value={formData.description}
+                    onChange={(event) => setFormData({ ...formData, description: event.target.value })}
+                    rows={5}
+                    className="mt-3 w-full resize-none border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none transition-colors focus:border-zinc-900 focus:bg-white"
+                    placeholder="Explain what your business does and who it helps."
                   />
+                </div>
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div>
+                    <label className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Phone</label>
+                    <input
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(event) => setFormData({ ...formData, phone: event.target.value })}
+                      className="mt-3 w-full border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none transition-colors focus:border-zinc-900 focus:bg-white"
+                      placeholder="(250) 555-0000"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Website</label>
+                    <input
+                      type="url"
+                      value={formData.website}
+                      onChange={(event) => setFormData({ ...formData, website: event.target.value })}
+                      className="mt-3 w-full border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none transition-colors focus:border-zinc-900 focus:bg-white"
+                      placeholder="https://example.com"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Email</label>
+                    <input
+                      type="email"
+                      value={formData.email}
+                      onChange={(event) => setFormData({ ...formData, email: event.target.value })}
+                      className="mt-3 w-full border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none transition-colors focus:border-zinc-900 focus:bg-white"
+                      placeholder="name@business.com"
+                    />
+                  </div>
                 </div>
                 <div>
-                  <label className="block font-sans text-sm font-medium text-zinc-700 mb-2">Website</label>
-                  <input 
-                    type="url"
-                    value={formData.website}
-                    onChange={(e) => setFormData({...formData, website: e.target.value})}
-                    className="w-full border border-zinc-200 bg-[#FAFAFA] px-4 py-3 text-sm text-zinc-900 outline-none focus:border-zinc-400 focus:bg-white transition-colors rounded-sm"
-                    placeholder="https://example.com"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block font-sans text-sm font-medium text-zinc-700 mb-2">Email</label>
-                  <input 
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
-                    className="w-full border border-zinc-200 bg-[#FAFAFA] px-4 py-3 text-sm text-zinc-900 outline-none focus:border-zinc-400 focus:bg-white transition-colors rounded-sm"
-                    placeholder="contact@business.com"
+                  <label className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Service areas</label>
+                  <input
+                    type="text"
+                    value={formData.serviceAreas}
+                    onChange={(event) => setFormData({ ...formData, serviceAreas: event.target.value })}
+                    className="mt-3 w-full border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none transition-colors focus:border-zinc-900 focus:bg-white"
+                    placeholder="Kelowna, West Kelowna, Lake Country"
                   />
                 </div>
               </div>
-            </div>
+            </section>
 
-            <div>
-              <h2 className="text-lg font-medium tracking-tight text-zinc-900 mb-6 border-b border-zinc-100 pb-4">Service Areas</h2>
-              <input 
-                type="text"
-                value={formData.serviceAreas}
-                onChange={(e) => setFormData({...formData, serviceAreas: e.target.value})}
-                className="w-full border border-zinc-200 bg-[#FAFAFA] px-4 py-3 text-sm text-zinc-900 outline-none focus:border-zinc-400 focus:bg-white transition-colors rounded-sm"
-                placeholder="Kelowna, West Kelowna, Lake Country (comma separated)"
-              />
-              <p className="text-xs text-zinc-500 mt-2">Separate multiple service areas with commas.</p>
-            </div>
-
-            <div>
-              <h2 className="text-lg font-medium tracking-tight text-zinc-900 mb-6 border-b border-zinc-100 pb-4">Business Hours</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <section className="border border-zinc-200 bg-white p-6 sm:p-8">
+              <h2 className="text-2xl font-bold tracking-tight text-zinc-950">Business hours</h2>
+              <div className="mt-6 grid gap-4 md:grid-cols-2">
                 {(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as const).map((day) => (
-                  <div key={day} className="flex items-center gap-4">
-                    <label className="w-24 text-sm font-medium text-zinc-700 capitalize">{day}</label>
-                    <input 
+                  <div key={day}>
+                    <label className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">{day}</label>
+                    <input
                       type="text"
-                      value={formData.hours[day] || ''}
-                      onChange={(e) => handleHoursChange(day, e.target.value)}
-                      className="flex-1 border border-zinc-200 bg-[#FAFAFA] px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-400 focus:bg-white transition-colors rounded-sm"
+                      value={formData.hours[day]}
+                      onChange={(event) => setFormData({
+                        ...formData,
+                        hours: {
+                          ...formData.hours,
+                          [day]: event.target.value,
+                        },
+                      })}
+                      className="mt-3 w-full border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none transition-colors focus:border-zinc-900 focus:bg-white"
                       placeholder="9:00 AM - 5:00 PM"
                     />
                   </div>
                 ))}
               </div>
-            </div>
+            </section>
 
-            <div className="pt-4">
-              <button 
-                type="submit"
-                disabled={saving}
-                className="w-full md:w-auto bg-zinc-900 text-white px-8 py-4 font-sans text-sm font-medium hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2 rounded-sm shadow-sm disabled:opacity-50"
-              >
-                {saving ? 'Saving...' : <><Save className="h-4 w-4" strokeWidth={1.5} /> Save Changes</>}
-              </button>
-            </div>
+            <button
+              type="submit"
+              disabled={saving}
+              className="inline-flex items-center justify-center gap-3 border-2 border-zinc-900 bg-zinc-900 px-6 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white transition-all hover:border-orange-500 hover:bg-orange-500 disabled:opacity-60"
+            >
+              {saving ? 'Saving...' : 'Save listing changes'}
+              {!saving ? <Save className="h-4 w-4" strokeWidth={2.2} /> : null}
+            </button>
+          </motion.form>
 
-              <p className="text-xs text-zinc-400 pt-4 border-t border-zinc-100">
-                Note: Only the fields above can be edited. Other business information is sourced from public records.
-              </p>
-            </form>
-          </motion.div>
+          <aside className="space-y-6">
+            <OwnerProfileChecklist
+              items={progress.fields}
+              title="Listing health"
+              description="These are the fields customers see first. Tighten these before anything else."
+              compact
+            />
+
+            <section className="border border-zinc-200 bg-white p-5">
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Recommended next move</p>
+              <h2 className="mt-3 text-2xl font-bold tracking-tight text-zinc-950">{recommendation.title}</h2>
+              <p className="mt-3 text-sm leading-6 text-zinc-600">{recommendation.description}</p>
+              {recommendation.href && recommendation.ctaLabel ? (
+                <Link
+                  to={recommendation.href}
+                  onClick={() => trackEvent('owner_dashboard_recommendation_clicked', { type: recommendation.type })}
+                  className="mt-5 inline-flex items-center gap-2 font-medium text-zinc-900 underline underline-offset-4 transition-colors hover:text-orange-600"
+                >
+                  {recommendation.ctaLabel}
+                  <ArrowRight className="h-4 w-4" strokeWidth={2.2} />
+                </Link>
+              ) : null}
+            </section>
+          </aside>
         </div>
-
-        <div className="space-y-6">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }} className="bg-white border border-zinc-200 p-6 shadow-sm rounded-sm">
-            <h3 className="font-medium text-zinc-900 mb-4 text-lg">Profile Completeness</h3>
-            <ul className="space-y-3">
-              <li className="flex items-center gap-3 text-sm">
-                <Check className={`h-4 w-4 ${formData.description && formData.description.length > 10 ? 'text-green-500' : 'text-zinc-300'}`} />
-                <span className={formData.description && formData.description.length > 10 ? 'text-zinc-700' : 'text-zinc-500'}>Business description</span>
-              </li>
-              <li className="flex items-center gap-3 text-sm">
-                <Check className={`h-4 w-4 ${formData.phone ? 'text-green-500' : 'text-zinc-300'}`} />
-                <span className={formData.phone ? 'text-zinc-700' : 'text-zinc-500'}>Phone number</span>
-              </li>
-              <li className="flex items-center gap-3 text-sm">
-                <Check className={`h-4 w-4 ${formData.website ? 'text-green-500' : 'text-zinc-300'}`} />
-                <span className={formData.website ? 'text-zinc-700' : 'text-zinc-500'}>Website</span>
-              </li>
-              <li className="flex items-center gap-3 text-sm">
-                <Check className={`h-4 w-4 ${formData.serviceAreas && formData.serviceAreas.length > 0 ? 'text-green-500' : 'text-zinc-300'}`} />
-                <span className={formData.serviceAreas && formData.serviceAreas.length > 0 ? 'text-zinc-700' : 'text-zinc-500'}>Service areas</span>
-              </li>
-              <li className="flex items-center gap-3 text-sm">
-                <Check className={`h-4 w-4 ${hasBusinessHours(formData.hours) ? 'text-green-500' : 'text-zinc-300'}`} />
-                <span className={hasBusinessHours(formData.hours) ? 'text-zinc-700' : 'text-zinc-500'}>Business hours</span>
-              </li>
-            </ul>
-          </motion.div>
-
-          {(() => {
-            const rec = getOwnerRecommendation({
-              business,
-              claimStatus: 'approved',
-            });
-            return (
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }} className="bg-white border border-zinc-200 p-6 shadow-sm rounded-sm relative overflow-hidden">
-                <div className="absolute left-0 top-0 bottom-0 w-1 bg-zinc-900"></div>
-                <h3 className="text-xs font-mono uppercase tracking-widest text-zinc-500 mb-3">Next Step</h3>
-                <h4 className="font-bold text-zinc-900 mb-2 text-lg">{rec.title}</h4>
-                <p className="text-sm text-zinc-500 mb-6 leading-relaxed">{rec.description}</p>
-                {rec.href && rec.ctaLabel && (
-                  <Link 
-                    to={rec.href}
-                    onClick={() => trackEvent('owner_dashboard_recommendation_clicked', { type: rec.type })}
-                    className="inline-flex w-full items-center justify-center gap-2 bg-zinc-900 text-white px-4 py-3 text-sm font-medium hover:bg-zinc-800 transition-colors rounded-sm"
-                  >
-                    {rec.ctaLabel} <ArrowRight className="h-4 w-4" />
-                  </Link>
-                )}
-              </motion.div>
-            );
-          })()}
-        </div>
-      </div>
-
-      </div>
-    </motion.div>
+      </main>
+    </div>
   );
 }

@@ -135,7 +135,7 @@ export default function ManagedGrowthPage() {
                 to="/book-call?offer=managed-growth"
                 className="group flex min-h-12 items-center justify-center gap-3 rounded-sm bg-white px-6 py-4 font-sans text-base font-semibold text-zinc-950 shadow-lg transition-all duration-200 hover:bg-indigo-50 hover:text-indigo-600 active:scale-[0.98] sm:px-10 sm:py-5 sm:text-lg lg:px-12 lg:py-6"
               >
-                Book a Strategy Call
+                Schedule a Strategy Call
                 <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" strokeWidth={2.5} />
               </Link>
               <Link
@@ -244,7 +244,7 @@ export default function ManagedGrowthPage() {
             to="/book-call?offer=managed-growth"
             className="inline-flex min-h-12 items-center justify-center gap-3 rounded-xl border border-zinc-900 bg-zinc-900 px-8 py-4 font-sans text-sm font-bold uppercase tracking-wider text-white shadow-sm transition-all hover:bg-zinc-800 hover:-translate-y-1 active:scale-95 sm:py-5"
           >
-            Book a Strategy Call
+            Schedule a Strategy Call
             <ArrowRight className="h-4 w-4" strokeWidth={2.5} />
           </Link>
         </div>

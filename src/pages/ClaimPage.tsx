@@ -1,26 +1,76 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
-import { ArrowRight, ArrowLeft, Search, Check, Building2, MapPin, Zap, LayoutGrid, User, Phone, Mail, ShieldCheck, Plus, AlertCircle } from 'lucide-react';
+import {
+  AlertCircle,
+  ArrowLeft,
+  ArrowRight,
+  Building2,
+  Check,
+  ExternalLink,
+  Mail,
+  MapPin,
+  Phone,
+  Search,
+  ShieldCheck,
+  User,
+} from 'lucide-react';
 import { motion } from 'motion/react';
-import GoogleIcon from '../components/GoogleIcon';
-import SectionEyebrow from '../components/SectionEyebrow';
-import { useAuth } from '../contexts/AuthContext';
-import { Business } from '../business';
-import { useDirectoryData } from '../directory-data';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import businessBg from '../photos/businessown/thumbnail_G74A6639.jpg';
-import { createImageFallbackHandler, preferSupabaseImage } from '../supabase-images';
+
+import GoogleIcon from '@/src/components/GoogleIcon';
+import SectionEyebrow from '@/src/components/SectionEyebrow';
+import type { Business } from '@/src/business';
+import { useAuth } from '@/src/contexts/AuthContext';
+import { useDirectoryData } from '@/src/directory-data';
+import { getBusinessListingPath } from '@/src/lib/ownerProfile';
+import { isSupabaseConfigured, supabase } from '@/src/lib/supabase';
+import businessBg from '@/src/photos/businessown/thumbnail_G74A6639.jpg';
+import claimFlowPhotoA from '@/src/photos/phoyo/pexels-tima-miroshnichenko-5845968.jpg';
+import claimFlowPhotoB from '@/src/photos/phoyo/pexels-zeoxs-12366518.jpg';
+import {
+  createImageFallbackHandler,
+  preferSupabaseImage,
+} from '@/src/supabase-images';
 
 interface ClaimPageProps {
   onClaimComplete?: () => void;
 }
 
+const steps = [
+  {
+    number: '01',
+    title: 'Find your listing',
+    description: 'Search by name, city, trade, or address.',
+  },
+  {
+    number: '02',
+    title: 'Confirm ownership',
+    description: 'Submit the details we need to review the claim.',
+  },
+  {
+    number: '03',
+    title: 'Update after approval',
+    description: 'Your owner dashboard unlocks once approved.',
+  },
+];
+
+const reviewPoints = [
+  'Claims are manually reviewed before editing access is granted.',
+  'Approved claims unlock dashboard access for the selected listing.',
+  'Rejected claims can be retried with stronger ownership details.',
+];
+
 export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
   const { user, loading: authLoading, signInWithGoogle } = useAuth();
-  const { businesses, categories, cities, isLoading: directoryLoading, error: directoryError } = useDirectoryData();
+  const {
+    businesses,
+    categories,
+    cities,
+    isLoading: directoryLoading,
+    error: directoryError,
+  } = useDirectoryData();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState<1 | 2>(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null);
   const [claimData, setClaimData] = useState({
@@ -35,8 +85,10 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const claimsAvailable = Boolean(supabase && isSupabaseConfigured());
-  const businessBgSrc = preferSupabaseImage('thumbnail_G74A6639.jpg', businessBg);
   const selectedBusinessId = searchParams.get('businessId');
+  const businessBgSrc = preferSupabaseImage('thumbnail_G74A6639.jpg', businessBg);
+  const claimFlowPhotoPrimary = claimFlowPhotoA;
+  const claimFlowPhotoSecondary = claimFlowPhotoB;
 
   useEffect(() => {
     if (user?.email) {
@@ -47,15 +99,8 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
     }
   }, [user?.email]);
 
-  const cityNames = useMemo(
-    () => new Map(cities.map((city) => [city.id, city.name])),
-    [cities]
-  );
-
-  const categoryNames = useMemo(
-    () => new Map(categories.map((category) => [category.id, category.name])),
-    [categories]
-  );
+  const cityNames = useMemo(() => new Map(cities.map((city) => [city.id, city.name])), [cities]);
+  const categoryNames = useMemo(() => new Map(categories.map((category) => [category.id, category.name])), [categories]);
 
   useEffect(() => {
     if (!user || directoryLoading || !selectedBusinessId) {
@@ -64,65 +109,77 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
 
     const matchedBusiness = businesses.find((business) => business.id === selectedBusinessId);
     if (!matchedBusiness) {
-      setError('That business listing could not be found. Search below to continue.');
+      setError('That listing could not be found. Search again to continue.');
       setSelectedBusiness(null);
       setStep(1);
       return;
     }
 
-    setError(null);
     setSelectedBusiness(matchedBusiness);
     setStep(2);
+    setError(null);
   }, [businesses, directoryLoading, selectedBusinessId, user]);
 
   const filteredBusinesses = useMemo(() => {
-    if (!searchQuery.trim()) return [];
-    const query = searchQuery.trim().toLowerCase();
+    if (!searchQuery.trim()) {
+      return [];
+    }
 
+    const query = searchQuery.trim().toLowerCase();
     return businesses
       .filter((business) => {
         const cityName = cityNames.get(business.cityId)?.toLowerCase() ?? '';
         const categoryName = categoryNames.get(business.categoryId)?.toLowerCase() ?? '';
 
-        return [
-          business.name,
-          cityName,
-          categoryName,
-          business.contact.address ?? '',
-        ].some((value) => value.toLowerCase().includes(query));
+        return [business.name, cityName, categoryName, business.contact.address ?? '']
+          .some((value) => value.toLowerCase().includes(query));
       })
       .slice(0, 10);
   }, [businesses, categoryNames, cityNames, searchQuery]);
 
-  const handleSelectBusiness = (business: Business) => {
+  const listingPath = getBusinessListingPath(selectedBusiness);
+  const selectedCityName = selectedBusiness ? cityNames.get(selectedBusiness.cityId) : undefined;
+  const selectedCategoryName = selectedBusiness ? categoryNames.get(selectedBusiness.categoryId) : undefined;
+
+  async function handleGoogleSignIn() {
+    setError(null);
+    setOauthLoading(true);
+
+    const redirectPath = `${window.location.pathname}${window.location.search}`;
+    const { error: signInError } = await signInWithGoogle(redirectPath);
+
+    if (signInError) {
+      setError(signInError.message);
+      setOauthLoading(false);
+    }
+  }
+
+  function handleSelectBusiness(business: Business) {
     setSelectedBusiness(business);
     setSearchQuery('');
+    setError(null);
     setStep(2);
     setSearchParams({ businessId: business.id });
-  };
+  }
 
-  const handleBackToSearch = () => {
+  function handleBackToSearch() {
     setSelectedBusiness(null);
-    setStep(1);
     setError(null);
+    setStep(1);
     setSearchParams({});
-  };
+  }
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!user || !selectedBusiness) return;
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    if (!user || !selectedBusiness || !supabase || !claimsAvailable) {
+      return;
+    }
 
     setError(null);
     setSubmitting(true);
 
     try {
-      if (!claimsAvailable || !supabase) {
-        setError('Claim submission is not available in this environment.');
-        setSubmitting(false);
-        return;
-      }
-
-      const { data: existingClaims } = await supabase
+      const { data: existingClaim } = await supabase
         .from('business_claims')
         .select('id, status')
         .eq('user_id', user.id)
@@ -130,22 +187,19 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
         .in('status', ['pending', 'approved'])
         .maybeSingle();
 
-      if (existingClaims) {
-        if (existingClaims.status === 'pending') {
-          setError('You already have a pending claim for this business.');
-          setSubmitting(false);
-          return;
-        }
-        if (existingClaims.status === 'approved') {
-          setError('You have already claimed this business.');
-          setSubmitting(false);
-          return;
-        }
+      if (existingClaim?.status === 'pending') {
+        setError('You already have a pending claim for this business.');
+        return;
+      }
+
+      if (existingClaim?.status === 'approved') {
+        setError('You have already claimed this business.');
+        return;
       }
 
       const { data: otherApprovedClaim } = await supabase
         .from('business_claims')
-        .select('id, claimant_name')
+        .select('id')
         .eq('business_id', selectedBusiness.id)
         .eq('status', 'approved')
         .neq('user_id', user.id)
@@ -153,7 +207,6 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
 
       if (otherApprovedClaim) {
         setError('This business has already been claimed by another user.');
-        setSubmitting(false);
         return;
       }
 
@@ -166,31 +219,23 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
         .maybeSingle();
 
       if (rejectedClaim) {
-        await supabase
-          .from('business_claims')
-          .delete()
-          .eq('id', rejectedClaim.id);
+        await supabase.from('business_claims').delete().eq('id', rejectedClaim.id);
       }
 
-      const { error: insertError } = await supabase
-        .from('business_claims')
-        .insert({
-          user_id: user.id,
-          business_id: selectedBusiness.id,
-          claimant_name: claimData.claimantName,
-          claimant_email: claimData.claimantEmail,
-          claimant_phone: claimData.claimantPhone || null,
-          relationship_to_business: claimData.relationshipToBusiness,
-          message: claimData.message || null,
-        });
+      const { error: insertError } = await supabase.from('business_claims').insert({
+        user_id: user.id,
+        business_id: selectedBusiness.id,
+        claimant_name: claimData.claimantName,
+        claimant_email: claimData.claimantEmail,
+        claimant_phone: claimData.claimantPhone || null,
+        relationship_to_business: claimData.relationshipToBusiness,
+        message: claimData.message || null,
+      });
 
       if (insertError) {
-        if (insertError.code === '23505') {
-          setError('You have already submitted a claim for this business.');
-        } else {
-          setError(insertError.message);
-        }
-        setSubmitting(false);
+        setError(insertError.code === '23505'
+          ? 'You have already submitted a claim for this business.'
+          : insertError.message);
         return;
       }
 
@@ -201,189 +246,156 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const handleGoogleSignIn = async () => {
-    setError(null);
-    setOauthLoading(true);
-
-    const redirectPath = `${window.location.pathname}${window.location.search}`;
-    const { error } = await signInWithGoogle(redirectPath);
-
-    if (error) {
-      setError(error.message);
-      setOauthLoading(false);
-    }
-  };
+  }
 
   if (authLoading || (user && directoryLoading)) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-zinc-50 font-sans">
-        <div className="w-12 h-12 border-2 border-zinc-200 border-t-zinc-900 rounded-full animate-spin"></div>
+      <div className="flex min-h-screen items-center justify-center bg-zinc-50">
+        <div className="h-12 w-12 animate-spin rounded-full border-2 border-zinc-200 border-t-zinc-900" />
       </div>
     );
   }
 
   if (user && !claimsAvailable) {
     return (
-      <div className="bg-[#FAFAFA] min-h-screen flex items-center justify-center py-24 relative overflow-hidden font-sans">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-[0.03] mix-blend-overlay z-0"></div>
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative bg-white border border-zinc-200 p-12 max-w-xl w-full mx-4 rounded-sm shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] text-center z-10">
-          <div className="w-16 h-16 bg-zinc-50 border border-zinc-100 rounded-sm flex items-center justify-center mx-auto mb-8">
-            <Zap className="w-8 h-8 text-zinc-400" strokeWidth={1.5} />
-          </div>
-          <h2 className="text-3xl font-semibold tracking-tight mb-4 text-zinc-900">System Offline</h2>
-          <p className="text-zinc-500 font-sans text-lg leading-relaxed">
-            Claim submission requires a configured environment. Please contact support.
+      <div className="min-h-screen bg-[#FAFAFA] px-4 py-24">
+        <div className="mx-auto max-w-2xl border-2 border-zinc-900 bg-white p-8 shadow-[8px_8px_0px_0px_rgba(24,24,27,1)] sm:p-10">
+          <SectionEyebrow
+            icon={AlertCircle}
+            className="inline-flex items-center gap-2 bg-zinc-900 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-white"
+            iconClassName="h-3.5 w-3.5 text-orange-400"
+          >
+            Claim System
+          </SectionEyebrow>
+          <h1 className="mt-6 text-4xl font-bold uppercase tracking-tight text-zinc-950">Claim submission is offline.</h1>
+          <p className="mt-4 text-lg leading-8 text-zinc-600">
+            This environment does not have the owner claim backend configured yet.
           </p>
-        </motion.div>
-      </div>
-    );
-  }
-
-  if (user && !directoryLoading && businesses.length === 0) {
-    return (
-      <div className="bg-[#FAFAFA] min-h-screen flex items-center justify-center py-24 relative overflow-hidden font-sans">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="relative bg-white border border-zinc-200 p-12 max-w-xl w-full mx-4 rounded-sm shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] text-center z-10"
-        >
-          <div className="w-16 h-16 bg-zinc-50 border border-zinc-100 rounded-sm flex items-center justify-center mx-auto mb-8">
-            <Search className="w-8 h-8 text-zinc-400" strokeWidth={1.5} />
-          </div>
-          <h2 className="text-3xl font-semibold tracking-tight mb-4 text-zinc-900">No Listings Loaded</h2>
-          <p className="text-zinc-500 font-sans text-lg leading-relaxed">
-            The directory data is not available right now. Refresh and try again.
-          </p>
-        </motion.div>
+        </div>
       </div>
     );
   }
 
   if (success) {
     return (
-      <div className="bg-[#FAFAFA] min-h-screen flex items-center justify-center py-24 relative overflow-hidden font-sans">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-[0.03] mix-blend-overlay z-0"></div>
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative bg-white border border-zinc-200 p-12 max-w-xl w-full mx-4 rounded-sm shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] text-center z-10">
-          <div className="w-16 h-16 bg-orange-50 border border-orange-100 rounded-sm flex items-center justify-center mx-auto mb-8 shadow-sm">
-            <Check className="w-8 h-8 text-orange-500" strokeWidth={2} />
+      <div className="min-h-screen bg-[#FAFAFA] px-4 py-20 sm:px-6 lg:px-10">
+        <div className="mx-auto max-w-3xl border-2 border-zinc-900 bg-white shadow-[10px_10px_0px_0px_rgba(24,24,27,1)]">
+          <div className="border-b-2 border-zinc-900 bg-zinc-900 px-6 py-6 text-white sm:px-10">
+            <SectionEyebrow
+              icon={Check}
+              className="inline-flex items-center gap-2 border border-white/15 bg-white/10 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-white"
+              iconClassName="h-3.5 w-3.5 text-orange-300"
+            >
+              Claim Submitted
+            </SectionEyebrow>
+            <h1 className="mt-6 text-4xl font-bold uppercase tracking-tight sm:text-5xl">We have your claim.</h1>
+            <p className="mt-4 max-w-2xl text-lg leading-8 text-zinc-300">
+              We will review ownership for <span className="font-semibold text-white">{selectedBusiness?.name}</span> and
+              notify you when the decision is made.
+            </p>
           </div>
-          <h2 className="text-3xl font-semibold tracking-tight mb-4 text-zinc-900">Claim Submitted</h2>
-          <p className="text-zinc-600 mb-10 font-sans text-lg leading-relaxed">
-            Your verification data for <strong className="text-zinc-900 font-semibold">{selectedBusiness?.name}</strong> has been transmitted. 
-            Our team will notify you once approval is complete.
-          </p>
-          <Link to="/claim/status" className="inline-flex items-center justify-center gap-3 w-full bg-zinc-900 text-white px-8 py-4 font-sans text-sm font-bold uppercase tracking-wider transition-all hover:bg-zinc-800 active:scale-[0.98] rounded-md shadow-md group">
-            Monitor Status <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" strokeWidth={2} />
-          </Link>
-        </motion.div>
+          <div className="grid gap-6 px-6 py-8 sm:px-10 sm:py-10 lg:grid-cols-[minmax(0,1fr)_18rem]">
+            <div className="space-y-3">
+              {reviewPoints.map((point) => (
+                <div key={point} className="flex items-start gap-3 border border-zinc-200 bg-zinc-50 px-4 py-4">
+                  <div className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-full border border-emerald-300 bg-emerald-500 text-white">
+                    <Check className="h-4 w-4" strokeWidth={3} />
+                  </div>
+                  <p className="text-sm leading-6 text-zinc-700">{point}</p>
+                </div>
+              ))}
+            </div>
+            <div className="border border-zinc-200 bg-zinc-50 p-5">
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Next action</p>
+              <Link
+                to="/claim/status"
+                className="mt-5 inline-flex w-full items-center justify-center gap-3 border-2 border-zinc-900 bg-zinc-900 px-5 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white transition-all hover:border-orange-500 hover:bg-orange-500"
+              >
+                Track claim status
+                <ArrowRight className="h-4 w-4" strokeWidth={2.6} />
+              </Link>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (!user) {
     return (
-      <div className="bg-[#FAFAFA] min-h-screen text-zinc-900 font-sans selection:bg-indigo-200 selection:text-indigo-900 flex flex-col">
-        {/* Homepage-matched Hero Section */}
-        <section className="relative pt-32 pb-48 lg:pt-48 lg:pb-64 flex items-center bg-zinc-900 overflow-visible text-white flex-grow">
+      <div className="min-h-screen bg-[#FAFAFA] text-zinc-900 font-sans selection:bg-indigo-200 selection:text-indigo-900">
+        <section className="relative overflow-hidden bg-zinc-900 px-4 pb-18 pt-26 text-white sm:px-6 sm:pb-24 sm:pt-34 lg:px-10 lg:pb-28 lg:pt-42">
           <div className="absolute inset-0 z-0">
-            <motion.img 
-              initial={{ scale: 1.1, opacity: 0 }}
-              animate={{ scale: 1, opacity: 0.6 }}
-              transition={{ duration: 2, ease: "easeOut" }}
+            <motion.img
+              initial={{ scale: 1.08, opacity: 0 }}
+              animate={{ scale: 1, opacity: 0.58 }}
+              transition={{ duration: 1.4, ease: 'easeOut' }}
               src={businessBgSrc}
               alt=""
               aria-hidden="true"
-              className="w-full h-full object-cover"
+              className="h-full w-full object-cover"
               onError={createImageFallbackHandler(businessBg)}
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/90 via-zinc-900/50 to-transparent z-10"></div>
-            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent z-10"></div>
-            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-20 mix-blend-overlay z-10"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/94 via-zinc-900/72 to-zinc-900/28" />
+            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/88 via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-20 mix-blend-overlay" />
           </div>
-          
-          <div className="relative z-20 max-w-[96rem] mx-auto px-4 sm:px-6 lg:px-10 w-full">
-            <div className="flex flex-col lg:flex-row gap-16 items-center">
-              <div className="flex flex-col items-start text-left max-w-2xl flex-1">
-                <motion.div 
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6 }}
-                >
-                  <SectionEyebrow
-                    icon={Building2}
-                    className="mb-8 inline-flex items-center gap-2 rounded-sm border border-white/20 bg-white/10 px-4 py-2 font-mono text-[10px] uppercase tracking-[0.3em] text-zinc-100 shadow-sm backdrop-blur-md"
-                    iconClassName="h-3.5 w-3.5 text-zinc-300"
-                  >
-                    Claim Process
-                  </SectionEyebrow>
-                </motion.div>
-                
-                <motion.h1 
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.1 }}
-                  className="text-5xl md:text-7xl lg:text-[6rem] font-medium tracking-tighter mb-8 leading-[1.05] drop-shadow-2xl"
-                >
-                  Locate Your <br /> <span className="font-serif italic font-light text-zinc-200">Enterprise.</span>
-                </motion.h1>
-                
-                <motion.p 
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.2 }}
-                  className="text-xl md:text-2xl text-zinc-300 mb-12 font-sans leading-relaxed text-balance drop-shadow-md"
-                >
-                  You must have an active system account to initiate a listing claim process. Authenticate to proceed.
-                </motion.p>
-              </div>
 
-              <motion.div 
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.8, delay: 0.3 }}
-                className="w-full lg:w-[450px] bg-white border border-zinc-200 p-8 lg:p-12 rounded-sm shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)] text-zinc-900"
+          <div className="relative z-10 mx-auto grid max-w-[96rem] gap-12 lg:grid-cols-[minmax(0,1.1fr)_28rem] lg:items-end">
+            <div className="max-w-3xl">
+              <SectionEyebrow
+                icon={Building2}
+                className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-zinc-100 backdrop-blur-md"
+                iconClassName="h-3.5 w-3.5 text-orange-300"
               >
-                <div className="space-y-8">
-                  {error && (
-                    <div className="bg-red-50 border border-red-200 rounded-md text-red-700 px-4 py-3 text-sm font-medium text-center">
-                      {error}
-                    </div>
-                  )}
+                Owner Flow
+              </SectionEyebrow>
+              <h1 className="mt-8 text-5xl font-medium tracking-tight text-white sm:text-6xl lg:text-[6rem] lg:leading-[0.96]">
+                Claim your
+                <br />
+                <span className="font-serif italic font-light text-zinc-200">business listing.</span>
+              </h1>
+              <p className="mt-8 max-w-2xl text-xl leading-9 text-zinc-300">
+                Sign in first, then search for your listing, submit ownership details, and unlock the owner dashboard after approval.
+              </p>
+            </div>
 
-                  <button
-                    type="button"
-                    onClick={handleGoogleSignIn}
-                    disabled={oauthLoading}
-                    className="w-full inline-flex items-center justify-center gap-3 bg-white text-zinc-900 border border-zinc-200 px-8 py-4 font-sans text-sm font-bold uppercase tracking-wider transition-all hover:bg-zinc-50 hover:border-zinc-300 active:scale-[0.98] rounded-md shadow-sm disabled:opacity-50"
-                  >
-                    <GoogleIcon />
-                    {oauthLoading ? 'Connecting...' : 'Continue with Google'}
-                  </button>
-
-                  <div className="flex items-center gap-4">
-                    <div className="h-px flex-1 bg-zinc-200"></div>
-                    <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Security Gateway</span>
-                    <div className="h-px flex-1 bg-zinc-200"></div>
-                  </div>
-
-                  <div className="flex flex-col gap-4">
-                    <Link
-                      to={`/login?redirect=${encodeURIComponent('/claim' + location.search)}`}
-                      className="w-full inline-flex items-center justify-center gap-3 bg-zinc-900 text-white px-8 py-4 font-sans text-sm font-bold uppercase tracking-wider transition-all hover:bg-zinc-800 active:scale-[0.98] rounded-md shadow-md group"
-                    >
-                      Sign In <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                    </Link>
-                    <Link 
-                      to={`/register?redirect=${encodeURIComponent('/claim' + location.search)}`}
-                      className="w-full inline-flex items-center justify-center gap-3 bg-white text-zinc-900 border border-zinc-200 px-8 py-4 font-sans text-sm font-bold uppercase tracking-wider hover:bg-zinc-50 hover:border-zinc-300 transition-all rounded-md"
-                    >
-                      New Account
-                    </Link>
-                  </div>
+            <div className="border border-zinc-200 bg-white p-7 text-zinc-900 shadow-[0_28px_60px_rgba(0,0,0,0.28)] sm:p-9">
+              {error ? (
+                <div className="mb-5 flex items-start gap-3 border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <p>{error}</p>
                 </div>
-              </motion.div>
+              ) : null}
+              <button
+                type="button"
+                onClick={handleGoogleSignIn}
+                disabled={oauthLoading}
+                className="inline-flex w-full items-center justify-center gap-3 border border-zinc-200 bg-white px-5 py-4 font-sans text-sm font-bold uppercase tracking-[0.14em] text-zinc-900 transition-colors hover:bg-zinc-50 disabled:opacity-60"
+              >
+                <GoogleIcon />
+                {oauthLoading ? 'Connecting...' : 'Continue with Google'}
+              </button>
+              <div className="my-6 flex items-center gap-3">
+                <div className="h-px flex-1 bg-zinc-200" />
+                <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Or</span>
+                <div className="h-px flex-1 bg-zinc-200" />
+              </div>
+              <div className="grid gap-3">
+                <Link
+                  to={`/login?redirect=${encodeURIComponent('/claim' + location.search)}`}
+                  className="inline-flex items-center justify-center gap-3 border-2 border-zinc-900 bg-zinc-900 px-5 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white transition-all hover:border-orange-500 hover:bg-orange-500"
+                >
+                  Sign in
+                  <ArrowRight className="h-4 w-4" strokeWidth={2.6} />
+                </Link>
+                <Link
+                  to={`/register?redirect=${encodeURIComponent('/claim' + location.search)}`}
+                  className="inline-flex items-center justify-center border border-zinc-200 bg-white px-5 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-700 transition-colors hover:bg-zinc-50 hover:text-zinc-950"
+                >
+                  Create account
+                </Link>
+              </div>
             </div>
           </div>
         </section>
@@ -392,247 +404,407 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
   }
 
   return (
-    <div className="bg-[#FAFAFA] min-h-screen text-zinc-900 font-sans selection:bg-indigo-200 selection:text-indigo-900">
-      <header className="bg-white border-b border-zinc-200 py-16 md:py-24 overflow-hidden relative">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-[0.03] mix-blend-overlay z-0"></div>
-        
-        <div className="relative max-w-[96rem] mx-auto px-4 sm:px-6 lg:px-10 z-10">
-          <div className="flex flex-col md:flex-row gap-8 items-start md:items-end justify-between">
-            <div className="max-w-3xl">
+    <div className="min-h-screen bg-[#FAFAFA] text-zinc-900 font-sans selection:bg-indigo-200 selection:text-indigo-900">
+      <section className="border-b-2 border-zinc-900 bg-white px-4 py-16 sm:px-6 sm:py-20 lg:px-10 lg:py-24">
+        <div className="mx-auto max-w-[96rem]">
+          <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_30rem] lg:items-end">
+            <div>
               <SectionEyebrow
-                icon={Building2}
-                className="mb-8 inline-flex items-center gap-2 border border-zinc-200 bg-zinc-50 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600 rounded-full shadow-sm"
-                iconClassName="h-3.5 w-3.5 text-zinc-500"
+                icon={ShieldCheck}
+                className="inline-flex items-center gap-2 bg-zinc-900 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-white"
+                iconClassName="h-3.5 w-3.5 text-orange-400"
               >
                 Ownership Verification
               </SectionEyebrow>
-              <h1 className="text-4xl md:text-6xl font-medium tracking-tighter mb-6 leading-none">
-                {step === 1 ? 'Locate Enterprise.' : 'Verify Assets.'}
+              <h1 className="mt-8 text-5xl font-bold uppercase tracking-tight text-zinc-950 sm:text-6xl lg:text-7xl">
+                {step === 1 ? 'Claim your listing.' : 'Confirm the owner details.'}
               </h1>
-              <p className="text-lg md:text-xl font-sans leading-relaxed text-zinc-600">
-                {step === 1 
-                  ? 'Identify your trade business within the regional infrastructure database.'
-                  : 'Establish administrative control through structural documentation.'}
+              <p className="mt-6 max-w-3xl text-lg leading-8 text-zinc-600 sm:text-xl">
+                {step === 1
+                  ? 'Start by finding the listing you want to manage. We will use that exact listing when we review your claim.'
+                  : 'Give us the details needed to verify ownership cleanly and unlock the dashboard once approved.'}
               </p>
             </div>
-            
-            <div className="shrink-0">
-              <div className="font-mono text-xs font-bold tracking-[0.2em] text-zinc-500 border border-zinc-200 bg-white rounded-full px-6 py-2 uppercase shadow-sm">
-                Step <span className="text-zinc-900">0{step}</span> / 02
+            <div className="relative overflow-hidden border-2 border-zinc-900 bg-zinc-900 text-white shadow-[12px_12px_0px_0px_rgba(24,24,27,0.14)]">
+              <div className="absolute inset-0">
+                <img
+                  src={step === 1 ? claimFlowPhotoPrimary : claimFlowPhotoSecondary}
+                  alt=""
+                  aria-hidden="true"
+                  className="h-full w-full object-cover opacity-55"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/58 to-zinc-900/22" />
+              </div>
+              <div className="relative z-10 flex min-h-[24rem] flex-col justify-between p-6 sm:p-7">
+                <div className="max-w-sm">
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-orange-300">
+                    Claim workflow
+                  </p>
+                  <p className="mt-4 text-2xl font-bold tracking-tight text-white">
+                    {step === 1 ? 'Match the exact listing before you submit.' : 'Show enough proof that review can move fast.'}
+                  </p>
+                  <p className="mt-4 text-sm leading-7 text-zinc-200">
+                    {step === 1
+                      ? 'Use the public directory record you actually want to manage. The review is tied to that listing only.'
+                      : 'Your role, contact details, and notes are what the team uses to verify ownership without back-and-forth.'}
+                  </p>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+                  {steps.map((stepItem, index) => {
+                    const isCurrent = step === 1 ? index === 0 : index === 1;
+                    const isComplete = step === 2 && index === 0;
+
+                    return (
+                      <div
+                        key={stepItem.number}
+                        className={`border px-4 py-4 backdrop-blur-sm ${
+                          isCurrent
+                            ? 'border-white/20 bg-white/12 text-white'
+                            : isComplete
+                              ? 'border-emerald-300/70 bg-emerald-50 text-zinc-900'
+                              : 'border-white/12 bg-zinc-950/55 text-zinc-300'
+                        }`}
+                      >
+                        <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em]">Step {stepItem.number}</p>
+                        <p className="mt-3 text-base font-semibold tracking-tight">{stepItem.title}</p>
+                        <p className={`mt-2 text-sm leading-6 ${isCurrent ? 'text-zinc-100' : 'text-inherit'}`}>
+                          {stepItem.description}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </header>
+      </section>
 
-      <main className="py-24 relative">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-[0.03] mix-blend-overlay z-0"></div>
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          {error && (
-            <div className="mb-8 bg-red-50 border border-red-200 rounded-md p-4 flex items-start gap-3">
-              <AlertCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="text-sm font-medium text-red-800">{error}</p>
-                <button 
-                  onClick={() => setError(null)}
-                  className="text-xs text-red-600 hover:text-red-700 underline mt-2"
-                >
+      <main className="px-4 py-12 sm:px-6 sm:py-14 lg:px-10 lg:py-16">
+        <div className="mx-auto max-w-[96rem]">
+          {error ? (
+            <div className="mb-8 flex items-start gap-3 border border-rose-200 bg-rose-50 px-4 py-4 text-sm text-rose-700">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <div>
+                <p className="font-medium">{error}</p>
+                <button type="button" onClick={() => setError(null)} className="mt-2 font-medium underline underline-offset-2">
                   Dismiss
                 </button>
               </div>
             </div>
-          )}
+          ) : null}
+
+          {directoryError ? (
+            <div className="mb-8 border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-800">
+              Live directory data is unavailable. Search is using the fallback dataset right now.
+            </div>
+          ) : null}
+
           {step === 1 ? (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="space-y-12">
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-6 flex items-center pointer-events-none">
-                  <Search className="h-6 w-6 text-zinc-400 group-focus-within:text-orange-500 transition-colors" strokeWidth={2} />
-                </div>
-                <input 
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search operational database..."
-                  className="w-full bg-white border border-zinc-200 rounded-sm px-16 py-6 text-xl font-medium text-zinc-900 outline-none shadow-[0_10px_20px_-10px_rgba(0,0,0,0.05)] focus:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] focus:border-zinc-300 transition-all"
-                  autoFocus
-                />
-              </div>
-
-              {directoryError ? (
-                <div className="rounded-sm border border-amber-200 bg-amber-50 px-6 py-4 text-sm text-amber-800">
-                  Live directory data is unavailable. Search is using the local fallback dataset right now.
-                </div>
-              ) : null}
-
-              {filteredBusinesses.length > 0 ? (
-                <div className="bg-white border border-zinc-200 rounded-sm shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] overflow-hidden">
-                  <div className="bg-zinc-50 border-b border-zinc-100 px-8 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
-                    Results Matching Query
-                  </div>
-                  {filteredBusinesses.map((business, i) => (
-                    <button
-                      key={business.id}
-                      onClick={() => handleSelectBusiness(business)}
-                      className={`w-full text-left px-8 py-6 hover:bg-zinc-50 transition-all group flex items-center justify-between ${i !== filteredBusinesses.length - 1 ? 'border-b border-zinc-100' : ''}`}
-                    >
+            <div className="grid gap-8 lg:grid-cols-[minmax(0,1.35fr)_22rem]">
+              <motion.section
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.45 }}
+                className="border-2 border-zinc-900 bg-white"
+              >
+                <div className="border-b border-zinc-200 bg-zinc-900 px-6 py-6 text-white sm:px-8 sm:py-8">
+                  <div className="flex flex-col gap-4">
+                    <div className="flex flex-wrap items-end justify-between gap-3">
                       <div>
-                        <p className="font-semibold text-xl text-zinc-900 group-hover:text-orange-600 tracking-tight transition-colors mb-1">{business.name}</p>
-                        <div className="flex items-center gap-3">
-                          <p className="font-mono text-[10px] font-bold text-zinc-500 flex items-center gap-1.5 uppercase tracking-widest">
-                            <MapPin className="w-3.5 h-3.5 text-zinc-400 group-hover:text-orange-400 transition-colors" />
-                            {cityNames.get(business.cityId) || business.cityId}
-                          </p>
-                          <span className="w-1 h-1 bg-zinc-200 rounded-full"></span>
-                          <p className="font-mono text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
-                            {categoryNames.get(business.categoryId) || business.categoryId}
-                          </p>
+                        <label className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-300">Find your business</label>
+                        <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-300 sm:text-base">
+                          Search the directory the same way a customer would. Pick the exact listing you want to claim.
+                        </p>
+                      </div>
+                      <Link
+                        to="/claim-business"
+                        className="inline-flex items-center gap-2 border border-white/15 bg-white/10 px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white transition-colors hover:border-orange-400 hover:bg-orange-500 hover:text-zinc-950"
+                      >
+                        Don&apos;t see your business?
+                        <ArrowRight className="h-4 w-4" strokeWidth={2.2} />
+                      </Link>
+                    </div>
+
+                    <div className="group/search relative flex flex-col gap-3 rounded-[1.75rem] border border-white/15 bg-white/10 p-3 shadow-[0_20px_40px_rgba(0,0,0,0.2)] backdrop-blur-xl md:flex-row md:items-center">
+                      <div className="relative flex-1 rounded-full border border-white/10 bg-white/12 transition-all duration-300 hover:bg-white/16 focus-within:border-orange-300/60 focus-within:bg-white/18">
+                        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-6">
+                          <Search className="h-5 w-5 text-zinc-400 transition-colors group-focus-within/search:text-orange-300" strokeWidth={1.7} />
+                        </div>
+                        <input
+                          type="text"
+                          value={searchQuery}
+                          onChange={(event) => setSearchQuery(event.target.value)}
+                          placeholder="Business name, city, trade, or address"
+                          className="block w-full rounded-full border-none bg-transparent py-4 pl-14 pr-5 text-base text-white outline-none placeholder:text-zinc-400 sm:py-5 sm:text-lg"
+                          autoFocus
+                        />
+                      </div>
+                      <div className="flex min-h-14 shrink-0 items-center justify-center rounded-full bg-white px-6 py-4 text-center font-sans text-sm font-semibold text-zinc-950 sm:px-8 sm:text-base">
+                        {searchQuery.trim()
+                          ? `${filteredBusinesses.length} matching ${filteredBusinesses.length === 1 ? 'listing' : 'listings'}`
+                          : 'Start typing to see matching listings'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="px-6 py-6 sm:px-8">
+                  {filteredBusinesses.length > 0 ? (
+                    <div className="space-y-3">
+                      {filteredBusinesses.map((business) => (
+                        <button
+                          key={business.id}
+                          type="button"
+                          onClick={() => handleSelectBusiness(business)}
+                          className="group flex w-full items-start justify-between gap-4 border border-zinc-200 bg-zinc-50 px-4 py-4 text-left transition-all hover:border-zinc-900 hover:bg-white"
+                        >
+                          <div>
+                            <p className="text-lg font-semibold tracking-tight text-zinc-950">{business.name}</p>
+                            <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-zinc-600">
+                              <span className="inline-flex items-center gap-1.5">
+                                <MapPin className="h-4 w-4 text-zinc-400" strokeWidth={2} />
+                                {cityNames.get(business.cityId) ?? business.cityId}
+                              </span>
+                              <span className="h-1 w-1 rounded-full bg-zinc-300" />
+                              <span>{categoryNames.get(business.categoryId) ?? business.categoryId}</span>
+                            </div>
+                            {business.contact.address ? (
+                              <p className="mt-2 text-sm text-zinc-500">{business.contact.address}</p>
+                            ) : null}
+                          </div>
+                          <div className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center border border-zinc-200 bg-white text-zinc-500 transition-all group-hover:border-zinc-900 group-hover:bg-zinc-900 group-hover:text-white">
+                            <ArrowRight className="h-4 w-4" strokeWidth={2.4} />
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  ) : searchQuery.trim() ? (
+                    <div className="border border-zinc-200 bg-zinc-50 px-5 py-10 text-center">
+                      <h2 className="text-2xl font-semibold tracking-tight text-zinc-950">No matching listing found.</h2>
+                      <p className="mx-auto mt-3 max-w-xl text-base leading-7 text-zinc-600">
+                        Double-check the search, or start a new listing request if your business is not in the directory yet.
+                      </p>
+                      <Link to="/claim-business" className="mt-6 inline-flex items-center gap-2 font-medium text-zinc-900 underline underline-offset-4 transition-colors hover:text-orange-600">
+                        Don&apos;t see your business? Add it here
+                        <ArrowRight className="h-4 w-4" strokeWidth={2.2} />
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="border border-zinc-200 bg-zinc-50 p-5">
+                        <p className="text-lg font-semibold tracking-tight text-zinc-950">Search by name or city</p>
+                        <p className="mt-2 text-sm leading-6 text-zinc-600">Use the business name, city, trade, or address to find the right listing faster.</p>
+                      </div>
+                      <div className="border border-zinc-200 bg-zinc-50 p-5">
+                        <p className="text-lg font-semibold tracking-tight text-zinc-950">Pick the exact listing</p>
+                        <p className="mt-2 text-sm leading-6 text-zinc-600">Your claim is tied to the listing you choose here, so start with the closest match.</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </motion.section>
+
+              <aside className="space-y-5">
+                <section className="overflow-hidden border border-zinc-200 bg-white">
+                  <div className="relative h-52">
+                    <img
+                      src={claimFlowPhotoPrimary}
+                      alt=""
+                      aria-hidden="true"
+                      className="h-full w-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/42 to-transparent" />
+                    <div className="absolute inset-x-0 bottom-0 p-5 text-white">
+                      <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-orange-300">Review standard</p>
+                      <p className="mt-2 text-lg font-semibold tracking-tight">The cleaner the match, the faster the review.</p>
+                    </div>
+                  </div>
+                </section>
+                <section className="border border-zinc-200 bg-white p-5">
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">How this works</p>
+                  <div className="mt-4 space-y-4">
+                    {steps.map((stepItem) => (
+                      <div key={stepItem.number} className="flex items-start gap-3">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-zinc-900 bg-zinc-900 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-white">
+                          {stepItem.number}
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-zinc-900">{stepItem.title}</p>
+                          <p className="mt-1 text-sm leading-6 text-zinc-600">{stepItem.description}</p>
                         </div>
                       </div>
-                      <div className="w-10 h-10 rounded-full bg-white border border-zinc-200 flex items-center justify-center group-hover:border-zinc-900 group-hover:bg-zinc-900 transition-all duration-300">
-                        <ArrowRight className="w-4 h-4 text-zinc-400 group-hover:text-white group-hover:translate-x-0.5 transition-all" strokeWidth={2} />
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              ) : searchQuery ? (
-                <div className="text-center py-24 bg-white border border-zinc-200 rounded-sm shadow-sm">
-                  <div className="w-16 h-16 bg-zinc-50 border border-zinc-100 rounded-sm flex items-center justify-center mx-auto mb-6">
-                    <Search className="w-8 h-8 text-zinc-400" strokeWidth={1.5} />
+                    ))}
                   </div>
-                  <p className="text-zinc-900 font-semibold tracking-tight text-2xl mb-3 leading-none">No Matches Found</p>
-                  <p className="text-zinc-500 text-lg">Verify your query or <Link to="/claim-business" className="text-orange-600 hover:text-orange-700 font-medium underline underline-offset-4 decoration-orange-200 hover:decoration-orange-500 transition-colors">submit a new listing</Link>.</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  {[
-                    { title: 'Find by Name', desc: 'Enter the registered trade name of your enterprise.', icon: Search },
-                    { title: 'Global Reach', desc: 'Every verified business in the Okanagan is indexed.', icon: MapPin }
-                  ].map((item, i) => (
-                    <div key={i} className="bg-white border border-zinc-200 rounded-sm p-8 group hover:-translate-y-1 hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] transition-all duration-500 ease-[0.16,1,0.3,1]">
-                      <div className="w-12 h-12 bg-zinc-50 border border-zinc-100 rounded-xl flex items-center justify-center mb-6 group-hover:bg-orange-50 group-hover:border-orange-100 transition-colors duration-300">
-                        <item.icon className="w-6 h-6 text-zinc-400 group-hover:text-orange-500 transition-colors" strokeWidth={1.5} />
-                      </div>
-                      <h4 className="font-semibold text-lg tracking-tight mb-2 text-zinc-900">{item.title}</h4>
-                      <p className="text-zinc-500 text-base leading-relaxed">{item.desc}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </motion.div>
+                </section>
+                <section className="border border-zinc-200 bg-zinc-50 p-5">
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Need a new listing?</p>
+                  <p className="mt-3 text-sm leading-6 text-zinc-600">If your business is not in the directory yet, use the business landing page before trying to claim.</p>
+                  <Link to="/claim-business" className="mt-4 inline-flex items-center gap-2 font-medium text-zinc-900 underline underline-offset-4 transition-colors hover:text-orange-600">
+                    Go to claim overview
+                    <ArrowRight className="h-4 w-4" strokeWidth={2.2} />
+                  </Link>
+                </section>
+              </aside>
+            </div>
           ) : (
-            <motion.form 
-              initial={{ opacity: 0, x: 20 }} 
-              animate={{ opacity: 1, x: 0 }} 
-              onSubmit={handleSubmit} 
-              className="space-y-8"
-            >
-              <div className="bg-zinc-900 text-white p-8 lg:p-10 rounded-sm flex items-center gap-6 shadow-xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-[0.03]">
-                  <Building2 className="w-48 h-48" />
-                </div>
-                <div className="absolute inset-0 bg-gradient-to-r from-zinc-900 via-zinc-900/90 to-transparent z-0"></div>
-                <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-sm border border-white/20 flex items-center justify-center shrink-0 z-10">
-                  <ShieldCheck className="h-8 w-8 text-white" strokeWidth={1.5} />
-                </div>
-                <div className="relative z-10">
-                  <p className="font-mono text-[10px] font-bold uppercase tracking-[0.3em] text-orange-400 mb-3">Target Entity</p>
-                  <p className="font-medium text-3xl md:text-4xl tracking-tight leading-none text-white">{selectedBusiness?.name}</p>
-                </div>
-              </div>
-
-              <div className="bg-white border border-zinc-200 rounded-sm p-8 lg:p-12 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] space-y-10">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                  <div className="space-y-3">
-                    <label className="flex items-center gap-2 font-mono text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
-                      <User className="w-3.5 h-3.5" /> Claimant Name *
-                    </label>
-                    <input 
-                      type="text"
-                      value={claimData.claimantName}
-                      onChange={(e) => setClaimData({...claimData, claimantName: e.target.value})}
-                      required
-                      className="w-full bg-zinc-50 border border-zinc-200 rounded-md px-4 py-4 text-base font-medium text-zinc-900 outline-none focus:border-zinc-400 focus:bg-white transition-all shadow-sm"
-                      placeholder="Full Name"
-                    />
+            <div className="grid gap-8 lg:grid-cols-[minmax(0,1.2fr)_24rem]">
+              <motion.form
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.45 }}
+                onSubmit={handleSubmit}
+                className="space-y-8"
+              >
+                <section className="border-2 border-zinc-900 bg-white">
+                  <div className="border-b-2 border-zinc-900 bg-zinc-900 px-6 py-6 text-white sm:px-8">
+                    <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-orange-300">Selected listing</p>
+                    <h2 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">{selectedBusiness?.name}</h2>
+                    <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-zinc-300">
+                      {selectedCityName ? <span>{selectedCityName}</span> : null}
+                      {selectedCategoryName ? <span>{selectedCategoryName}</span> : null}
+                    </div>
                   </div>
-
-                  <div className="space-y-3">
-                    <label className="flex items-center gap-2 font-mono text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
-                      <Mail className="w-3.5 h-3.5" /> Email Address *
-                    </label>
-                    <input 
-                      type="email"
-                      value={claimData.claimantEmail}
-                      onChange={(e) => setClaimData({...claimData, claimantEmail: e.target.value})}
-                      required
-                      className="w-full bg-zinc-50 border border-zinc-200 rounded-md px-4 py-4 text-base font-medium text-zinc-900 outline-none focus:border-zinc-400 focus:bg-white transition-all shadow-sm"
-                      placeholder="operator@example.com"
-                    />
+                  <div className="grid gap-6 px-6 py-6 sm:px-8 lg:grid-cols-[minmax(0,1fr)_15rem]">
+                    <div>
+                      {selectedBusiness?.contact.address ? (
+                        <p className="text-sm leading-6 text-zinc-600">{selectedBusiness.contact.address}</p>
+                      ) : (
+                        <p className="text-sm leading-6 text-zinc-500">No street address is published for this listing yet.</p>
+                      )}
+                    </div>
+                    {listingPath ? (
+                      <Link
+                        to={listingPath}
+                        className="inline-flex items-center justify-center gap-2 border border-zinc-200 bg-zinc-50 px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-700 transition-colors hover:border-zinc-900 hover:bg-white hover:text-zinc-950"
+                      >
+                        View public listing
+                        <ExternalLink className="h-4 w-4" strokeWidth={2.2} />
+                      </Link>
+                    ) : null}
                   </div>
+                </section>
 
-                  <div className="space-y-3">
-                    <label className="flex items-center gap-2 font-mono text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
-                      <Phone className="w-3.5 h-3.5" /> Phone Number
-                    </label>
-                    <input 
-                      type="tel"
-                      value={claimData.claimantPhone}
-                      onChange={(e) => setClaimData({...claimData, claimantPhone: e.target.value})}
-                      className="w-full bg-zinc-50 border border-zinc-200 rounded-md px-4 py-4 text-base font-medium text-zinc-900 outline-none focus:border-zinc-400 focus:bg-white transition-all shadow-sm"
-                      placeholder="(250) 555-0000"
-                    />
-                  </div>
-
-                  <div className="space-y-3">
-                    <label className="flex items-center gap-2 font-mono text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
-                      <ShieldCheck className="w-3.5 h-3.5" /> Authority Level *
-                    </label>
-                    <div className="relative">
-                      <select 
-                        value={claimData.relationshipToBusiness}
-                        onChange={(e) => setClaimData({...claimData, relationshipToBusiness: e.target.value})}
+                <section className="border border-zinc-200 bg-white p-6 sm:p-8">
+                  <div className="grid gap-6 md:grid-cols-2">
+                    <div>
+                      <label className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                        <User className="h-3.5 w-3.5" />
+                        Full name
+                      </label>
+                      <input
+                        type="text"
+                        value={claimData.claimantName}
+                        onChange={(event) => setClaimData({ ...claimData, claimantName: event.target.value })}
                         required
-                        className="w-full bg-zinc-50 border border-zinc-200 rounded-md px-4 py-4 text-base font-medium text-zinc-900 outline-none focus:border-zinc-400 focus:bg-white transition-all appearance-none cursor-pointer shadow-sm"
+                        className="mt-3 w-full border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-900 focus:bg-white"
+                        placeholder="Your name"
+                      />
+                    </div>
+                    <div>
+                      <label className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                        <Mail className="h-3.5 w-3.5" />
+                        Email address
+                      </label>
+                      <input
+                        type="email"
+                        value={claimData.claimantEmail}
+                        onChange={(event) => setClaimData({ ...claimData, claimantEmail: event.target.value })}
+                        required
+                        className="mt-3 w-full border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-900 focus:bg-white"
+                        placeholder="name@business.com"
+                      />
+                    </div>
+                    <div>
+                      <label className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                        <Phone className="h-3.5 w-3.5" />
+                        Phone number
+                      </label>
+                      <input
+                        type="tel"
+                        value={claimData.claimantPhone}
+                        onChange={(event) => setClaimData({ ...claimData, claimantPhone: event.target.value })}
+                        className="mt-3 w-full border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-900 focus:bg-white"
+                        placeholder="(250) 555-0000"
+                      />
+                    </div>
+                    <div>
+                      <label className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                        <ShieldCheck className="h-3.5 w-3.5" />
+                        Your role
+                      </label>
+                      <select
+                        value={claimData.relationshipToBusiness}
+                        onChange={(event) => setClaimData({ ...claimData, relationshipToBusiness: event.target.value })}
+                        className="mt-3 w-full border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none transition-colors focus:border-zinc-900 focus:bg-white"
                       >
                         <option value="owner">Owner</option>
                         <option value="manager">Manager</option>
                         <option value="employee">Employee</option>
-                        <option value="authorized">Authorized Rep</option>
+                        <option value="authorized">Authorized representative</option>
                       </select>
                     </div>
                   </div>
-                </div>
+                  <div className="mt-8">
+                    <label className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Verification notes</label>
+                    <textarea
+                      value={claimData.message}
+                      onChange={(event) => setClaimData({ ...claimData, message: event.target.value })}
+                      rows={5}
+                      className="mt-3 w-full resize-none border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-900 focus:bg-white"
+                      placeholder="Add anything that helps us verify ownership faster."
+                    />
+                  </div>
+                  <div className="mt-8 flex flex-col gap-4 border-t border-zinc-100 pt-6 sm:flex-row">
+                    <button
+                      type="button"
+                      onClick={handleBackToSearch}
+                      className="inline-flex items-center justify-center gap-2 border border-zinc-200 bg-white px-5 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-700 transition-colors hover:bg-zinc-50 hover:text-zinc-950"
+                    >
+                      <ArrowLeft className="h-4 w-4" strokeWidth={2.4} />
+                      Back
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={submitting}
+                      className="inline-flex flex-1 items-center justify-center gap-3 border-2 border-zinc-900 bg-zinc-900 px-6 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white transition-all hover:border-orange-500 hover:bg-orange-500 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {submitting ? 'Submitting claim...' : 'Submit claim for review'}
+                      {!submitting ? <ArrowRight className="h-4 w-4" strokeWidth={2.6} /> : null}
+                    </button>
+                  </div>
+                </section>
+              </motion.form>
 
-                <div className="space-y-3">
-                  <label className="font-mono text-[10px] font-bold text-zinc-500 uppercase tracking-widest block">Additional Verification Notes</label>
-                  <textarea
-                    value={claimData.message}
-                    onChange={(e) => setClaimData({...claimData, message: e.target.value})}
-                    rows={3}
-                    className="w-full bg-zinc-50 border border-zinc-200 rounded-md px-4 py-4 text-base font-medium text-zinc-900 outline-none focus:border-zinc-400 focus:bg-white transition-all resize-none shadow-sm"
-                    placeholder="Provide details to verify your structural ownership..."
-                  />
-                </div>
-
-                <div className="flex flex-col sm:flex-row gap-4 pt-8 border-t border-zinc-100">
-                  <button 
-                    type="button"
-                    onClick={handleBackToSearch}
-                    className="w-full sm:w-16 flex items-center justify-center bg-white border border-zinc-200 rounded-md py-4 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-50 hover:border-zinc-300 transition-all active:scale-[0.98] shadow-sm"
-                    title="Back to search"
-                  >
-                    <ArrowLeft className="h-5 w-5" strokeWidth={2} />
-                  </button>
-                  <button 
-                    type="submit"
-                    disabled={submitting}
-                    className="flex-1 inline-flex items-center justify-center gap-3 bg-zinc-900 text-white rounded-md px-8 py-4 font-sans text-sm font-bold uppercase tracking-wider transition-all group shadow-md hover:bg-zinc-800 active:scale-[0.98] disabled:opacity-50"
-                  >
-                    {submitting ? 'Transmitting...' : <>Submit for Verification <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" strokeWidth={2} /></>}
-                  </button>
-                </div>
-              </div>
-            </motion.form>
+              <aside className="space-y-5">
+                <section className="overflow-hidden border border-zinc-200 bg-white">
+                  <div className="relative h-56">
+                    <img
+                      src={claimFlowPhotoSecondary}
+                      alt=""
+                      aria-hidden="true"
+                      className="h-full w-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/38 to-transparent" />
+                    <div className="absolute inset-x-0 bottom-0 p-5 text-white">
+                      <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-orange-300">Owner access</p>
+                      <p className="mt-2 text-lg font-semibold tracking-tight">Approved claims unlock listing control, not just an account badge.</p>
+                    </div>
+                  </div>
+                </section>
+                <section className="border border-zinc-200 bg-white p-5">
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">What we review</p>
+                  <div className="mt-4 space-y-3">
+                    {reviewPoints.map((point) => (
+                      <div key={point} className="flex items-start gap-3">
+                        <div className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-zinc-900" />
+                        <p className="text-sm leading-6 text-zinc-600">{point}</p>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              </aside>
+            </div>
           )}
         </div>
       </main>
