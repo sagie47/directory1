@@ -8,9 +8,9 @@ import Seo from '../components/Seo';
 import SectionEyebrow from '../components/SectionEyebrow';
 import BusinessFAQ from '../components/BusinessFAQ';
 import BusinessCTA from '../components/BusinessCTA';
-import businessHero from '../photos/phoyo/pexels-tima-miroshnichenko-5845916.jpg';
-import businessStoryPhoto from '../photos/phoyo/pexels-cottonbro-7019765.jpg';
-import businessOperationsPhoto from '../photos/phoyo/pexels-tima-miroshnichenko-6170142.jpg';
+import businessHero from '../photos/businessown/AA_BCConstruction.jpg';
+import businessStoryPhoto from '../photos/businessown/thumbnail_G74A6639.jpg';
+import businessOperationsPhoto from '../photos/businessown/plumbing_career_social jpg.jpg';
 import { trackEvent } from '../lib/analytics';
 
 const offerLanes = [

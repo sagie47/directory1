@@ -259,7 +259,7 @@ export default function OwnerDashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-zinc-900 font-sans selection:bg-indigo-200 selection:text-indigo-900">
-      <section className="border-b-2 border-zinc-900 bg-white px-4 py-16 sm:px-6 sm:py-20 lg:px-10 lg:py-24">
+      <section className="border-b-2 border-zinc-900 bg-white px-4 py-10 sm:px-6 sm:py-12 lg:px-10 lg:py-14">
         <div className="mx-auto max-w-[96rem]">
           <SectionEyebrow
             icon={ShieldCheck}
@@ -268,10 +268,10 @@ export default function OwnerDashboardPage() {
           >
             Owner Dashboard
           </SectionEyebrow>
-          <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-end">
+          <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem] xl:items-end">
             <div>
-              <h1 className="text-5xl font-bold uppercase tracking-tight text-zinc-950 sm:text-6xl lg:text-7xl">{business.name}</h1>
-              <p className="mt-4 text-lg leading-8 text-zinc-600 sm:text-xl">
+              <h1 className="max-w-4xl text-4xl font-bold uppercase tracking-tight text-zinc-950 sm:text-5xl lg:text-6xl xl:text-7xl">{business.name}</h1>
+              <p className="mt-4 max-w-3xl text-lg leading-8 text-zinc-600 sm:text-xl">
                 Update the public details customers depend on first: your description, contact info, service area, and hours.
               </p>
               <div className="mt-6 flex flex-wrap items-center gap-3 text-sm text-zinc-500">
@@ -285,38 +285,52 @@ export default function OwnerDashboardPage() {
                 ) : null}
               </div>
             </div>
-            {approvedClaims.length > 1 ? (
-              <div className="border border-zinc-200 bg-zinc-50 p-4">
-                <label className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Manage another listing</label>
-                <select
-                  value={selectedClaimId}
-                  onChange={async (event) => {
-                    const nextClaim = approvedClaims.find((claim) => claim.id === event.target.value);
-                    if (nextClaim) {
-                      setLoading(true);
-                      await hydrateClaim(nextClaim);
-                      setLoading(false);
-                    }
-                  }}
-                  className="mt-3 w-full border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none focus:border-zinc-900"
-                >
-                  {approvedClaims.map((claim) => {
-                    const optionBusiness = businesses.find((entry) => entry.id === claim.business_id);
-                    return (
-                      <option key={claim.id} value={claim.id}>
-                        {optionBusiness?.name ?? claim.business_id}
-                      </option>
-                    );
-                  })}
-                </select>
+            <div className="border border-zinc-200 bg-zinc-50 p-5">
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Editing scope</p>
+              <div className="mt-4 space-y-3 text-sm text-zinc-600">
+                <div className="flex items-end justify-between gap-4 border-b border-zinc-200 pb-3">
+                  <span>Listing health</span>
+                  <span className="text-3xl font-bold tracking-tight text-zinc-950">{progress.completedCount}/{progress.totalCount}</span>
+                </div>
+                <div className="flex items-end justify-between gap-4 border-b border-zinc-200 pb-3">
+                  <span>Complete</span>
+                  <span className="text-xl font-semibold tracking-tight text-zinc-950">{progress.percent}%</span>
+                </div>
+                <p className="leading-6">Tighten the customer-facing basics first, then move to the next recommended improvement.</p>
               </div>
-            ) : null}
+              {approvedClaims.length > 1 ? (
+                <div className="mt-5 border-t border-zinc-200 pt-5">
+                  <label className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Manage another listing</label>
+                  <select
+                    value={selectedClaimId}
+                    onChange={async (event) => {
+                      const nextClaim = approvedClaims.find((claim) => claim.id === event.target.value);
+                      if (nextClaim) {
+                        setLoading(true);
+                        await hydrateClaim(nextClaim);
+                        setLoading(false);
+                      }
+                    }}
+                    className="mt-3 w-full border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none focus:border-zinc-900"
+                  >
+                    {approvedClaims.map((claim) => {
+                      const optionBusiness = businesses.find((entry) => entry.id === claim.business_id);
+                      return (
+                        <option key={claim.id} value={claim.id}>
+                          {optionBusiness?.name ?? claim.business_id}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+              ) : null}
+            </div>
           </div>
         </div>
       </section>
 
-      <main className="px-4 py-12 sm:px-6 sm:py-14 lg:px-10 lg:py-16">
-        <div className="mx-auto grid max-w-[96rem] gap-8 lg:grid-cols-[minmax(0,1.2fr)_24rem]">
+      <main className="px-4 py-8 sm:px-6 sm:py-10 lg:px-10 lg:py-12">
+        <div className="mx-auto grid max-w-[96rem] gap-8 xl:grid-cols-[minmax(0,1.2fr)_22rem]">
           <motion.form initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} onSubmit={handleSubmit} className="space-y-6">
             {error ? (
               <div className="flex items-start gap-3 border border-rose-200 bg-rose-50 px-4 py-4 text-sm text-rose-700">
@@ -423,7 +437,7 @@ export default function OwnerDashboardPage() {
             </button>
           </motion.form>
 
-          <aside className="space-y-6">
+          <aside className="space-y-6 xl:sticky xl:top-24">
             <OwnerProfileChecklist
               items={progress.fields}
               title="Listing health"

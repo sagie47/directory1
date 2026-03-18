@@ -18,8 +18,8 @@ import { trackEvent } from '@/src/lib/analytics';
 import { getOwnerProfileProgress, getClaimStatusCopy } from '@/src/lib/ownerProfile';
 import { getOwnerRecommendation } from '@/src/lib/recommendations';
 import { isSupabaseConfigured, supabase } from '@/src/lib/supabase';
-import claimStatusPhotoA from '@/src/photos/phoyo/pexels-zeoxs-12366518.jpg';
-import claimStatusPhotoB from '@/src/photos/phoyo/pexels-tima-miroshnichenko-5845968.jpg';
+import claimStatusPhotoA from '@/src/photos/businessown/AA_BCConstruction.jpg';
+import claimStatusPhotoB from '@/src/photos/businessown/thumbnail_G74A6639.jpg';
 
 interface BusinessClaim {
   id: string;

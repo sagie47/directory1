@@ -24,8 +24,8 @@ import { useDirectoryData } from '@/src/directory-data';
 import { getBusinessListingPath } from '@/src/lib/ownerProfile';
 import { isSupabaseConfigured, supabase } from '@/src/lib/supabase';
 import businessBg from '@/src/photos/businessown/thumbnail_G74A6639.jpg';
-import claimFlowPhotoA from '@/src/photos/phoyo/pexels-tima-miroshnichenko-5845968.jpg';
-import claimFlowPhotoB from '@/src/photos/phoyo/pexels-zeoxs-12366518.jpg';
+import claimFlowPhotoA from '@/src/photos/businessown/AA_BCConstruction.jpg';
+import claimFlowPhotoB from '@/src/photos/businessown/pr-roofer-1200x700.jpg';
 import {
   createImageFallbackHandler,
   preferSupabaseImage,
@@ -101,6 +101,13 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
 
   const cityNames = useMemo(() => new Map(cities.map((city) => [city.id, city.name])), [cities]);
   const categoryNames = useMemo(() => new Map(categories.map((category) => [category.id, category.name])), [categories]);
+  const targetedBusiness = selectedBusiness ?? (
+    selectedBusinessId
+      ? businesses.find((business) => business.id === selectedBusinessId) ?? null
+      : null
+  );
+  const targetedBusinessCityName = targetedBusiness ? cityNames.get(targetedBusiness.cityId) : undefined;
+  const targetedBusinessCategoryName = targetedBusiness ? categoryNames.get(targetedBusiness.categoryId) : undefined;
 
   useEffect(() => {
     if (!user || directoryLoading || !selectedBusinessId) {
@@ -248,7 +255,7 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
     }
   }
 
-  if (authLoading || (user && directoryLoading)) {
+  if (authLoading || (user && directoryLoading) || (!user && Boolean(selectedBusinessId) && directoryLoading)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-50">
         <div className="h-12 w-12 animate-spin rounded-full border-2 border-zinc-200 border-t-zinc-900" />
@@ -324,7 +331,7 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
   if (!user) {
     return (
       <div className="min-h-screen bg-[#FAFAFA] text-zinc-900 font-sans selection:bg-indigo-200 selection:text-indigo-900">
-        <section className="relative overflow-hidden bg-zinc-900 px-4 pb-18 pt-26 text-white sm:px-6 sm:pb-24 sm:pt-34 lg:px-10 lg:pb-28 lg:pt-42">
+        <section className="relative overflow-hidden bg-zinc-900 px-4 pb-14 pt-20 text-white sm:px-6 sm:pb-18 sm:pt-24 lg:px-10 lg:pb-20 lg:pt-28">
           <div className="absolute inset-0 z-0">
             <motion.img
               initial={{ scale: 1.08, opacity: 0 }}
@@ -341,7 +348,7 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
             <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-20 mix-blend-overlay" />
           </div>
 
-          <div className="relative z-10 mx-auto grid max-w-[96rem] gap-12 lg:grid-cols-[minmax(0,1.1fr)_28rem] lg:items-end">
+          <div className="relative z-10 mx-auto grid max-w-[96rem] gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(20rem,28rem)] lg:items-start">
             <div className="max-w-3xl">
               <SectionEyebrow
                 icon={Building2}
@@ -350,51 +357,82 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
               >
                 Owner Flow
               </SectionEyebrow>
-              <h1 className="mt-8 text-5xl font-medium tracking-tight text-white sm:text-6xl lg:text-[6rem] lg:leading-[0.96]">
-                Claim your
-                <br />
-                <span className="font-serif italic font-light text-zinc-200">business listing.</span>
+              <h1 className="mt-6 text-5xl font-medium tracking-tight text-white sm:text-6xl lg:text-[5.35rem] lg:leading-[0.98]">
+                {targetedBusiness ? 'Claim this listing.' : 'Claim your business listing.'}
               </h1>
-              <p className="mt-8 max-w-2xl text-xl leading-9 text-zinc-300">
-                Sign in first, then search for your listing, submit ownership details, and unlock the owner dashboard after approval.
+              <p className="mt-6 max-w-2xl text-lg leading-8 text-zinc-300 sm:text-xl sm:leading-9">
+                {targetedBusiness
+                  ? `You are starting from ${targetedBusiness.name}. Sign in to verify ownership for this exact listing, then submit the owner details tied to it.`
+                  : 'Sign in first, then search for your listing, submit ownership details, and unlock the owner dashboard after approval.'}
               </p>
-            </div>
-
-            <div className="border border-zinc-200 bg-white p-7 text-zinc-900 shadow-[0_28px_60px_rgba(0,0,0,0.28)] sm:p-9">
-              {error ? (
-                <div className="mb-5 flex items-start gap-3 border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                  <p>{error}</p>
+              {targetedBusiness ? (
+                <div className="mt-8 max-w-2xl border border-white/15 bg-white/10 p-5 backdrop-blur-md">
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-orange-300">Selected listing</p>
+                  <p className="mt-3 text-2xl font-semibold tracking-tight text-white">{targetedBusiness.name}</p>
+                  <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-zinc-200">
+                    {targetedBusinessCityName ? <span>{targetedBusinessCityName}</span> : null}
+                    {targetedBusinessCategoryName ? <span>{targetedBusinessCategoryName}</span> : null}
+                    {targetedBusiness.contact.address ? <span>{targetedBusiness.contact.address}</span> : null}
+                  </div>
                 </div>
               ) : null}
-              <button
-                type="button"
-                onClick={handleGoogleSignIn}
-                disabled={oauthLoading}
-                className="inline-flex w-full items-center justify-center gap-3 border border-zinc-200 bg-white px-5 py-4 font-sans text-sm font-bold uppercase tracking-[0.14em] text-zinc-900 transition-colors hover:bg-zinc-50 disabled:opacity-60"
-              >
-                <GoogleIcon />
-                {oauthLoading ? 'Connecting...' : 'Continue with Google'}
-              </button>
-              <div className="my-6 flex items-center gap-3">
-                <div className="h-px flex-1 bg-zinc-200" />
-                <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Or</span>
-                <div className="h-px flex-1 bg-zinc-200" />
+            </div>
+
+            <div className="space-y-5">
+              <div className="relative overflow-hidden border border-white/15 bg-zinc-900 text-white shadow-[0_28px_60px_rgba(0,0,0,0.28)]">
+                <img
+                  src={targetedBusiness ? claimFlowPhotoB : claimFlowPhotoA}
+                  alt=""
+                  aria-hidden="true"
+                  className="h-64 w-full object-cover opacity-70"
+                  fetchPriority="high"
+                  decoding="async"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 p-6">
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-orange-300">Claim workflow</p>
+                  <p className="mt-3 text-2xl font-semibold tracking-tight text-white">
+                    {targetedBusiness ? 'This claim will stay attached to the listing you just selected.' : 'Start clean, choose the exact listing, then verify ownership.'}
+                  </p>
+                </div>
               </div>
-              <div className="grid gap-3">
-                <Link
-                  to={`/login?redirect=${encodeURIComponent('/claim' + location.search)}`}
-                  className="inline-flex items-center justify-center gap-3 border-2 border-zinc-900 bg-zinc-900 px-5 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white transition-all hover:border-orange-500 hover:bg-orange-500"
+
+              <div className="border border-zinc-200 bg-white p-7 text-zinc-900 shadow-[0_28px_60px_rgba(0,0,0,0.28)] sm:p-9">
+                {error ? (
+                  <div className="mb-5 flex items-start gap-3 border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                    <p>{error}</p>
+                  </div>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={handleGoogleSignIn}
+                  disabled={oauthLoading}
+                  className="inline-flex w-full items-center justify-center gap-3 border border-zinc-200 bg-white px-5 py-4 font-sans text-sm font-bold uppercase tracking-[0.14em] text-zinc-900 transition-colors hover:bg-zinc-50 disabled:opacity-60"
                 >
-                  Sign in
-                  <ArrowRight className="h-4 w-4" strokeWidth={2.6} />
-                </Link>
-                <Link
-                  to={`/register?redirect=${encodeURIComponent('/claim' + location.search)}`}
-                  className="inline-flex items-center justify-center border border-zinc-200 bg-white px-5 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-700 transition-colors hover:bg-zinc-50 hover:text-zinc-950"
-                >
-                  Create account
-                </Link>
+                  <GoogleIcon />
+                  {oauthLoading ? 'Connecting...' : targetedBusiness ? 'Continue to claim this listing' : 'Continue with Google'}
+                </button>
+                <div className="my-6 flex items-center gap-3">
+                  <div className="h-px flex-1 bg-zinc-200" />
+                  <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Or</span>
+                  <div className="h-px flex-1 bg-zinc-200" />
+                </div>
+                <div className="grid gap-3">
+                  <Link
+                    to={`/login?redirect=${encodeURIComponent('/claim' + location.search)}`}
+                    className="inline-flex items-center justify-center gap-3 border-2 border-zinc-900 bg-zinc-900 px-5 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white transition-all hover:border-orange-500 hover:bg-orange-500"
+                  >
+                    {targetedBusiness ? 'Sign in for this listing' : 'Sign in'}
+                    <ArrowRight className="h-4 w-4" strokeWidth={2.6} />
+                  </Link>
+                  <Link
+                    to={`/register?redirect=${encodeURIComponent('/claim' + location.search)}`}
+                    className="inline-flex items-center justify-center border border-zinc-200 bg-white px-5 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-700 transition-colors hover:bg-zinc-50 hover:text-zinc-950"
+                  >
+                    Create account
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
@@ -405,9 +443,9 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-zinc-900 font-sans selection:bg-indigo-200 selection:text-indigo-900">
-      <section className="border-b-2 border-zinc-900 bg-white px-4 py-16 sm:px-6 sm:py-20 lg:px-10 lg:py-24">
+      <section className="border-b-2 border-zinc-900 bg-white px-4 py-10 sm:px-6 sm:py-12 lg:px-10 lg:py-14">
         <div className="mx-auto max-w-[96rem]">
-          <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_30rem] lg:items-end">
+          <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_26rem] xl:items-end">
             <div>
               <SectionEyebrow
                 icon={ShieldCheck}
@@ -416,14 +454,21 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
               >
                 Ownership Verification
               </SectionEyebrow>
-              <h1 className="mt-8 text-5xl font-bold uppercase tracking-tight text-zinc-950 sm:text-6xl lg:text-7xl">
+              <h1 className="mt-6 text-4xl font-bold uppercase tracking-tight text-zinc-950 sm:text-5xl lg:text-6xl xl:text-7xl">
                 {step === 1 ? 'Claim your listing.' : 'Confirm the owner details.'}
               </h1>
-              <p className="mt-6 max-w-3xl text-lg leading-8 text-zinc-600 sm:text-xl">
+              <p className="mt-5 max-w-3xl text-lg leading-8 text-zinc-600 sm:text-xl">
                 {step === 1
                   ? 'Start by finding the listing you want to manage. We will use that exact listing when we review your claim.'
                   : 'Give us the details needed to verify ownership cleanly and unlock the dashboard once approved.'}
               </p>
+              {targetedBusiness ? (
+                <div className="mt-6 inline-flex flex-wrap items-center gap-2 border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
+                  <span className="font-semibold text-zinc-950">{targetedBusiness.name}</span>
+                  {targetedBusinessCityName ? <span>{targetedBusinessCityName}</span> : null}
+                  {targetedBusinessCategoryName ? <span>{targetedBusinessCategoryName}</span> : null}
+                </div>
+              ) : null}
             </div>
             <div className="relative overflow-hidden border-2 border-zinc-900 bg-zinc-900 text-white shadow-[12px_12px_0px_0px_rgba(24,24,27,0.14)]">
               <div className="absolute inset-0">
@@ -432,10 +477,11 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
                   alt=""
                   aria-hidden="true"
                   className="h-full w-full object-cover opacity-55"
+                  decoding="async"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/58 to-zinc-900/22" />
               </div>
-              <div className="relative z-10 flex min-h-[24rem] flex-col justify-between p-6 sm:p-7">
+              <div className="relative z-10 flex min-h-[18rem] flex-col justify-between p-6 sm:p-7">
                 <div className="max-w-sm">
                   <p className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-orange-300">
                     Claim workflow
@@ -481,7 +527,7 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
         </div>
       </section>
 
-      <main className="px-4 py-12 sm:px-6 sm:py-14 lg:px-10 lg:py-16">
+      <main className="px-4 py-8 sm:px-6 sm:py-10 lg:px-10 lg:py-12">
         <div className="mx-auto max-w-[96rem]">
           {error ? (
             <div className="mb-8 flex items-start gap-3 border border-rose-200 bg-rose-50 px-4 py-4 text-sm text-rose-700">
