@@ -3,6 +3,8 @@ import { useEffect } from 'react';
 import { ArrowRight, Building2, Check, Clock3, Edit3, HelpCircle, Image, MapPin, Phone, ShieldCheck, Workflow } from 'lucide-react';
 import { motion } from 'motion/react';
 import businessBg from '../photos/job-construction-scaled.jpg';
+import claimBodyPhotoA from '../photos/phoyo/pexels-tima-miroshnichenko-5845968.jpg';
+import claimBodyPhotoB from '../photos/phoyo/pexels-zeoxs-12366518.jpg';
 import BusinessFAQ from '../components/BusinessFAQ';
 import Seo from '../components/Seo';
 import SectionEyebrow from '../components/SectionEyebrow';
@@ -259,6 +261,27 @@ export default function ClaimBusinessPage() {
               <p className="mt-8 max-w-md text-lg font-medium leading-relaxed text-zinc-500">
                 A verified profile is the foundation of digital credibility. We ensure the connection between owner and listing is absolute.
               </p>
+
+              <div className="mt-12 overflow-hidden rounded-[2rem] border border-zinc-200 bg-white shadow-2xl shadow-zinc-200/40">
+                <div className="relative aspect-[4/5] sm:aspect-[16/11] lg:aspect-[4/5]">
+                  <img
+                    src={claimBodyPhotoA}
+                    alt=""
+                    aria-hidden="true"
+                    className="h-full w-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent" />
+                  <div className="absolute inset-x-0 bottom-0 p-6 text-white">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 font-mono text-[9px] font-bold uppercase tracking-[0.2em] text-orange-200 backdrop-blur-sm">
+                      <Image className="h-3 w-3" strokeWidth={2.2} />
+                      Listing accuracy
+                    </div>
+                    <p className="mt-3 max-w-xs text-lg font-semibold tracking-tight">
+                      Strong public details reduce doubt before the first call even happens.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="space-y-6">
@@ -305,6 +328,43 @@ export default function ClaimBusinessPage() {
             <p className="mt-6 max-w-2xl text-lg font-medium text-zinc-500">
               A streamlined verification process designed to respect your time while maintaining the integrity of the directory.
             </p>
+          </div>
+
+          <div className="mb-20 overflow-hidden rounded-[2.75rem] border border-zinc-200/70 bg-white shadow-[0_30px_80px_rgba(24,24,27,0.08)]">
+            <div className="grid lg:grid-cols-[1.15fr_0.85fr] lg:items-stretch">
+              <div className="relative min-h-[22rem] overflow-hidden sm:min-h-[28rem]">
+                <img
+                  src={claimBodyPhotoB}
+                  alt=""
+                  aria-hidden="true"
+                  className="h-full w-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-zinc-950/20 via-zinc-950/10 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/18 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 p-8 sm:p-10 lg:max-w-xl">
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-[0.24em] text-orange-300">Ownership review</p>
+                  <p className="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+                    The flow stays simple on the surface so the verification step can stay strict underneath.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-col justify-center bg-zinc-950 px-8 py-10 text-white sm:px-10 sm:py-12">
+                {[
+                  'Select the exact public listing you want to control.',
+                  'Submit enough real owner detail that the review team does not need to guess.',
+                  'Unlock the editable fields only after ownership is confirmed.',
+                ].map((point, index) => (
+                  <div
+                    key={point}
+                    className={index === 0 ? 'border-b border-white/10 pb-6' : index === 2 ? 'pt-6' : 'border-b border-white/10 py-6'}
+                  >
+                    <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Rule 0{index + 1}</p>
+                    <p className="mt-3 text-lg font-semibold leading-relaxed tracking-tight text-zinc-100">{point}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
           <div className="grid gap-8 lg:grid-cols-3 lg:gap-12">

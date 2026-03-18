@@ -1,55 +1,26 @@
 import { type FormEvent, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Activity, Save, CheckCircle, AlertCircle, User, ArrowRight } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useAuth } from '../contexts/AuthContext';
-import { hasApprovedClaim } from '../lib/auth';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import SectionEyebrow from '../components/SectionEyebrow';
 
 export default function AccountPage() {
-  const { user, profile, loading: authLoading, refreshProfile } = useAuth();
+  const { user, profile, loading: authLoading, refreshProfile, hasApprovedClaim } = useAuth();
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fullName, setFullName] = useState(profile?.full_name || '');
-  const [canAccessOwnerDashboard, setCanAccessOwnerDashboard] = useState(false);
+  const canAccessOwnerDashboard = hasApprovedClaim || profile?.role === 'admin';
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [searchParams] = useSearchParams();
+  const wasDenied = searchParams.get('denied') === '1';
 
   useEffect(() => {
     setFullName(profile?.full_name || '');
   }, [profile?.full_name]);
-
-  useEffect(() => {
-    let isActive = true;
-
-    if (!user) {
-      setCanAccessOwnerDashboard(false);
-      return () => {
-        isActive = false;
-      };
-    }
-
-    if (profile?.role === 'admin') {
-      setCanAccessOwnerDashboard(true);
-      return () => {
-        isActive = false;
-      };
-    }
-
-    hasApprovedClaim(user.id).then((hasClaim) => {
-      if (!isActive) {
-        return;
-      }
-
-      setCanAccessOwnerDashboard(hasClaim);
-    });
-
-    return () => {
-      isActive = false;
-    };
-  }, [profile?.role, user]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -135,8 +106,8 @@ export default function AccountPage() {
               Please sign in to view your account.
             </p>
             <Link
-              to="/claim"
-              className="inline-flex w-full items-center justify-center gap-3 bg-zinc-900 text-white px-8 py-5 font-sans text-sm font-bold uppercase tracking-wider transition-all hover:bg-orange-500 active:scale-95 group rounded-xl shadow-md hover:shadow-none hover:translate-x-1 hover:translate-y-1 border border-zinc-200"
+              to="/login?redirect=/account"
+              className="inline-flex w-full items-center justify-center gap-3 bg-zinc-900 text-white px-8 py-5 font-sans text-sm font-bold uppercase tracking-wider transition-all hover:bg-orange-500 active:scale-[0.98] group rounded-sm shadow-md hover:shadow-none hover:translate-x-1 hover:translate-y-1 border-2 border-zinc-200"
             >
               Continue <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" strokeWidth={2.5} />
             </Link>
@@ -161,7 +132,7 @@ export default function AccountPage() {
         <div className="mb-12">
           <SectionEyebrow
             icon={Activity}
-            className="mb-6 inline-flex items-center gap-2 border border-zinc-200 bg-white px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600 shadow-sm rounded-sm"
+            className="mb-6 inline-flex items-center gap-2 border-2 border-zinc-900 bg-zinc-50 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600 rounded-sm"
             iconClassName="h-3.5 w-3.5 text-zinc-900"
           >
             Account
@@ -175,6 +146,12 @@ export default function AccountPage() {
         </div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }} className="border border-zinc-200 bg-white p-8 md:p-12 shadow-xl rounded-sm">
+          {wasDenied && (
+            <div className="mb-8 border-2 border-amber-200 bg-amber-50 rounded-sm p-4 font-mono text-xs font-bold uppercase tracking-wider text-amber-800 flex items-start gap-3">
+              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+              <span>You do not have permission to access that page.</span>
+            </div>
+          )}
           <div className="flex items-center gap-6 mb-10 pb-10 border-b-2 border-zinc-100">
             <div className="w-20 h-20 border border-zinc-200 bg-zinc-50 flex items-center justify-center rounded-sm shadow-md">
               <User className="w-10 h-10 text-zinc-900" strokeWidth={1.5} />
@@ -190,14 +167,14 @@ export default function AccountPage() {
 
           <form onSubmit={handleSubmit} className="space-y-8">
             {error && (
-              <div className="border-2 border-red-900 bg-red-50 rounded-xl p-4 font-mono text-xs font-bold uppercase tracking-wider text-red-900 flex items-start gap-3 shadow-[4px_4px_0px_0px_rgba(127,29,29,1)]">
+              <div className="border-2 border-red-900 bg-red-50 rounded-sm p-4 font-mono text-xs font-bold uppercase tracking-wider text-red-900 flex items-start gap-3 shadow-[4px_4px_0px_0px_rgba(127,29,29,1)]">
                 <AlertCircle className="h-4 w-4 shrink-0" />
                 <span>{error}</span>
               </div>
             )}
 
             {saveSuccess && (
-              <div className="border-2 border-green-900 bg-green-50 rounded-xl p-4 font-mono text-xs font-bold uppercase tracking-wider text-green-900 flex items-center gap-3 shadow-[4px_4px_0px_0px_rgba(20,83,45,1)]">
+              <div className="border-2 border-green-900 bg-green-50 rounded-sm p-4 font-mono text-xs font-bold uppercase tracking-wider text-green-900 flex items-center gap-3 shadow-[4px_4px_0px_0px_rgba(20,83,45,1)]">
                 <CheckCircle className="h-4 w-4" /> 
                 <span>Account updated successfully!</span>
               </div>
@@ -209,7 +186,7 @@ export default function AccountPage() {
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                className="w-full border-2 border-zinc-200 bg-zinc-50 px-4 py-4 text-base font-medium text-zinc-900 outline-none transition-colors focus:border-zinc-900 focus:bg-white rounded-xl shadow-sm"
+                className="w-full border-2 border-zinc-200 bg-zinc-50 px-4 py-4 text-base font-medium text-zinc-900 outline-none transition-colors focus:border-zinc-900 focus:bg-white rounded-sm shadow-sm"
                 placeholder="Your name"
               />
             </div>
@@ -220,7 +197,7 @@ export default function AccountPage() {
                 type="email"
                 value={user.email || ''}
                 disabled
-                className="w-full border-2 border-zinc-200 bg-zinc-100 px-4 py-4 text-base font-medium text-zinc-500 outline-none cursor-not-allowed rounded-xl"
+                className="w-full border-2 border-zinc-200 bg-zinc-100 px-4 py-4 text-base font-medium text-zinc-500 outline-none cursor-not-allowed rounded-sm"
               />
               <p className="mt-2 font-mono text-[10px] font-bold uppercase tracking-wider text-zinc-400">Email cannot be changed.</p>
             </div>
@@ -229,7 +206,7 @@ export default function AccountPage() {
               <button 
                 type="submit"
                 disabled={saving}
-                className="w-full md:w-auto inline-flex items-center justify-center gap-3 bg-zinc-900 text-white px-8 py-5 font-sans text-sm font-bold uppercase tracking-wider transition-all hover:bg-orange-500 active:scale-95 shadow-md hover:shadow-none hover:translate-x-1 hover:translate-y-1 disabled:opacity-50 disabled:pointer-events-none rounded-xl border border-zinc-200 group"
+                className="w-full md:w-auto inline-flex items-center justify-center gap-3 bg-zinc-900 text-white px-8 py-5 font-sans text-sm font-bold uppercase tracking-wider transition-all hover:bg-orange-500 active:scale-[0.98] shadow-md hover:shadow-none hover:translate-x-1 hover:translate-y-1 disabled:opacity-50 disabled:pointer-events-none rounded-sm border-2 border-zinc-200 group"
               >
                 {saving ? 'Saving...' : <><Save className="h-4 w-4" strokeWidth={2} /> Save Changes</>}
               </button>
@@ -241,14 +218,14 @@ export default function AccountPage() {
             <div className="space-y-4">
               <Link 
                 to="/claim/status" 
-                className="group flex items-center border-2 border-zinc-200 bg-zinc-50 px-6 py-4 rounded-xl font-sans text-base font-bold text-zinc-900 transition-all hover:border-zinc-900 hover:shadow-[4px_4px_0px_0px_rgba(24,24,27,0.1)]"
+                className="group flex items-center border-2 border-zinc-200 bg-zinc-50 px-6 py-4 rounded-sm font-sans text-base font-bold text-zinc-900 transition-all hover:border-zinc-900 hover:shadow-[4px_4px_0px_0px_rgba(24,24,27,0.1)]"
               >
                 View Claim Status <ArrowRight className="ml-auto h-5 w-5 text-zinc-400 transition-all group-hover:translate-x-1 group-hover:text-orange-500" strokeWidth={2.5} />
               </Link>
               {canAccessOwnerDashboard && (
                 <Link 
                   to="/owner/dashboard" 
-                  className="group flex items-center border-2 border-zinc-200 bg-zinc-50 px-6 py-4 rounded-xl font-sans text-base font-bold text-zinc-900 transition-all hover:border-zinc-900 hover:shadow-[4px_4px_0px_0px_rgba(24,24,27,0.1)]"
+                  className="group flex items-center border-2 border-zinc-200 bg-zinc-50 px-6 py-4 rounded-sm font-sans text-base font-bold text-zinc-900 transition-all hover:border-zinc-900 hover:shadow-[4px_4px_0px_0px_rgba(24,24,27,0.1)]"
                 >
                   Owner Dashboard <ArrowRight className="ml-auto h-5 w-5 text-zinc-400 transition-all group-hover:translate-x-1 group-hover:text-orange-500" strokeWidth={2.5} />
                 </Link>
@@ -256,9 +233,9 @@ export default function AccountPage() {
               {profile?.role === 'admin' && (
                 <Link 
                   to="/admin/claims" 
-                  className="group flex items-center border-2 border-zinc-200 bg-zinc-50 px-6 py-4 rounded-xl font-sans text-base font-bold text-zinc-900 transition-all hover:border-zinc-900 hover:shadow-[4px_4px_0px_0px_rgba(24,24,27,0.1)]"
+                  className="group flex items-center border-2 border-zinc-200 bg-zinc-50 px-6 py-4 rounded-sm font-sans text-base font-bold text-zinc-900 transition-all hover:border-zinc-900 hover:shadow-[4px_4px_0px_0px_rgba(24,24,27,0.1)]"
                 >
-                  Admin Claim Review <ArrowRight className="ml-auto h-5 w-5 text-zinc-400 transition-all group-hover:translate-x-1 group-hover:text-orange-500" strokeWidth={2.5} />
+                  Claims Admin <ArrowRight className="ml-auto h-5 w-5 text-zinc-400 transition-all group-hover:translate-x-1 group-hover:text-orange-500" strokeWidth={2.5} />
                 </Link>
               )}
             </div>
@@ -266,7 +243,7 @@ export default function AccountPage() {
 
           <div className="mt-12 pt-10 border-t-2 border-red-100">
             <h3 className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-red-600 mb-6">Danger Zone</h3>
-            <div className="border-2 border-red-200 bg-red-50 p-6 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+            <div className="border-2 border-red-200 bg-red-50 p-6 rounded-sm flex flex-col sm:flex-row sm:items-center justify-between gap-6">
               <div>
                 <h4 className="font-bold text-red-900 text-lg mb-1">Delete Account</h4>
                 <p className="text-red-700 text-sm font-medium">Permanently remove your account and all associated data.</p>
@@ -295,7 +272,7 @@ export default function AccountPage() {
               ) : (
                 <button
                   onClick={() => setShowDeleteConfirm(true)}
-                  className="px-6 py-3 bg-white border-2 border-red-200 text-red-700 font-bold text-sm uppercase tracking-wider rounded-xl hover:bg-red-100 hover:border-red-300 transition-all shadow-sm active:scale-95 whitespace-nowrap"
+                  className="px-6 py-3 bg-white border-2 border-red-200 text-red-700 font-bold text-sm uppercase tracking-wider rounded-sm hover:bg-red-100 hover:border-red-300 transition-all shadow-sm active:scale-[0.98] whitespace-nowrap"
                 >
                   Delete Account
                 </button>

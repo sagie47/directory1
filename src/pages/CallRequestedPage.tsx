@@ -1,28 +1,15 @@
 import { Link, useSearchParams } from 'react-router-dom';
-import { ArrowRight, Check, Mail, Phone } from 'lucide-react';
+import { ArrowRight, Check, CreditCard, Mail, Phone } from 'lucide-react';
 import { motion } from 'motion/react';
 
-const contentMap = {
-  website: {
-    eyebrow: 'Website Call Requested',
-    title: "Thanks. We've Got Your Website Request.",
-    body: 'We will review what you shared and reach out with next steps for a practical website conversation.',
-    backTo: '/websites-for-trades',
-    backLabel: 'Back to Websites for Trades',
-  },
-  'managed-growth': {
-    eyebrow: 'Strategy Call Requested',
-    title: "Thanks. We've Got Your Strategy Request.",
-    body: 'We will review your details and reach out with next steps for a managed growth conversation.',
-    backTo: '/managed-growth',
-    backLabel: 'Back to Managed Growth',
-  },
-} as const;
+import { getCallOffer, getCallOfferConfig } from '@/src/lib/callOffers';
 
 export default function CallRequestedPage() {
   const [searchParams] = useSearchParams();
-  const offer = searchParams.get('offer') === 'managed-growth' ? 'managed-growth' : 'website';
-  const content = contentMap[offer];
+  const offer = getCallOffer(searchParams.get('offer'));
+  const content = getCallOfferConfig(offer);
+  const paymentStatus = searchParams.get('payment');
+  const paymentReceived = paymentStatus === 'paid';
 
   return (
     <motion.div
@@ -44,20 +31,28 @@ export default function CallRequestedPage() {
           </div>
 
           <div className="mt-8 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-zinc-500">
-            {content.eyebrow}
+            {content.successEyebrow}
           </div>
           <h1 className="mt-4 text-4xl font-bold uppercase tracking-tighter leading-tight text-zinc-900 md:text-5xl">
-            {content.title}
+            {paymentReceived ? 'Payment received.' : content.successTitle}
           </h1>
           <p className="mt-6 max-w-2xl text-lg font-medium leading-relaxed text-zinc-600">
-            {content.body}
+            {paymentReceived
+              ? 'Your payment is in. Use the scheduling link below if it is available, or watch for our follow-up if scheduling is still being handled manually.'
+              : content.successBody}
           </p>
 
           <div className="mt-10 grid gap-4 border-t-2 border-zinc-100 pt-8 sm:grid-cols-2">
             <div className="rounded-sm border border-zinc-200 bg-zinc-50 p-6 transition-all duration-300 hover:border-zinc-300 hover:shadow-xl">
               <div className="flex items-center gap-3 text-zinc-900">
-                <Phone className="h-5 w-5 text-orange-500" strokeWidth={2} />
-                <span className="font-sans font-bold">We will call to schedule</span>
+                {paymentReceived ? (
+                  <CreditCard className="h-5 w-5 text-orange-500" strokeWidth={2} />
+                ) : (
+                  <Phone className="h-5 w-5 text-orange-500" strokeWidth={2} />
+                )}
+                <span className="font-sans font-bold">
+                  {paymentReceived ? 'Stripe payment confirmed' : 'We will follow up on scheduling'}
+                </span>
               </div>
             </div>
             <div className="rounded-sm border border-zinc-200 bg-zinc-50 p-6 transition-all duration-300 hover:border-zinc-300 hover:shadow-xl">
@@ -70,10 +65,22 @@ export default function CallRequestedPage() {
 
           <div className="mt-10 border-t-2 border-zinc-100 pt-8">
             <div className="flex flex-col gap-4 sm:flex-row">
-              <Link to={content.backTo} className="inline-flex items-center justify-center gap-3 rounded-xl border border-zinc-900 bg-zinc-900 px-8 py-5 font-sans text-sm font-bold uppercase tracking-wider text-white shadow-sm transition-all hover:bg-zinc-800 hover:-translate-y-1 active:scale-95">
-                {content.backLabel}
-                <ArrowRight className="h-5 w-5" strokeWidth={2.5} />
-              </Link>
+              {content.scheduleUrl ? (
+                <a
+                  href={content.scheduleUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-3 rounded-xl border border-zinc-900 bg-zinc-900 px-8 py-5 font-sans text-sm font-bold uppercase tracking-wider text-white shadow-sm transition-all hover:bg-zinc-800 hover:-translate-y-1 active:scale-95"
+                >
+                  Schedule Call
+                  <ArrowRight className="h-5 w-5" strokeWidth={2.5} />
+                </a>
+              ) : (
+                <Link to={content.backTo} className="inline-flex items-center justify-center gap-3 rounded-xl border border-zinc-900 bg-zinc-900 px-8 py-5 font-sans text-sm font-bold uppercase tracking-wider text-white shadow-sm transition-all hover:bg-zinc-800 hover:-translate-y-1 active:scale-95">
+                  {content.backLabel}
+                  <ArrowRight className="h-5 w-5" strokeWidth={2.5} />
+                </Link>
+              )}
               <Link to="/for-business" className="inline-flex items-center justify-center gap-3 rounded-xl border border-zinc-200 bg-white px-8 py-5 font-sans text-sm font-bold uppercase tracking-wider text-zinc-900 transition-all hover:border-zinc-300 hover:bg-zinc-50 active:scale-95">
                 Back to Business Options
               </Link>

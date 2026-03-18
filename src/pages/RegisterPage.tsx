@@ -1,5 +1,5 @@
 import { type FormEvent, useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight, UserPlus, Check } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -14,12 +14,15 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [searchParams] = useSearchParams();
+  const rawRedirect = searchParams.get('redirect') || '/account';
+  const redirectTo = rawRedirect.startsWith('/') && !rawRedirect.startsWith('//') ? rawRedirect : '/account';
 
   useEffect(() => {
     if (!authLoading && user) {
-      navigate('/account', { replace: true });
+      navigate(redirectTo, { replace: true });
     }
-  }, [authLoading, navigate, user]);
+  }, [authLoading, navigate, redirectTo, user]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -50,7 +53,7 @@ export default function RegisterPage() {
     }
 
     if (session) {
-      navigate('/account', { replace: true });
+      navigate(redirectTo, { replace: true });
       return;
     }
 
@@ -62,12 +65,12 @@ export default function RegisterPage() {
 
   if (success) {
     return (
-      <div className="bg-[#FAFAFA] min-h-screen py-24 text-zinc-900 font-sans relative overflow-hidden flex flex-col justify-center selection:bg-orange-500/20">
-        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(to right, #d4d4d8 1px, transparent 1px), linear-gradient(to bottom, #d4d4d8 1px, transparent 1px)', backgroundSize: '4rem 4rem' }}></div>
+      <div className="bg-[#FAFAFA] min-h-screen py-24 text-zinc-900 font-sans relative overflow-hidden flex flex-col justify-center selection:bg-indigo-200 selection:text-indigo-900">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-[0.03] mix-blend-overlay pointer-events-none"></div>
 
         <div className="relative max-w-xl w-full mx-auto px-4 sm:px-6 z-10 text-center">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white border border-zinc-200 p-8 sm:p-12 rounded-sm shadow-xl text-center relative z-10">
-            <div className="w-16 h-16 bg-emerald-50 text-emerald-500 border border-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ ease: [0.16, 1, 0.3, 1] }} className="bg-white border-2 border-zinc-200 p-8 sm:p-12 rounded-sm shadow-xl text-center relative z-10">
+            <div className="w-16 h-16 bg-emerald-50 text-emerald-500 border-2 border-emerald-200 flex items-center justify-center mx-auto mb-6 rounded-sm">
               <Check className="w-8 h-8 text-emerald-500" strokeWidth={2.5} />
             </div>
             <h2 className="text-3xl md:text-4xl font-black uppercase tracking-tighter mb-6 text-zinc-900">Check Your Email</h2>
@@ -75,7 +78,7 @@ export default function RegisterPage() {
               We've sent a verification link to <strong className="text-zinc-900">{email}</strong>. 
               Click the link to verify your account and sign in.
             </p>
-            <Link to="/claim" className="inline-flex items-center justify-center gap-3 w-full bg-zinc-900 text-white rounded-xl px-8 py-4 font-sans text-sm font-semibold uppercase tracking-widest transition-all shadow-sm hover:bg-orange-500 hover:-translate-y-1 hover:shadow-md active:scale-95 group">
+            <Link to="/claim" className="inline-flex items-center justify-center gap-3 w-full bg-zinc-900 text-white rounded-sm px-8 py-4 font-sans text-sm font-bold uppercase tracking-wider transition-all shadow-sm hover:bg-orange-500 hover:-translate-y-1 hover:shadow-md active:scale-[0.98] group">
               Back to Claim <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" strokeWidth={2.5} />
             </Link>
           </motion.div>
@@ -90,14 +93,14 @@ export default function RegisterPage() {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
-      className="bg-[#FAFAFA] min-h-screen py-24 text-zinc-900 font-sans relative overflow-hidden flex flex-col justify-center selection:bg-orange-500/20"
+      className="bg-[#FAFAFA] min-h-screen py-24 text-zinc-900 font-sans relative overflow-hidden flex flex-col justify-center selection:bg-indigo-200 selection:text-indigo-900"
     >
-      <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(to right, #d4d4d8 1px, transparent 1px), linear-gradient(to bottom, #d4d4d8 1px, transparent 1px)', backgroundSize: '4rem 4rem' }}></div>
+      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-[0.03] mix-blend-overlay pointer-events-none"></div>
 
       <div className="relative max-w-xl w-full mx-auto px-4 sm:px-6 z-10 text-center">
         
-        <div className="inline-flex items-center gap-2 font-mono text-[10px] font-bold tracking-widest text-zinc-500 mb-8 border border-zinc-200 rounded-full px-4 py-2 uppercase bg-white shadow-sm">
-          <UserPlus className="w-4 h-4 text-zinc-400" fill="currentColor" />
+        <div className="inline-flex items-center gap-2 font-mono text-[10px] font-bold tracking-[0.2em] text-zinc-600 mb-8 border-2 border-zinc-900 bg-zinc-50 px-4 py-2 uppercase rounded-sm">
+          <UserPlus className="w-4 h-4 text-zinc-900" strokeWidth={2} />
           Registration
         </div>
         
@@ -108,16 +111,16 @@ export default function RegisterPage() {
           Join the directory to claim your business, respond to reviews, and manage your profile.
         </p>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }} className="bg-white border border-zinc-200 p-8 sm:p-12 rounded-sm shadow-xl text-left relative z-10">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1, ease: [0.16, 1, 0.3, 1] }} className="bg-white border-2 border-zinc-200 p-8 sm:p-12 rounded-sm shadow-xl text-left relative z-10">
           <form onSubmit={handleSubmit} className="space-y-6">
             {visibleError && (
-              <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-widest">
+              <div className="bg-red-50 border-2 border-red-200 text-red-600 rounded-sm px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-widest">
                 {visibleError}
               </div>
             )}
 
             {!isConfigured && (
-              <div className="bg-amber-50 border border-amber-200 text-amber-700 rounded-xl px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-widest">
+              <div className="bg-amber-50 border-2 border-amber-200 text-amber-700 rounded-sm px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-widest">
                 Authentication is not configured in this environment.
               </div>
             )}
@@ -129,7 +132,7 @@ export default function RegisterPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-4 text-base font-medium text-zinc-900 outline-none focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 focus:bg-white transition-all shadow-sm"
+                className="w-full bg-zinc-50 border-2 border-zinc-200 rounded-sm px-4 py-4 text-base font-medium text-zinc-900 outline-none focus:border-zinc-900 focus:bg-white transition-colors"
                 placeholder="you@company.com"
               />
             </div>
@@ -143,7 +146,7 @@ export default function RegisterPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   minLength={6}
-                  className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-4 text-base font-medium text-zinc-900 outline-none focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 focus:bg-white transition-all shadow-sm"
+                  className="w-full bg-zinc-50 border-2 border-zinc-200 rounded-sm px-4 py-4 text-base font-medium text-zinc-900 outline-none focus:border-zinc-900 focus:bg-white transition-colors"
                   placeholder="Min. 6 characters"
                 />
               </div>
@@ -155,7 +158,7 @@ export default function RegisterPage() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
-                  className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-4 text-base font-medium text-zinc-900 outline-none focus:border-zinc-900 focus:ring-1 focus:ring-zinc-900 focus:bg-white transition-all shadow-sm"
+                  className="w-full bg-zinc-50 border-2 border-zinc-200 rounded-sm px-4 py-4 text-base font-medium text-zinc-900 outline-none focus:border-zinc-900 focus:bg-white transition-colors"
                   placeholder="Verify password"
                 />
               </div>
@@ -165,7 +168,7 @@ export default function RegisterPage() {
               <button 
                 type="submit" 
                 disabled={loading || authLoading || !isConfigured}
-                className="w-full inline-flex items-center justify-center gap-3 bg-zinc-900 text-white rounded-xl px-8 py-4 font-sans text-sm font-semibold uppercase tracking-widest transition-all shadow-sm hover:bg-orange-500 hover:-translate-y-1 hover:shadow-md active:scale-95 group disabled:opacity-50 disabled:pointer-events-none"
+                className="w-full inline-flex items-center justify-center gap-3 bg-zinc-900 text-white rounded-sm px-8 py-4 font-sans text-sm font-bold uppercase tracking-wider transition-all shadow-sm hover:bg-orange-500 hover:-translate-y-1 hover:shadow-md active:scale-[0.98] group disabled:opacity-50 disabled:pointer-events-none"
               >
                 {loading ? 'Creating account...' : <>Create Account <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" strokeWidth={2.5} /></>}
               </button>
@@ -174,8 +177,8 @@ export default function RegisterPage() {
             <div className="mt-8 text-center">
               <p className="text-zinc-500 font-mono text-[10px] font-bold uppercase tracking-widest">
                 Already have an account?{' '}
-                <Link to="/claim" className="text-zinc-900 hover:text-orange-500 transition-colors">
-                  Continue here
+                <Link to={`/login${redirectTo !== '/account' ? `?redirect=${encodeURIComponent(redirectTo)}` : ''}`} className="text-zinc-900 hover:text-orange-500 transition-colors">
+                  Sign in
                 </Link>
               </p>
             </div>

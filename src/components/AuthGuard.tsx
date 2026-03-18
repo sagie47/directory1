@@ -1,7 +1,6 @@
-import { type ReactNode, useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { type ReactNode } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth, UserRole } from '../contexts/AuthContext';
-import { hasApprovedClaim } from '../lib/auth';
 
 interface AuthGuardProps {
   children: ReactNode;
@@ -10,49 +9,10 @@ interface AuthGuardProps {
 }
 
 export default function AuthGuard({ children, requireRole, requireApprovedClaim = false }: AuthGuardProps) {
-  const { user, profile, loading } = useAuth();
-  const [claimLoading, setClaimLoading] = useState(requireApprovedClaim);
-  const [approvedClaim, setApprovedClaim] = useState(false);
+  const { user, profile, loading, hasApprovedClaim } = useAuth();
+  const location = useLocation();
 
-  useEffect(() => {
-    let isActive = true;
-
-    if (!requireApprovedClaim || !user || profile?.role === 'admin') {
-      setApprovedClaim(profile?.role === 'admin');
-      setClaimLoading(false);
-      return () => {
-        isActive = false;
-      };
-    }
-
-    setClaimLoading(true);
-
-    hasApprovedClaim(user.id)
-      .then((hasClaim) => {
-        if (!isActive) {
-          return;
-        }
-
-        setApprovedClaim(hasClaim);
-        setClaimLoading(false);
-      })
-      .catch((claimError) => {
-        console.error('Error checking claim access:', claimError);
-
-        if (!isActive) {
-          return;
-        }
-
-        setApprovedClaim(false);
-        setClaimLoading(false);
-      });
-
-    return () => {
-      isActive = false;
-    };
-  }, [profile?.role, requireApprovedClaim, user]);
-
-  if (loading || claimLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA]">
         <div className="animate-pulse flex flex-col items-center gap-4">
@@ -64,7 +24,8 @@ export default function AuthGuard({ children, requireRole, requireApprovedClaim 
   }
 
   if (!user) {
-    return <Navigate to="/claim" replace />;
+    const redirectTo = `/login?redirect=${encodeURIComponent(location.pathname + location.search)}`;
+    return <Navigate to={redirectTo} replace />;
   }
 
   if (requireRole && requireRole.length > 0) {
@@ -74,7 +35,7 @@ export default function AuthGuard({ children, requireRole, requireApprovedClaim 
     }
   }
 
-  if (requireApprovedClaim && !approvedClaim) {
+  if (requireApprovedClaim && !hasApprovedClaim && profile?.role !== 'admin') {
     return <Navigate to="/claim/status" replace />;
   }
 

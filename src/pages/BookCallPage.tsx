@@ -1,50 +1,22 @@
 import { type ChangeEvent, type FormEvent, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowRight, BriefcaseBusiness, Building2, Globe, LineChart, Wrench } from 'lucide-react';
+import {
+  ArrowRight,
+  Building2,
+  CreditCard,
+  ShieldCheck,
+  Wrench,
+} from 'lucide-react';
 import { motion } from 'motion/react';
 
-import SectionEyebrow from '../components/SectionEyebrow';
-
-const offerContent = {
-  website: {
-    eyebrow: 'Website Intake',
-    icon: Globe,
-    title: 'Book a Website Call',
-    intro: 'Tell us a bit about your business and current site situation. We will use this to shape a practical website conversation, not a generic agency pitch.',
-    cta: 'Request Website Call',
-  },
-  'managed-growth': {
-    eyebrow: 'Strategy Intake',
-    icon: LineChart,
-    title: 'Book a Strategy Call',
-    intro: 'Tell us where the current bottlenecks are. We will use this to understand whether managed growth support makes sense for your business.',
-    cta: 'Request Strategy Call',
-  },
-} as const;
-
-const serviceNeeds = {
-  website: [
-    { value: '', label: 'What do you need most?' },
-    { value: 'new-site', label: 'A new website' },
-    { value: 'redesign', label: 'A redesign of an existing site' },
-    { value: 'service-pages', label: 'Stronger service pages and structure' },
-    { value: 'credibility', label: 'A more credible first impression' },
-  ],
-  'managed-growth': [
-    { value: '', label: 'What is the biggest current need?' },
-    { value: 'visibility', label: 'Visibility and presence management' },
-    { value: 'lead-response', label: 'Lead response and follow-up support' },
-    { value: 'reviews', label: 'Reputation and review support' },
-    { value: 'execution', label: 'Ongoing execution help' },
-  ],
-} as const;
+import SectionEyebrow from '@/src/components/SectionEyebrow';
+import { getCallOffer, getCallOfferConfig } from '@/src/lib/callOffers';
 
 export default function BookCallPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const offer = searchParams.get('offer') === 'managed-growth' ? 'managed-growth' : 'website';
-  const content = offerContent[offer];
-  const offerOptions = serviceNeeds[offer];
+  const offer = getCallOffer(searchParams.get('offer'));
+  const content = getCallOfferConfig(offer);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -58,14 +30,17 @@ export default function BookCallPage() {
     primaryNeed: '',
   });
 
+  const hasStripePayment = Boolean(content.stripePaymentUrl);
+  const hasSchedulingLink = Boolean(content.scheduleUrl);
+
   const reassurance = useMemo(
     () => [
       'Built around local trade businesses',
       offer === 'website' ? 'Website-first conversation' : 'Operational strategy conversation',
-      'No bloated proposal process',
-      'Clear next-step recommendation',
+      hasStripePayment ? 'Stripe checkout supported' : 'No payment step configured yet',
+      hasSchedulingLink ? 'Scheduling link ready after payment' : 'We can still follow up manually',
     ],
-    [offer],
+    [hasSchedulingLink, hasStripePayment, offer],
   );
 
   function handleChange(event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
@@ -79,11 +54,16 @@ export default function BookCallPage() {
     event.preventDefault();
     setLoading(true);
 
-    // TODO: Replace with CRM or backend submission.
     setTimeout(() => {
       setLoading(false);
+
+      if (content.stripePaymentUrl) {
+        window.location.assign(content.stripePaymentUrl);
+        return;
+      }
+
       navigate(`/call-requested?offer=${offer}`);
-    }, 700);
+    }, 500);
   }
 
   return (
@@ -104,12 +84,28 @@ export default function BookCallPage() {
             >
               {content.eyebrow}
             </SectionEyebrow>
-            <h1 className="text-5xl font-bold uppercase tracking-tighter leading-[0.95] text-zinc-900 md:text-6xl lg:text-7xl">
+            <h1 className="text-5xl font-bold uppercase leading-[0.95] tracking-tighter text-zinc-900 md:text-6xl lg:text-7xl">
               {content.title}
             </h1>
             <p className="mt-6 text-xl font-medium leading-relaxed text-zinc-600">
               {content.intro}
             </p>
+
+            <div className="mt-8 border border-zinc-200 bg-white p-5 shadow-sm">
+              <div className="flex items-start gap-3">
+                <CreditCard className="mt-0.5 h-5 w-5 text-orange-500" strokeWidth={2} />
+                <div>
+                  <p className="font-semibold text-zinc-900">
+                    {hasStripePayment ? 'This flow continues to Stripe after submit.' : 'This flow currently ends as a request form.'}
+                  </p>
+                  <p className="mt-1 text-sm leading-6 text-zinc-600">
+                    {hasStripePayment
+                      ? 'Submit your intake, then you will be redirected to Stripe to handle payment before scheduling.'
+                      : 'If you want paid scheduling, add the Stripe payment URL env vars and this page will redirect automatically.'}
+                  </p>
+                </div>
+              </div>
+            </div>
 
             <div className="mt-12 border-t-2 border-zinc-200 pt-8">
               <div className="mb-6 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">What to Expect</div>
@@ -201,26 +197,28 @@ export default function BookCallPage() {
                 <label className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">Primary Need *</label>
                 <div className="relative">
                   <select name="primaryNeed" value={formData.primaryNeed} onChange={handleChange} required className="w-full appearance-none rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-4 pr-12 text-base font-medium text-zinc-900 outline-none transition-colors focus:border-zinc-900 focus:bg-white">
-                    {offerOptions.map((item) => (
+                    {content.serviceNeeds.map((item) => (
                       <option key={item.value} value={item.value}>{item.label}</option>
                     ))}
                   </select>
-                  <BriefcaseBusiness className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400" />
+                  <content.primaryNeedIcon className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400" />
                 </div>
               </div>
 
               <button type="submit" disabled={loading} className="inline-flex w-full items-center justify-center gap-3 rounded-xl border border-zinc-900 bg-zinc-900 px-8 py-5 font-sans text-sm font-bold uppercase tracking-wider text-white shadow-sm transition-all hover:bg-zinc-800 hover:-translate-y-1 active:scale-95 disabled:pointer-events-none disabled:opacity-50">
-                {loading ? 'Submitting...' : content.cta}
+                {loading ? 'Submitting...' : hasStripePayment ? content.cta : 'Request Call'}
                 <ArrowRight className="h-5 w-5" strokeWidth={2.5} />
               </button>
 
               <p className="text-center font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">
-                No bloated proposal process. Just a practical first conversation.
+                {hasStripePayment
+                  ? 'Simple intake first, then Stripe checkout.'
+                  : 'No Stripe payment link configured yet.'}
               </p>
             </form>
 
             <div className="mt-8 border-t-2 border-zinc-100 pt-6">
-              <Link to={offer === 'website' ? '/websites-for-trades' : '/managed-growth'} className="group inline-flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500 transition-colors hover:text-zinc-900">
+              <Link to={content.backTo} className="group inline-flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500 transition-colors hover:text-zinc-900">
                 <ArrowRight className="h-3 w-3 rotate-180 transition-transform group-hover:-translate-x-1" strokeWidth={2} />
                 Back to offer page
               </Link>

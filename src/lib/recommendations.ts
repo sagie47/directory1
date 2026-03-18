@@ -1,6 +1,8 @@
-import { Business } from '../business';
+import type { Business } from '@/src/business';
+import { getOwnerProfileProgress, type OwnerProfileSnapshot } from '@/src/lib/ownerProfile';
 
 export type RecommendationType =
+  | 'review_pending'
   | 'complete_profile'
   | 'website_fix'
   | 'lead_capture'
@@ -17,62 +19,72 @@ export interface RecommendationResult {
 }
 
 interface RecommendationContext {
-  business?: Business | null;
+  business?: Business | OwnerProfileSnapshot | null;
   claimStatus?: 'pending' | 'approved' | 'rejected' | 'revoked';
 }
 
-export function getOwnerRecommendation({ business, claimStatus }: RecommendationContext): RecommendationResult {
+export function getOwnerRecommendation({
+  business,
+  claimStatus,
+}: RecommendationContext): RecommendationResult {
+  if (claimStatus === 'revoked') {
+    return {
+      type: 'none',
+      title: 'Claim Revoked',
+      description: 'Your claim for this business has been revoked. Please contact support if you believe this is an error.',
+      href: '/contact',
+      ctaLabel: 'Contact Support',
+    };
+  }
+
   if (claimStatus === 'rejected') {
     return {
       type: 'retry_claim',
       title: 'Claim Needs Another Attempt',
       description: 'This claim was not approved. Review the reason above and try again if you have updated ownership details.',
       href: '/claim',
-      ctaLabel: 'Start a New Claim'
+      ctaLabel: 'Start A New Claim',
     };
   }
 
   if (!business) {
     return {
-      type: 'none',
-      title: 'We Are Reviewing Your Claim',
-      description: 'We will confirm your ownership request before any profile updates are available.'
+      type: claimStatus === 'pending' ? 'review_pending' : 'none',
+      title: claimStatus === 'pending' ? 'Review In Progress' : 'Owner Tools Locked',
+      description: claimStatus === 'pending'
+        ? 'We are confirming ownership before any profile editing becomes available.'
+        : 'Owner tools unlock after a verified business claim is approved.',
     };
   }
 
-  const hasDescription = Boolean(business.description && business.description.length > 10);
-  const hasPhone = Boolean(business.contact?.phone);
-  const hasWebsite = Boolean(business.contact?.website);
-  const hasServiceAreas = Boolean(business.serviceAreas && business.serviceAreas.length > 0);
-  const hasHours = Boolean(
-    business.hours && Object.values(business.hours).some((value) => Boolean(value?.trim()))
-  );
-  
-  if (!hasDescription || !hasPhone || !hasServiceAreas || !hasHours) {
-    if (claimStatus === 'pending') {
-      return {
-        type: 'complete_profile',
-        title: 'Complete Your Profile',
-        description: 'You’ll be able to complete this after approval.'
-      };
-    }
+  if (claimStatus === 'pending') {
+    return {
+      type: 'review_pending',
+      title: 'Review In Progress',
+      description: 'We are checking your ownership details now. If approved, the dashboard unlocks immediately so you can update the listing.',
+    };
+  }
 
+  const progress = getOwnerProfileProgress(business);
+  const hasRequiredGaps = progress.requiredCompleted < progress.requiredTotal;
+
+  if (hasRequiredGaps) {
     return {
       type: 'complete_profile',
       title: 'Complete Your Profile',
-      description: 'Your profile is still missing core business details.',
+      description: 'Your listing is still missing core details that help customers trust and contact your business.',
       href: '/owner/dashboard',
-      ctaLabel: 'Update Profile'
+      ctaLabel: 'Update Profile',
     };
   }
 
-  if (!hasWebsite) {
+  if (!business.contact?.website) {
     return {
       type: 'website_fix',
-      title: 'Missing Website',
-      description: 'You do not have a website listed. Your website may be making it harder for customers to contact you.',
+      title: 'Add A Website',
+      description: 'Your core listing details are in place. A website gives customers one more reason to trust you before they call.',
       href: '/websites-for-trades',
-      ctaLabel: 'Explore Websites'
+      ctaLabel: 'Explore Websites',
     };
   }
 
@@ -80,9 +92,9 @@ export function getOwnerRecommendation({ business, claimStatus }: Recommendation
     return {
       type: 'lead_capture',
       title: 'Capture More Leads',
-      description: 'If you miss calls while on jobs, lead capture is the next best fit.',
+      description: 'Your listing basics are in good shape. If you still miss calls while on jobs, lead capture is the next gap to fix.',
       href: '/never-miss-a-lead',
-      ctaLabel: 'View Lead Capture'
+      ctaLabel: 'View Lead Capture',
     };
   }
 
@@ -91,6 +103,6 @@ export function getOwnerRecommendation({ business, claimStatus }: Recommendation
     title: 'Keep Your Listing Working Harder',
     description: 'Your profile basics are in place. The next step is improving how customers discover and contact your business.',
     href: '/for-business',
-    ctaLabel: 'See Business Options'
+    ctaLabel: 'See Business Options',
   };
 }
