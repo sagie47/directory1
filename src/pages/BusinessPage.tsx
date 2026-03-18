@@ -185,6 +185,10 @@ export default function BusinessPage() {
 
   const visibleMobileReviews = reviews.slice(0, visibleMobileReviewCount);
   const hasMoreMobileReviews = visibleMobileReviewCount < reviews.length;
+  const claimPath = `/claim?businessId=${encodeURIComponent(business.id)}`;
+  const claimEntryPath = user
+    ? claimPath
+    : `/login?redirect=${encodeURIComponent(claimPath)}`;
 
   const showMoreMobileReviews = () => {
     setVisibleMobileReviewCount((previous) => Math.min(previous + MOBILE_REVIEW_BATCH_SIZE, reviews.length));
@@ -591,7 +595,7 @@ export default function BusinessPage() {
                 <h4 className="font-black text-sm text-zinc-900 uppercase tracking-widest mb-2">Is this your business?</h4>
                 <p className="text-sm text-zinc-600 mb-6 font-medium leading-relaxed">Claim this page to update your services, hours, and contact info.</p>
                 <div className="space-y-3">
-                  <Link to={`/claim?businessId=${encodeURIComponent(business.id)}`} className="inline-flex items-center justify-between w-full bg-zinc-900 text-white rounded-lg shadow-sm px-4 py-3 font-sans text-xs font-semibold tracking-wide hover:bg-orange-500 hover:-translate-y-0.5 hover:shadow-md transition-all">
+                  <Link to={claimEntryPath} className="inline-flex items-center justify-between w-full bg-zinc-900 text-white rounded-lg shadow-sm px-4 py-3 font-sans text-xs font-semibold tracking-wide hover:bg-orange-500 hover:-translate-y-0.5 hover:shadow-md transition-all">
                     <span>Claim Business</span>
                     <ArrowRight className="w-3 h-3" />
                   </Link>
