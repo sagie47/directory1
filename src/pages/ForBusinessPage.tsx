@@ -117,7 +117,13 @@ export default function ForBusinessPage() {
   const businessHeroSrc = preferSupabaseImage('thumbnail_G74A6639.jpg', businessHero);
 
   return (
-    <div className="bg-[#FAFAFA] text-zinc-900 font-sans selection:bg-indigo-200 selection:text-indigo-900">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.5 }}
+      className="bg-[#FAFAFA] text-zinc-900 font-sans selection:bg-indigo-200 selection:text-indigo-900"
+    >
       <Seo
         title="For Business Owners | Okanagan Trades"
         description="Explore claim, lead-capture, website, and managed growth options built for Okanagan trade businesses."
@@ -352,6 +358,6 @@ export default function ForBusinessPage() {
         ctaText="Claim Your Profile"
         ctaHref="/claim"
       />
-    </div>
+    </motion.div>
   );
 }

@@ -1,5 +1,5 @@
 import { type FormEvent, useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { ArrowRight, ArrowLeft, Search, Check, Building2, MapPin, Zap, LayoutGrid, User, Phone, Mail, ShieldCheck, Plus, AlertCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 import GoogleIcon from '../components/GoogleIcon';
@@ -18,6 +18,7 @@ interface ClaimPageProps {
 export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
   const { user, loading: authLoading, signInWithGoogle } = useAuth();
   const { businesses, categories, cities, isLoading: directoryLoading, error: directoryError } = useDirectoryData();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [step, setStep] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
@@ -369,13 +370,13 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
 
                   <div className="flex flex-col gap-4">
                     <Link
-                      to="/login?redirect=/claim"
+                      to={`/login?redirect=${encodeURIComponent('/claim' + location.search)}`}
                       className="w-full inline-flex items-center justify-center gap-3 bg-zinc-900 text-white px-8 py-4 font-sans text-sm font-bold uppercase tracking-wider transition-all hover:bg-zinc-800 active:scale-[0.98] rounded-md shadow-md group"
                     >
                       Sign In <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                     </Link>
                     <Link 
-                      to="/register" 
+                      to={`/register?redirect=${encodeURIComponent('/claim' + location.search)}`}
                       className="w-full inline-flex items-center justify-center gap-3 bg-white text-zinc-900 border border-zinc-200 px-8 py-4 font-sans text-sm font-bold uppercase tracking-wider hover:bg-zinc-50 hover:border-zinc-300 transition-all rounded-md"
                     >
                       New Account
