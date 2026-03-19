@@ -40,6 +40,8 @@ export default function BusinessCard({ business, contextCityName }: BusinessCard
   }, [reviews.length]);
 
   const activeReview = reviews[currentReviewIndex];
+  const summaryText = activeReview?.text || business.description || `${business.name} serves ${serviceAreas.slice(0, 2).join(' and ')}.`;
+  const summaryLabel = activeReview?.author || 'Listing summary';
   
   const imageSrc = photos[0];
   const isServiceAreaMatch = Boolean(
@@ -139,9 +141,9 @@ export default function BusinessCard({ business, contextCityName }: BusinessCard
         <div className="mt-auto mb-6 flex-grow flex flex-col justify-end">
           <div className="relative pt-6 border-t border-zinc-100 min-h-[102px]">
             <AnimatePresence mode="wait">
-              {activeReview ? (
+              {summaryText ? (
                 <motion.div 
-                  key={currentReviewIndex}
+                  key={activeReview ? currentReviewIndex : summaryText}
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -4 }}
@@ -149,16 +151,18 @@ export default function BusinessCard({ business, contextCityName }: BusinessCard
                   className="relative z-10 pl-4 border-l-2 border-zinc-100"
                 >
                   <p className="font-sans italic text-zinc-600 text-[13px] leading-relaxed line-clamp-3 tracking-tight">
-                    {activeReview.text}
+                    {summaryText}
                   </p>
                   <div className="flex items-center gap-3 mt-3">
-                    <div className="flex shrink-0">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} className={`h-2.5 w-2.5 ${i < activeReview.rating ? 'fill-orange-400 text-orange-400' : 'fill-zinc-200 text-zinc-200'}`} />
-                      ))}
-                    </div>
+                    {activeReview ? (
+                      <div className="flex shrink-0">
+                        {[...Array(5)].map((_, i) => (
+                          <Star key={i} className={`h-2.5 w-2.5 ${i < activeReview.rating ? 'fill-orange-400 text-orange-400' : 'fill-zinc-200 text-zinc-200'}`} />
+                        ))}
+                      </div>
+                    ) : null}
                     <span className="font-sans text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-400 truncate">
-                      {activeReview.author}
+                      {summaryLabel}
                     </span>
                   </div>
                 </motion.div>

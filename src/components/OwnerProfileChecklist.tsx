@@ -31,7 +31,7 @@ export default function OwnerProfileChecklist({
       <div className="flex items-start justify-between gap-4 border-b border-zinc-100 pb-5">
         <div>
           <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
-            Listing Health
+            Progress
           </p>
           <h2 className={cn('mt-2 font-sans font-bold tracking-tight text-zinc-950', compact ? 'text-xl' : 'text-2xl')}>
             {title}
@@ -57,10 +57,10 @@ export default function OwnerProfileChecklist({
         {items.map((item) => (
           <div
             key={item.id}
-            className={cn(
-              'flex items-start gap-3 border px-4 py-3 transition-colors',
-              item.complete ? 'border-emerald-200 bg-emerald-50/70' : 'border-zinc-200 bg-zinc-50',
-            )}
+              className={cn(
+                'flex items-start gap-3 border px-4 py-3 transition-colors',
+                item.complete ? 'border-emerald-200 bg-emerald-50/70' : 'border-zinc-200 bg-zinc-50',
+              )}
           >
             <div
               className={cn(

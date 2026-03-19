@@ -11,6 +11,11 @@ interface AuthGuardProps {
 export default function AuthGuard({ children, requireRole, requireApprovedClaim = false }: AuthGuardProps) {
   const { user, profile, loading, hasApprovedClaim } = useAuth();
   const location = useLocation();
+  const isLocalOwnerPreview =
+    import.meta.env.DEV &&
+    requireApprovedClaim &&
+    location.pathname === '/owner/dashboard' &&
+    new URLSearchParams(location.search).get('preview') === '1';
 
   if (loading) {
     return (
@@ -21,6 +26,10 @@ export default function AuthGuard({ children, requireRole, requireApprovedClaim 
         </div>
       </div>
     );
+  }
+
+  if (isLocalOwnerPreview) {
+    return <>{children}</>;
   }
 
   if (!user) {
