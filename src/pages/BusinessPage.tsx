@@ -61,6 +61,21 @@ type SeedDataModule = {
   categories: Category[];
 };
 
+type VerificationState = 'verified' | 'unverified' | 'unknown';
+
+let seedDataPromise: Promise<SeedDataModule> | null = null;
+
+function loadSeedDataFromJson(): Promise<SeedDataModule> {
+  if (!seedDataPromise) {
+    seedDataPromise = import('../data').then((module) => ({
+      businesses: module.businesses,
+      cities: module.cities,
+      categories: module.categories,
+    }));
+  }
+  return seedDataPromise;
+}
+
 function isMissingTableError(error: { code?: string; message?: string } | null | undefined) {
   if (!error) {
     return false;
@@ -183,7 +198,8 @@ export default function BusinessPage() {
   const [city, setCity] = useState<City | null>(null);
   const [category, setCategory] = useState<Category | null>(null);
   const [business, setBusiness] = useState<Business | null>(null);
-  const [isVerified, setIsVerified] = useState(false);
+  const [verificationState, setVerificationState] = useState<VerificationState>('unverified');
+  const [verificationLookupWarning, setVerificationLookupWarning] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isOwner, setIsOwner] = useState(false);
@@ -200,7 +216,8 @@ export default function BusinessPage() {
           setBusiness(null);
           setCity(null);
           setCategory(null);
-          setIsVerified(false);
+          setVerificationState('unverified');
+          setVerificationLookupWarning(null);
           setLoadError(null);
           setIsLoading(false);
         }
@@ -212,12 +229,13 @@ export default function BusinessPage() {
       setBusiness(null);
       setCity(null);
       setCategory(null);
-      setIsVerified(false);
+      setVerificationState('unverified');
+      setVerificationLookupWarning(null);
       setIsOwner(false);
 
       if (!supabase || !isSupabaseConfigured()) {
         try {
-          const module = await import('../data') as SeedDataModule;
+          const module = await loadSeedDataFromJson();
           const seedBusiness = module.businesses.find((entry) => entry.id === businessId) ?? null;
 
           if (!isActive) {
@@ -233,7 +251,8 @@ export default function BusinessPage() {
           setBusiness(seedBusiness);
           setCity(module.cities.find((entry) => entry.id === seedBusiness.cityId) ?? null);
           setCategory(module.categories.find((entry) => entry.id === seedBusiness.categoryId) ?? null);
-          setIsVerified(false);
+          setVerificationState('unknown');
+          setVerificationLookupWarning('Verified status is unavailable because the verification lookup is not connected in this environment.');
           setIsLoading(false);
         } catch (error: unknown) {
           if (isActive) {
@@ -260,7 +279,8 @@ export default function BusinessPage() {
             setBusiness(null);
             setCity(null);
             setCategory(null);
-            setIsVerified(false);
+            setVerificationState('unverified');
+            setVerificationLookupWarning(null);
           }
           return;
         }
@@ -269,16 +289,32 @@ export default function BusinessPage() {
           overrideResult,
           cityResult,
           categoryResult,
-          verifiedResult,
         ] = await Promise.all([
           supabase.from('business_overrides').select('business_id, name, description, contact, service_areas, hours, photos').eq('business_id', businessId).maybeSingle(),
           supabase.from('cities').select('id, name, description').eq('id', businessRow.city_id).maybeSingle(),
           supabase.from('categories').select('id, name, icon, group_id').eq('id', businessRow.category_id).maybeSingle(),
-          supabase.from('verified_businesses').select('business_id').eq('business_id', businessId).maybeSingle(),
         ]);
 
+        let verifiedResult: { data: { business_id: string } | null; error: { code?: string; message?: string } | null } = {
+          data: null,
+          error: null,
+        };
+
+        try {
+          verifiedResult = await supabase
+            .from('verified_businesses')
+            .select('business_id')
+            .eq('business_id', businessId)
+            .maybeSingle();
+        } catch (error: unknown) {
+          verifiedResult = {
+            data: null,
+            error: error && typeof error === 'object' ? (error as { code?: string; message?: string }) : { message: 'Unable to verify business status.' },
+          };
+        }
+
         const overrideError = isMissingTableError(overrideResult.error) ? null : overrideResult.error;
-        const verifiedError = isMissingTableError(verifiedResult.error) ? null : verifiedResult.error;
+        const verifiedError = verifiedResult.error;
 
         if (overrideError) {
           throw overrideError;
@@ -310,18 +346,65 @@ export default function BusinessPage() {
           icon: categoryResult.data.icon ?? undefined,
           groupId: categoryResult.data.group_id ?? undefined,
         } : null);
-        setIsVerified(Boolean(verifiedResult.data));
+        if (verifiedError || isMissingTableError(verifiedError)) {
+          setVerificationState('unknown');
+          setVerificationLookupWarning(
+            isMissingTableError(verifiedError)
+              ? 'Verified status could not be checked because the verified_businesses table is missing.'
+              : 'Verified status could not be checked right now. The listing loaded, but the verification lookup failed.',
+          );
+        } else {
+          setVerificationState(verifiedResult.data ? 'verified' : 'unverified');
+          setVerificationLookupWarning(null);
+        }
       } catch (error: unknown) {
         if (!isActive) {
           return;
         }
 
         console.error('[business-page] Failed to load listing.', error);
-        setBusiness(null);
-        setCity(null);
-        setCategory(null);
-        setIsVerified(false);
-        setLoadError(error instanceof Error ? error.message : 'Unable to load this listing right now.');
+        const dbErrorMessage = error instanceof Error ? error.message : 'Unable to load this listing right now.';
+
+        try {
+          const module = await loadSeedDataFromJson();
+          const seedBusiness = module.businesses.find((entry) => entry.id === businessId) ?? null;
+
+          if (!isActive) {
+            return;
+          }
+
+          if (!seedBusiness) {
+            setBusiness(null);
+            setCity(null);
+            setCategory(null);
+            setVerificationState('unverified');
+            setVerificationLookupWarning(null);
+            setLoadError(dbErrorMessage);
+            setIsLoading(false);
+            return;
+          }
+
+          setBusiness(seedBusiness);
+          setCity(module.cities.find((entry) => entry.id === seedBusiness.cityId) ?? null);
+          setCategory(module.categories.find((entry) => entry.id === seedBusiness.categoryId) ?? null);
+          setVerificationState('unknown');
+          setVerificationLookupWarning('Verified status could not be checked because the primary business lookup failed.');
+          setLoadError(null);
+          setIsLoading(false);
+        } catch (seedError: unknown) {
+          if (!isActive) {
+            return;
+          }
+
+          console.error('[business-page] Seed fallback also failed.', seedError);
+          setBusiness(null);
+          setCity(null);
+          setCategory(null);
+          setVerificationState('unverified');
+          setVerificationLookupWarning(null);
+          setLoadError(dbErrorMessage);
+          setIsLoading(false);
+        }
       } finally {
         if (isActive) {
           setIsLoading(false);
@@ -567,7 +650,7 @@ export default function BusinessPage() {
                 <h1 className="text-4xl font-black uppercase leading-[1.05] tracking-tighter text-zinc-900 md:text-5xl lg:text-6xl">
                   {business.name}
                 </h1>
-                {isVerified && (
+                {verificationState === 'verified' && (
                   <div title="Verified Business" className="flex items-center gap-1.5 bg-orange-50 text-orange-600 border border-orange-200 px-3 py-1.5 rounded-full shadow-sm mt-1 shrink-0">
                     <CheckCircle className="h-4 w-4" fill="currentColor" stroke="white" strokeWidth={2} />
                     <span className="font-mono text-[10px] font-bold uppercase tracking-widest hidden sm:inline">Verified</span>
@@ -858,47 +941,88 @@ export default function BusinessPage() {
               </section>
             )}
 
-            {!isVerified && (
-            <div className="mt-8 p-8 border border-zinc-200 rounded-sm bg-zinc-50 shadow-sm">
-              <div className="bg-white p-6 rounded-xl border border-zinc-200 shadow-sm">
-                <AlertCircle className="w-5 h-5 text-zinc-500 mb-4" />
-                <h4 className="font-black text-sm text-zinc-900 uppercase tracking-widest mb-2">Is this your business?</h4>
-                <p className="text-sm text-zinc-600 mb-6 font-medium leading-relaxed">Claim this page to update your services, hours, and contact info.</p>
-                <div className="space-y-3">
-                  <Link to={claimEntryPath} className="inline-flex items-center justify-between w-full bg-zinc-900 text-white rounded-lg shadow-sm px-4 py-3 font-sans text-xs font-semibold tracking-wide hover:bg-orange-500 hover:-translate-y-0.5 hover:shadow-md transition-all">
-                    <span>Claim Business</span>
-                    <ArrowRight className="w-3 h-3" />
-                  </Link>
-                  {ownerCheckError ? (
-                    <p className="rounded-lg border border-zinc-200 bg-white px-4 py-3 text-xs text-zinc-600">{ownerCheckError}</p>
-                  ) : null}
-                  <Link to="/never-miss-a-lead" className="inline-flex items-center justify-between w-full rounded-lg border border-zinc-200 bg-white px-4 py-3 font-sans text-xs font-semibold tracking-wide text-zinc-900 hover:border-zinc-900 hover:-translate-y-0.5 hover:shadow-md transition-all">
-                    <span>Need help handling leads?</span>
-                    <ArrowRight className="w-3 h-3" />
-                  </Link>
-                </div>
-              </div>
-            </div>
-            )}
-
-            {isVerified && (
-            <div className="mt-8 p-8 border border-orange-200 rounded-sm bg-orange-50 shadow-sm">
-              <div className="bg-white p-6 rounded-xl border border-orange-100 shadow-sm">
-                <CheckCircle className="w-5 h-5 text-orange-500 mb-4" />
-                <h4 className="font-black text-sm text-zinc-900 uppercase tracking-widest mb-2">Verified Business</h4>
-                {isOwner ? (
-                  <>
-                    <p className="text-sm text-zinc-600 mb-6 font-medium leading-relaxed">You are the verified owner of this business. Manage your listing from the owner dashboard.</p>
-                    <Link to="/owner/dashboard" className="inline-flex items-center justify-between w-full bg-orange-500 text-white rounded-lg shadow-sm px-4 py-3 font-sans text-xs font-semibold tracking-wide hover:bg-orange-600 hover:-translate-y-0.5 hover:shadow-md transition-all">
-                      <span>Owner Dashboard</span>
+            {verificationState === 'unverified' && (
+              <div className="mt-8 p-8 border border-zinc-200 rounded-sm bg-zinc-50 shadow-sm">
+                <div className="bg-white p-6 rounded-xl border border-zinc-200 shadow-sm">
+                  <AlertCircle className="w-5 h-5 text-zinc-500 mb-4" />
+                  <h4 className="font-black text-sm text-zinc-900 uppercase tracking-widest mb-2">Is this your business?</h4>
+                  <p className="text-sm text-zinc-600 mb-6 font-medium leading-relaxed">Claim this page to update your services, hours, and contact info.</p>
+                  <div className="space-y-3">
+                    <Link to={claimEntryPath} className="inline-flex items-center justify-between w-full bg-zinc-900 text-white rounded-lg shadow-sm px-4 py-3 font-sans text-xs font-semibold tracking-wide hover:bg-orange-500 hover:-translate-y-0.5 hover:shadow-md transition-all">
+                      <span>Claim Business</span>
                       <ArrowRight className="w-3 h-3" />
                     </Link>
-                  </>
-                ) : (
-                  <p className="text-sm text-zinc-600 font-medium leading-relaxed">This business has been verified as legitimately operated.</p>
-                )}
+                    {ownerCheckError ? (
+                      <p className="rounded-lg border border-zinc-200 bg-white px-4 py-3 text-xs text-zinc-600">{ownerCheckError}</p>
+                    ) : null}
+                    <Link to="/never-miss-a-lead" className="inline-flex items-center justify-between w-full rounded-lg border border-zinc-200 bg-white px-4 py-3 font-sans text-xs font-semibold tracking-wide text-zinc-900 hover:border-zinc-900 hover:-translate-y-0.5 hover:shadow-md transition-all">
+                      <span>Need help handling leads?</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </Link>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
+
+            {verificationState === 'unknown' && (
+              <div className="mt-8 p-8 border border-amber-200 rounded-sm bg-amber-50 shadow-sm">
+                <div className="bg-white p-6 rounded-xl border border-amber-100 shadow-sm">
+                  <AlertCircle className="w-5 h-5 text-amber-500 mb-4" />
+                  <h4 className="font-black text-sm text-zinc-900 uppercase tracking-widest mb-2">Verification status unavailable</h4>
+                  <p className="text-sm text-zinc-600 mb-6 font-medium leading-relaxed">
+                    {verificationLookupWarning ?? 'We loaded the listing, but could not confirm whether verified ownership is available for this business right now.'}
+                  </p>
+                  <div className="space-y-3">
+                    {isOwner ? (
+                      <Link to="/owner/dashboard" className="inline-flex items-center justify-between w-full bg-orange-500 text-white rounded-lg shadow-sm px-4 py-3 font-sans text-xs font-semibold tracking-wide hover:bg-orange-600 hover:-translate-y-0.5 hover:shadow-md transition-all">
+                        <span>Owner Dashboard</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </Link>
+                    ) : null}
+                    <Link to="/contact" className="inline-flex items-center justify-between w-full bg-zinc-900 text-white rounded-lg shadow-sm px-4 py-3 font-sans text-xs font-semibold tracking-wide hover:bg-orange-500 hover:-translate-y-0.5 hover:shadow-md transition-all">
+                      <span>Contact support</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </Link>
+                    {ownerCheckError ? (
+                      <p className="rounded-lg border border-zinc-200 bg-white px-4 py-3 text-xs text-zinc-600">{ownerCheckError}</p>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {verificationState === 'verified' && (
+              <div className="mt-8 p-8 border border-orange-200 rounded-sm bg-orange-50 shadow-sm">
+                <div className="bg-white p-6 rounded-xl border border-orange-100 shadow-sm">
+                  <CheckCircle className="w-5 h-5 text-orange-500 mb-4" />
+                  <h4 className="font-black text-sm text-zinc-900 uppercase tracking-widest mb-2">Verified Business</h4>
+                  {isOwner ? (
+                    <>
+                      <p className="text-sm text-zinc-600 mb-6 font-medium leading-relaxed">You are the verified owner of this business. Manage your listing from the owner dashboard.</p>
+                      <Link to="/owner/dashboard" className="inline-flex items-center justify-between w-full bg-orange-500 text-white rounded-lg shadow-sm px-4 py-3 font-sans text-xs font-semibold tracking-wide hover:bg-orange-600 hover:-translate-y-0.5 hover:shadow-md transition-all">
+                        <span>Owner Dashboard</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </Link>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm text-zinc-600 mb-6 font-medium leading-relaxed">
+                        This business has been verified as legitimately operated. If you need to manage access or ownership, contact support and reference this listing.
+                      </p>
+                      <div className="space-y-3">
+                        <Link to="/contact" className="inline-flex items-center justify-between w-full bg-zinc-900 text-white rounded-lg shadow-sm px-4 py-3 font-sans text-xs font-semibold tracking-wide hover:bg-orange-500 hover:-translate-y-0.5 hover:shadow-md transition-all">
+                          <span>Request ownership transfer</span>
+                          <ArrowRight className="w-3 h-3" />
+                        </Link>
+                        <Link to="/contact" className="inline-flex items-center justify-between w-full rounded-lg border border-zinc-200 bg-white px-4 py-3 font-sans text-xs font-semibold tracking-wide text-zinc-900 hover:border-zinc-900 hover:-translate-y-0.5 hover:shadow-md transition-all">
+                          <span>Contact support</span>
+                          <ArrowRight className="w-3 h-3" />
+                        </Link>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
             )}
           </div>
         </div>

@@ -348,6 +348,109 @@ using (
   )
 );
 
+create or replace function public.submit_business_claim(
+  p_business_id text,
+  p_claimant_name text,
+  p_claimant_email text,
+  p_claimant_phone text default null,
+  p_relationship_to_business text,
+  p_message text default null
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_user_id uuid := auth.uid();
+  v_claim_id uuid;
+  v_constraint_name text;
+begin
+  if v_user_id is null then
+    raise exception 'Not authenticated';
+  end if;
+
+  if exists (
+    select 1
+    from public.business_claims
+    where user_id = v_user_id
+      and business_id = p_business_id
+      and status = 'pending'
+  ) then
+    raise exception 'You already have a pending claim for this business.';
+  end if;
+
+  if exists (
+    select 1
+    from public.business_claims
+    where user_id = v_user_id
+      and business_id = p_business_id
+      and status = 'approved'
+  ) then
+    raise exception 'You already have an approved claim for this business.';
+  end if;
+
+  if exists (
+    select 1
+    from public.business_claims
+    where business_id = p_business_id
+      and status = 'approved'
+      and user_id <> v_user_id
+  ) then
+    raise exception 'This business has already been claimed by another user.';
+  end if;
+
+  delete from public.business_claims
+  where user_id = v_user_id
+    and business_id = p_business_id
+    and status in ('rejected', 'revoked');
+
+  begin
+    insert into public.business_claims (
+      user_id,
+      business_id,
+      claimant_name,
+      claimant_email,
+      claimant_phone,
+      relationship_to_business,
+      message
+    )
+    values (
+      v_user_id,
+      p_business_id,
+      p_claimant_name,
+      p_claimant_email,
+      p_claimant_phone,
+      p_relationship_to_business,
+      p_message
+    )
+    returning id into v_claim_id;
+  exception
+    when unique_violation then
+      get stacked diagnostics v_constraint_name = constraint_name;
+
+      if v_constraint_name = 'business_claims_one_pending_per_user_business_idx' then
+        raise exception 'You already have a pending claim for this business.';
+      elsif v_constraint_name = 'business_claims_one_approved_per_business_idx' then
+        raise exception 'This business has already been claimed by another user.';
+      else
+        raise exception 'A claim was submitted at the same time. Please refresh and try again.';
+      end if;
+  end;
+
+  return v_claim_id;
+end;
+$$;
+
+grant execute on function public.submit_business_claim(
+  text,
+  text,
+  text,
+  text,
+  text,
+  text
+) to authenticated;
+
 create or replace function public.delete_user_account()
 returns void
 language plpgsql
