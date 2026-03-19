@@ -69,7 +69,8 @@ type BusinessOverrideRow = {
   photos: unknown;
 };
 
-const PAGE_SIZE = 200;
+const PAGE_SIZE = 1000;
+const MAX_CONCURRENT_PREFETCH = 5;
 const ACTIVE_CITY_IDS = new Set([
   'kelowna',
   'vernon',
@@ -107,13 +108,20 @@ let seedDataPromise: Promise<DirectoryData> | null = null;
 
 function loadSeedData() {
   if (!seedDataPromise) {
-    seedDataPromise = import('./data').then((module) => filterDirectoryData({
-      cities: module.cities,
-      categoryGroups: module.categoryGroups,
-      categories: module.categories,
-      businesses: module.businesses,
-      verifiedBusinessIds: new Set<string>(), // Assume none are verified in static seed data
-    }));
+    seedDataPromise = fetch('/data.json')
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`Failed to load seed data: ${res.status}`);
+        }
+        return res.json();
+      })
+      .then((module) => filterDirectoryData({
+        cities: module.cities,
+        categoryGroups: module.categoryGroups,
+        categories: module.categories,
+        businesses: module.businesses,
+        verifiedBusinessIds: new Set<string>(),
+      }));
   }
 
   return seedDataPromise;
@@ -240,27 +248,40 @@ function mergeBusinessOverride(business: Business, override?: BusinessOverrideRo
   };
 }
 
-async function fetchAllRows<T>(query: (from: number, to: number) => Promise<{ data: T[] | null; error: { message: string } | null }>) {
-  const rows: T[] = [];
-  let from = 0;
-
-  while (true) {
-    const to = from + PAGE_SIZE - 1;
-    const { data, error } = await query(from, to);
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    const batch = data ?? [];
-    rows.push(...batch);
-
-    if (batch.length < PAGE_SIZE) {
-      return rows;
-    }
-
-    from += PAGE_SIZE;
+async function fetchAllRows<T>(
+  query: (from: number, to: number) => Promise<{ data: T[] | null; error: { message: string } | null }>,
+  getCount: () => Promise<number>
+) {
+  const total = await getCount();
+  if (total === 0) {
+    return [];
   }
+
+  const pageCount = Math.ceil(total / PAGE_SIZE);
+  const pageIndices = Array.from({ length: pageCount }, (_, i) => i);
+
+  const results: T[][] = new Array(pageCount);
+
+  for (let i = 0; i < pageCount; i += MAX_CONCURRENT_PREFETCH) {
+    const batch = pageIndices.slice(i, i + MAX_CONCURRENT_PREFETCH);
+    const pages = await Promise.all(
+      batch.map((pageIndex) => {
+        const from = pageIndex * PAGE_SIZE;
+        const to = from + PAGE_SIZE - 1;
+        return query(from, to);
+      })
+    );
+
+    for (let j = 0; j < pages.length; j++) {
+      const { data, error } = pages[j];
+      if (error) {
+        throw new Error(error.message);
+      }
+      results[batch[j]] = data ?? [];
+    }
+  }
+
+  return results.flat();
 }
 
 async function fetchDirectoryData(): Promise<DirectoryData> {
@@ -278,18 +299,29 @@ async function fetchDirectoryData(): Promise<DirectoryData> {
     supabase.from('cities').select('id, name, description').order('name'),
     supabase.from('category_groups').select('id, name, description').order('name'),
     supabase.from('categories').select('id, name, icon, group_id').order('name'),
-    fetchAllRows<BusinessRow>(async (from, to) => {
-      const result = await supabase
-        .from('businesses')
-        .select('id, name, city_id, category_id, description, rating, review_count, service_areas, category_tags, specialties, photos, hours, contact')
-        .order('name')
-        .range(from, to);
+    fetchAllRows<BusinessRow>(
+      async (from, to) => {
+        const result = await supabase
+          .from('businesses')
+          .select('id, name, city_id, category_id, description, rating, review_count, service_areas, category_tags, specialties, photos, hours, contact')
+          .order('name')
+          .range(from, to);
 
-      return {
-        data: (result.data ?? []) as BusinessRow[],
-        error: result.error ? { message: result.error.message } : null,
-      };
-    }),
+        return {
+          data: (result.data ?? []) as BusinessRow[],
+          error: result.error ? { message: result.error.message } : null,
+        };
+      },
+      async () => {
+        const { count, error } = await supabase
+          .from('businesses')
+          .select('id', { count: 'exact', head: true });
+        if (error) {
+          throw new Error(error.message);
+        }
+        return count ?? 0;
+      }
+    ),
     supabase.from('business_overrides').select('business_id, name, description, contact, service_areas, hours, photos'),
     supabase.from('verified_businesses').select('business_id'),
   ]);
