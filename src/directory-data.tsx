@@ -106,10 +106,6 @@ function filterDirectoryData(data: DirectoryData): DirectoryData {
 let seedDataPromise: Promise<DirectoryData> | null = null;
 
 function loadSeedData() {
-  if (!import.meta.env.DEV) {
-    return Promise.reject(new Error('Static seed data is disabled in production builds.'));
-  }
-
   if (!seedDataPromise) {
     seedDataPromise = import('./data').then((module) => filterDirectoryData({
       cities: module.cities,

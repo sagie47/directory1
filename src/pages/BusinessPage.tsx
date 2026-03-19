@@ -216,14 +216,6 @@ export default function BusinessPage() {
       setIsOwner(false);
 
       if (!supabase || !isSupabaseConfigured()) {
-        if (!import.meta.env.DEV) {
-          if (isActive) {
-            setLoadError('Listing data is unavailable because the backend is not configured.');
-            setIsLoading(false);
-          }
-          return;
-        }
-
         try {
           const module = await import('../data') as SeedDataModule;
           const seedBusiness = module.businesses.find((entry) => entry.id === businessId) ?? null;
