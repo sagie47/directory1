@@ -116,6 +116,7 @@ export default function AdminClaimsPage() {
   const [error, setError] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState<Record<string, string>>({});
   const [claimErrors, setClaimErrors] = useState<Record<string, string>>({});
+  const [claimWarnings, setClaimWarnings] = useState<Record<string, string>>({});
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<ClaimFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -259,6 +260,11 @@ export default function AdminClaimsPage() {
       return;
     }
 
+    const currentClaim = claims.find((claim) => claim.id === claimId);
+    if (!currentClaim || currentClaim.status !== 'pending') {
+      return;
+    }
+
     const reason = status === 'rejected' ? rejectionReason[claimId]?.trim() ?? '' : null;
     if (status === 'rejected' && !reason) {
       setClaimErrors((current) => ({
@@ -269,10 +275,17 @@ export default function AdminClaimsPage() {
     }
 
     setClaimErrors((current) => ({ ...current, [claimId]: '' }));
+    setClaimWarnings((current) => {
+      const nextWarnings = { ...current };
+      delete nextWarnings[claimId];
+      return nextWarnings;
+    });
     setProcessingId(claimId);
     setError(null);
 
     try {
+      const statusLabel = status === 'approved' ? 'approved' : 'rejected';
+
       const { error: reviewError } = await supabase.rpc('review_business_claim', {
         p_claim_id: claimId,
         p_status: status,
@@ -284,8 +297,46 @@ export default function AdminClaimsPage() {
         return;
       }
 
+      const { data: updatedClaim } = await supabase
+        .from('business_claims')
+        .select('id, status, claimant_email, rejection_reason, updated_at')
+        .eq('id', claimId)
+        .single();
+
+      const nextClaim = {
+        ...currentClaim,
+        status,
+        claimant_email: updatedClaim?.claimant_email ?? currentClaim.claimant_email,
+        rejection_reason:
+          status === 'rejected'
+            ? updatedClaim?.rejection_reason ?? reason
+            : updatedClaim?.rejection_reason ?? null,
+        updated_at: updatedClaim?.updated_at ?? currentClaim.updated_at,
+      } satisfies Claim;
+
+      setClaims((currentClaims) =>
+        currentClaims.map((claim) => (claim.id === claimId ? nextClaim : claim))
+      );
+
       setRejectionReason((current) => ({ ...current, [claimId]: '' }));
-      await fetchClaims({ silent: true });
+
+      const { error: notifyError } = await supabase.functions.invoke('notify_claim_status', {
+        body: {
+          type: 'UPDATE' as const,
+          record: nextClaim,
+          old_record: {
+            ...currentClaim,
+            status: 'pending' as const,
+          },
+        },
+      });
+
+      if (notifyError) {
+        setClaimWarnings((current) => ({
+          ...current,
+          [claimId]: `Claim ${statusLabel}, but the status notification could not be sent: ${notifyError.message}`,
+        }));
+      }
     } finally {
       setProcessingId(null);
     }
@@ -403,6 +454,21 @@ export default function AdminClaimsPage() {
           <div className="mt-8 flex items-start gap-3 border border-rose-200 bg-rose-50 px-4 py-4 text-sm text-rose-700">
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
             <p>{error}</p>
+          </div>
+        ) : null}
+
+        {Object.values(claimWarnings).some((message) => Boolean(message)) ? (
+          <div className="mt-8 border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-800">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-amber-700">
+              Claim notification warning
+            </p>
+            <ul className="mt-3 space-y-2">
+              {Object.entries(claimWarnings)
+                .filter(([, message]) => Boolean(message))
+                .map(([claimId, message]) => (
+                  <li key={claimId}>{message}</li>
+                ))}
+            </ul>
           </div>
         ) : null}
 

@@ -177,9 +177,10 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
     setSubmitting(true);
 
     try {
+      // Fast-path existing claims for redirect UX; the RPC still enforces submission atomically.
       const { data: existingClaim } = await supabase
         .from('business_claims')
-        .select('id, status')
+        .select('status')
         .eq('user_id', user.id)
         .eq('business_id', selectedBusiness.id)
         .in('status', ['pending', 'approved'])
@@ -195,45 +196,41 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
         return;
       }
 
-      const { data: otherApprovedClaim } = await supabase
-        .from('business_claims')
-        .select('id')
-        .eq('business_id', selectedBusiness.id)
-        .eq('status', 'approved')
-        .neq('user_id', user.id)
-        .maybeSingle();
+      const { data: claimId, error: submitError } = await supabase.rpc('submit_business_claim', {
+        p_business_id: selectedBusiness.id,
+        p_claimant_name: claimData.claimantName,
+        p_claimant_email: claimData.claimantEmail,
+        p_claimant_phone: claimData.claimantPhone || null,
+        p_relationship_to_business: claimData.relationshipToBusiness,
+        p_message: claimData.message || null,
+      });
 
-      if (otherApprovedClaim) {
-        setError('This business has already been claimed by another user.');
+      if (submitError) {
+        if (submitError.message.includes('pending claim')) {
+          navigate('/claim/status');
+          return;
+        }
+
+        if (submitError.message.includes('approved claim')) {
+          navigate('/owner/dashboard');
+          return;
+        }
+
+        if (
+          submitError.code === '23505'
+          || submitError.message.includes('same time')
+          || submitError.message.includes('already been claimed')
+        ) {
+          setError(submitError.message);
+          return;
+        }
+
+        setError(submitError.message);
         return;
       }
 
-      const { data: rejectedClaim } = await supabase
-        .from('business_claims')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('business_id', selectedBusiness.id)
-        .eq('status', 'rejected')
-        .maybeSingle();
-
-      if (rejectedClaim) {
-        await supabase.from('business_claims').delete().eq('id', rejectedClaim.id);
-      }
-
-      const { error: insertError } = await supabase.from('business_claims').insert({
-        user_id: user.id,
-        business_id: selectedBusiness.id,
-        claimant_name: claimData.claimantName,
-        claimant_email: claimData.claimantEmail,
-        claimant_phone: claimData.claimantPhone || null,
-        relationship_to_business: claimData.relationshipToBusiness,
-        message: claimData.message || null,
-      });
-
-      if (insertError) {
-        setError(insertError.code === '23505'
-          ? 'You have already submitted a claim for this business.'
-          : insertError.message);
+      if (!claimId) {
+        setError('Your claim was submitted, but the confirmation id was not returned.');
         return;
       }
 

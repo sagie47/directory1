@@ -3,6 +3,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const resendApiKey = Deno.env.get('RESEND_API_KEY');
 const webhookSecret = Deno.env.get('WEBHOOK_SECRET');
+const supabaseUrl = Deno.env.get('SUPABASE_URL');
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
 
 function escapeHtml(input: string): string {
   return input
@@ -15,10 +18,48 @@ function escapeHtml(input: string): string {
 
 serve(async (req) => {
   try {
-    // Authenticate webhook origin
     const signature = req.headers.get('x-webhook-signature');
-    if (webhookSecret && signature !== webhookSecret) {
-      return new Response(null, { status: 401 });
+    const authHeader = req.headers.get('authorization');
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error('Supabase environment variables missing');
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Allow either trusted webhook signature or authenticated admin invocation.
+    const signatureMatches = Boolean(webhookSecret) && signature === webhookSecret;
+    if (!signatureMatches) {
+      if (!authHeader?.startsWith('Bearer ')) {
+        return new Response(null, { status: 401 });
+      }
+
+      if (!supabaseAnonKey) {
+        throw new Error('SUPABASE_ANON_KEY is required for auth-based notification invocation');
+      }
+
+      const authClient = createClient(supabaseUrl, supabaseAnonKey, {
+        global: {
+          headers: {
+            Authorization: authHeader,
+          },
+        },
+      });
+
+      const { data: userData, error: userError } = await authClient.auth.getUser();
+      if (userError || !userData.user) {
+        return new Response(null, { status: 401 });
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userData.user.id)
+        .maybeSingle();
+
+      if (profileError || profile?.role !== 'admin') {
+        return new Response(null, { status: 403 });
+      }
     }
 
     const payload = await req.json();
@@ -29,6 +70,10 @@ serve(async (req) => {
       return new Response(JSON.stringify({ message: 'Ignored: Not an update' }), { status: 200 });
     }
 
+    if (!record.id || record.id !== old_record.id) {
+      return new Response(JSON.stringify({ message: 'Ignored: Invalid claim payload' }), { status: 200 });
+    }
+
     // Only trigger on transition from pending to approved/rejected
     const statusChanged = old_record.status !== record.status;
     const isTerminalStatus = record.status === 'approved' || record.status === 'rejected';
@@ -36,16 +81,6 @@ serve(async (req) => {
     if (!statusChanged || !isTerminalStatus) {
       return new Response(JSON.stringify({ message: 'Ignored: Status did not change to a terminal state' }), { status: 200 });
     }
-
-    // Connect to Supabase to mark the notification as sent
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-
-    if (!supabaseUrl || !supabaseServiceKey) {
-      throw new Error('Supabase environment variables missing');
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Check dry-run mode BEFORE claiming to avoid marking as sent
     if (!resendApiKey) {
