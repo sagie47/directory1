@@ -107,8 +107,7 @@ let seedDataPromise: Promise<DirectoryData> | null = null;
 
 function loadSeedData() {
   if (!import.meta.env.DEV) {
-    console.warn('[directory-data] Static seed data is disabled in production builds.');
-    return Promise.resolve(emptySeedData);
+    return Promise.reject(new Error('Static seed data is disabled in production builds.'));
   }
 
   if (!seedDataPromise) {
@@ -363,14 +362,23 @@ export function DirectoryDataProvider({ children }: { children: ReactNode }) {
 
   const refresh = async () => {
     if (!isSupabaseConfigured()) {
-      const seedData = await loadSeedData();
-      const nextState = {
-        ...seedData,
-        isLoading: false,
-        source: 'seed',
-      } satisfies DirectoryDataState;
-      cachedDirectoryDataState = nextState;
-      setState(nextState);
+      try {
+        const seedData = await loadSeedData();
+        const nextState = {
+          ...seedData,
+          isLoading: false,
+          source: 'seed',
+        } satisfies DirectoryDataState;
+        cachedDirectoryDataState = nextState;
+        setState(nextState);
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Unable to load seed directory data.';
+        setState((current) => ({
+          ...current,
+          isLoading: false,
+          error: message,
+        }));
+      }
       return;
     }
 
@@ -394,17 +402,26 @@ export function DirectoryDataProvider({ children }: { children: ReactNode }) {
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Unable to load directory data.';
       console.error('[directory-data] Refresh failed.', error);
-      const seedData = await loadSeedData();
-      setState(() => {
-        const nextState = {
-        ...seedData,
-        isLoading: false,
-        source: 'seed',
-        error: message,
-        } satisfies DirectoryDataState;
-        cachedDirectoryDataState = nextState;
-        return nextState;
-      });
+      try {
+        const seedData = await loadSeedData();
+        setState(() => {
+          const nextState = {
+            ...seedData,
+            isLoading: false,
+            source: 'seed',
+            error: message,
+          } satisfies DirectoryDataState;
+          cachedDirectoryDataState = nextState;
+          return nextState;
+        });
+      } catch (seedError: unknown) {
+        console.error('[directory-data] Seed refresh fallback failed.', seedError);
+        setState((current) => ({
+          ...current,
+          isLoading: false,
+          error: message,
+        }));
+      }
     }
   };
 

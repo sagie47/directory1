@@ -26,13 +26,13 @@ interface BusinessClaim {
 
 interface BusinessOverride {
   business_id: string;
-  name?: string;
-  description?: string;
+  name?: string | null;
+  description?: string | null;
   contact?: {
-    phone?: string;
-    website?: string;
-    address?: string;
-    email?: string;
+    phone?: string | null;
+    website?: string | null;
+    address?: string | null;
+    email?: string | null;
   };
   service_areas?: string[];
   hours?: BusinessHours;
@@ -48,6 +48,7 @@ const defaultHours: BusinessHours = {
   saturday: '',
   sunday: '',
 };
+const OWNER_SELECTED_CLAIM_STORAGE_KEY = 'owner-dashboard:selected-claim-id';
 
 function normalizeHours(hours?: BusinessHours) {
   return {
@@ -61,6 +62,14 @@ function parseListValues(value: string) {
     .split('\n')
     .map((entry) => entry.trim())
     .filter(Boolean);
+}
+
+function resolveOverrideValue(overrideValue: string | null | undefined, fallbackValue?: string) {
+  if (overrideValue === undefined) {
+    return fallbackValue ?? '';
+  }
+
+  return overrideValue ?? '';
 }
 
 export default function OwnerDashboardPage() {
@@ -109,17 +118,27 @@ export default function OwnerDashboardPage() {
       .maybeSingle();
 
     const override = (overrideData ?? null) as BusinessOverride | null;
+    const overrideContact = override?.contact;
+
     setFormData({
-      name: override?.name || matchedBusiness?.name || '',
-      description: override?.description || matchedBusiness?.description || '',
-      phone: override?.contact?.phone || matchedBusiness?.contact?.phone || '',
-      website: override?.contact?.website || matchedBusiness?.contact?.website || '',
-      address: override?.contact?.address || matchedBusiness?.contact?.address || '',
-      email: override?.contact?.email || matchedBusiness?.contact?.email || '',
-      serviceAreas: override?.service_areas?.join(', ') || matchedBusiness?.serviceAreas?.join(', ') || '',
-      photos: override?.photos?.join('\n') || matchedBusiness?.photos?.join('\n') || '',
-      hours: normalizeHours(override?.hours || matchedBusiness?.hours),
+      name: resolveOverrideValue(override?.name, matchedBusiness?.name),
+      description: resolveOverrideValue(override?.description, matchedBusiness?.description),
+      phone: resolveOverrideValue(overrideContact?.phone, matchedBusiness?.contact?.phone),
+      website: resolveOverrideValue(overrideContact?.website, matchedBusiness?.contact?.website),
+      address: resolveOverrideValue(overrideContact?.address, matchedBusiness?.contact?.address),
+      email: resolveOverrideValue(overrideContact?.email, matchedBusiness?.contact?.email),
+      serviceAreas: override?.service_areas !== undefined
+        ? override.service_areas.join(', ')
+        : (matchedBusiness?.serviceAreas?.join(', ') ?? ''),
+      photos: override?.photos !== undefined
+        ? override.photos.join('\n')
+        : (matchedBusiness?.photos?.join('\n') ?? ''),
+      hours: normalizeHours(override?.hours !== undefined ? override.hours : matchedBusiness?.hours),
     });
+
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(OWNER_SELECTED_CLAIM_STORAGE_KEY, claim.id);
+    }
   }
 
   useEffect(() => {
@@ -145,7 +164,14 @@ export default function OwnerDashboardPage() {
         setApprovedClaims(claimList);
 
         if (claimList.length > 0) {
-          await hydrateClaim(claimList[0]);
+          const preferredClaimId = typeof window !== 'undefined'
+            ? window.localStorage.getItem(OWNER_SELECTED_CLAIM_STORAGE_KEY)
+            : null;
+          const preferredClaim = preferredClaimId
+            ? claimList.find((claim) => claim.id === preferredClaimId) ?? null
+            : null;
+
+          await hydrateClaim(preferredClaim ?? claimList[0]);
         }
       } catch (caughtError) {
         setError(caughtError instanceof Error ? caughtError.message : 'Failed to load the owner dashboard.');
@@ -328,8 +354,11 @@ export default function OwnerDashboardPage() {
                       const nextClaim = approvedClaims.find((claim) => claim.id === event.target.value);
                       if (nextClaim) {
                         setLoading(true);
-                        await hydrateClaim(nextClaim);
-                        setLoading(false);
+                        try {
+                          await hydrateClaim(nextClaim);
+                        } finally {
+                          setLoading(false);
+                        }
                       }
                     }}
                     className="mt-3 w-full border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none focus:border-zinc-900"

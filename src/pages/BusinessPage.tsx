@@ -55,6 +55,12 @@ type BusinessOverrideRow = {
   photos: unknown;
 };
 
+type SeedDataModule = {
+  businesses: Business[];
+  cities: City[];
+  categories: Category[];
+};
+
 function isMissingTableError(error: { code?: string; message?: string } | null | undefined) {
   if (!error) {
     return false;
@@ -181,6 +187,7 @@ export default function BusinessPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isOwner, setIsOwner] = useState(false);
+  const [ownerCheckError, setOwnerCheckError] = useState<string | null>(null);
   const [visibleMobileReviewCount, setVisibleMobileReviewCount] = useState(INITIAL_MOBILE_REVIEW_COUNT);
   const canonicalPath = business ? `/${business.cityId}/${business.categoryId}/${business.id}` : null;
 
@@ -188,7 +195,7 @@ export default function BusinessPage() {
     let isActive = true;
 
     async function loadBusinessPage() {
-      if (!businessId || !supabase || !isSupabaseConfigured()) {
+      if (!businessId) {
         if (isActive) {
           setBusiness(null);
           setCity(null);
@@ -207,6 +214,44 @@ export default function BusinessPage() {
       setCategory(null);
       setIsVerified(false);
       setIsOwner(false);
+
+      if (!supabase || !isSupabaseConfigured()) {
+        if (!import.meta.env.DEV) {
+          if (isActive) {
+            setLoadError('Listing data is unavailable because the backend is not configured.');
+            setIsLoading(false);
+          }
+          return;
+        }
+
+        try {
+          const module = await import('../data') as SeedDataModule;
+          const seedBusiness = module.businesses.find((entry) => entry.id === businessId) ?? null;
+
+          if (!isActive) {
+            return;
+          }
+
+          if (!seedBusiness) {
+            setLoadError('This listing could not be found in local seed data.');
+            setIsLoading(false);
+            return;
+          }
+
+          setBusiness(seedBusiness);
+          setCity(module.cities.find((entry) => entry.id === seedBusiness.cityId) ?? null);
+          setCategory(module.categories.find((entry) => entry.id === seedBusiness.categoryId) ?? null);
+          setIsVerified(false);
+          setIsLoading(false);
+        } catch (error: unknown) {
+          if (isActive) {
+            console.error('[business-page] Failed to load seed listing fallback.', error);
+            setLoadError(error instanceof Error ? error.message : 'Unable to load this listing right now.');
+            setIsLoading(false);
+          }
+        }
+        return;
+      }
       try {
         const { data: businessRow, error: businessError } = await supabase
           .from('businesses')
@@ -304,22 +349,36 @@ export default function BusinessPage() {
 
     if (!business || !user || !supabase || !isSupabaseConfigured()) {
       setIsOwner(false);
+      setOwnerCheckError(null);
       return () => {
         isActive = false;
       };
     }
 
     const checkOwnership = async () => {
-      const { data } = await supabase
-        .from('business_claims')
-        .select('id')
-        .eq('business_id', business.id)
-        .eq('user_id', user.id)
-        .eq('status', 'approved')
-        .maybeSingle();
+      try {
+        const { data, error } = await supabase
+          .from('business_claims')
+          .select('id')
+          .eq('business_id', business.id)
+          .eq('user_id', user.id)
+          .eq('status', 'approved')
+          .maybeSingle();
 
-      if (isActive) {
-        setIsOwner(!!data);
+        if (error) {
+          throw error;
+        }
+
+        if (isActive) {
+          setIsOwner(!!data);
+          setOwnerCheckError(null);
+        }
+      } catch (error: unknown) {
+        console.error('[business-page] Failed to verify ownership.', error);
+        if (isActive) {
+          setIsOwner(false);
+          setOwnerCheckError('Could not verify owner access right now.');
+        }
       }
     };
 
@@ -818,6 +877,9 @@ export default function BusinessPage() {
                     <span>Claim Business</span>
                     <ArrowRight className="w-3 h-3" />
                   </Link>
+                  {ownerCheckError ? (
+                    <p className="rounded-lg border border-zinc-200 bg-white px-4 py-3 text-xs text-zinc-600">{ownerCheckError}</p>
+                  ) : null}
                   <Link to="/never-miss-a-lead" className="inline-flex items-center justify-between w-full rounded-lg border border-zinc-200 bg-white px-4 py-3 font-sans text-xs font-semibold tracking-wide text-zinc-900 hover:border-zinc-900 hover:-translate-y-0.5 hover:shadow-md transition-all">
                     <span>Need help handling leads?</span>
                     <ArrowRight className="w-3 h-3" />

@@ -74,25 +74,56 @@ const AUTH_CALLBACK_PARAM_KEYS = [
   'error_description',
 ] as const;
 
+function parseAuthCallbackParams(value: string) {
+  const normalizedValue = value.startsWith('#') ? value.slice(1) : value;
+
+  if (!normalizedValue) {
+    return null;
+  }
+
+  const looksLikeAuthParams = normalizedValue.includes('=')
+    || AUTH_CALLBACK_PARAM_KEYS.some((key) => normalizedValue.includes(`${key}=`));
+
+  if (!looksLikeAuthParams) {
+    return null;
+  }
+
+  return new URLSearchParams(normalizedValue);
+}
+
 function hasAuthCallbackParams(currentUrl: URL) {
-  const hashParams = new URLSearchParams(currentUrl.hash.startsWith('#') ? currentUrl.hash.slice(1) : currentUrl.hash);
+  const hashParams = parseAuthCallbackParams(currentUrl.hash);
 
   return AUTH_CALLBACK_PARAM_KEYS.some((key) =>
-    currentUrl.searchParams.has(key) || hashParams.has(key)
+    currentUrl.searchParams.has(key) || hashParams?.has(key) === true
   );
 }
 
 function clearAuthCallbackParams(currentUrl: URL) {
-  const hashParams = new URLSearchParams(currentUrl.hash.startsWith('#') ? currentUrl.hash.slice(1) : currentUrl.hash);
+  const hashParams = parseAuthCallbackParams(currentUrl.hash);
+  let changedSearchParams = false;
+  let changedHashParams = false;
 
   AUTH_CALLBACK_PARAM_KEYS.forEach((key) => {
-    currentUrl.searchParams.delete(key);
-    hashParams.delete(key);
+    if (currentUrl.searchParams.has(key)) {
+      currentUrl.searchParams.delete(key);
+      changedSearchParams = true;
+    }
+
+    if (hashParams?.has(key)) {
+      hashParams.delete(key);
+      changedHashParams = true;
+    }
   });
 
-  const nextHash = hashParams.toString();
-  currentUrl.hash = nextHash ? `#${nextHash}` : '';
-  window.history.replaceState({}, document.title, `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`);
+  if (changedHashParams && hashParams) {
+    const nextHash = hashParams.toString();
+    currentUrl.hash = nextHash ? `#${nextHash}` : '';
+  }
+
+  if (changedSearchParams || changedHashParams) {
+    window.history.replaceState({}, document.title, `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`);
+  }
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {

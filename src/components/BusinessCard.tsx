@@ -40,8 +40,8 @@ export default function BusinessCard({ business, contextCityName }: BusinessCard
   }, [reviews.length]);
 
   const activeReview = reviews[currentReviewIndex];
-  const summaryText = activeReview?.text ?? business.description ?? `${business.name} serves ${serviceAreas.slice(0, 2).join(' and ')}.`;
-  const summaryLabel = activeReview?.author ?? 'Listing summary';
+  const summaryText = activeReview?.text || business.description || `${business.name} serves ${serviceAreas.slice(0, 2).join(' and ')}.`;
+  const summaryLabel = activeReview?.author || 'Listing summary';
   
   const imageSrc = photos[0];
   const isServiceAreaMatch = Boolean(

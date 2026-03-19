@@ -123,6 +123,8 @@ export function getClaimStatusCopy(status: ClaimStatus) {
       return {
         label: 'Under review',
         shortLabel: 'Pending',
+        title: 'Review in progress',
+        description: 'Your claim is in manual review right now. You cannot edit the listing until ownership is approved.',
         accentClassName: 'border-amber-200 bg-amber-50 text-amber-700',
         iconClassName: 'text-amber-500',
       };
@@ -130,6 +132,8 @@ export function getClaimStatusCopy(status: ClaimStatus) {
       return {
         label: 'Approved',
         shortLabel: 'Approved',
+        title: 'Approved and ready',
+        description: 'Ownership is confirmed. The next step is opening the owner dashboard and updating the fields customers rely on.',
         accentClassName: 'border-emerald-200 bg-emerald-50 text-emerald-700',
         iconClassName: 'text-emerald-500',
       };
@@ -137,6 +141,8 @@ export function getClaimStatusCopy(status: ClaimStatus) {
       return {
         label: 'Needs a new claim',
         shortLabel: 'Rejected',
+        title: 'Rejected',
+        description: 'This claim was not approved. Review the reason below, then submit a stronger claim if you still need access.',
         accentClassName: 'border-rose-200 bg-rose-50 text-rose-700',
         iconClassName: 'text-rose-500',
       };
@@ -144,6 +150,8 @@ export function getClaimStatusCopy(status: ClaimStatus) {
       return {
         label: 'Access removed',
         shortLabel: 'Revoked',
+        title: 'Access removed',
+        description: 'This listing is no longer attached to your account. Contact support if you believe that was a mistake.',
         accentClassName: 'border-rose-200 bg-rose-50 text-rose-700',
         iconClassName: 'text-rose-500',
       };

@@ -38,31 +38,6 @@ function getStatusIcon(status: BusinessClaim['status']) {
   }
 }
 
-function getStatusMessage(claim: BusinessClaim) {
-  switch (claim.status) {
-    case 'pending':
-      return {
-        title: 'Review in progress',
-        description: 'Your claim is in manual review right now. You cannot edit the listing until ownership is approved.',
-      };
-    case 'approved':
-      return {
-        title: 'Approved and ready',
-        description: 'Ownership is confirmed. The next step is opening the owner dashboard and updating the fields customers rely on.',
-      };
-    case 'rejected':
-      return {
-        title: 'Rejected',
-        description: 'This claim was not approved. Review the reason below, then submit a stronger claim if you still need access.',
-      };
-    case 'revoked':
-      return {
-        title: 'Access removed',
-        description: 'This listing is no longer attached to your account. Contact support if you believe that was a mistake.',
-      };
-  }
-}
-
 export default function ClaimStatusPage() {
   const [searchParams] = useSearchParams();
   const { user, loading: authLoading } = useAuth();
@@ -212,7 +187,6 @@ export default function ClaimStatusPage() {
               const business = businessesById.get(claim.business_id);
               const listingPath = getBusinessListingPath(business);
               const statusCopy = getClaimStatusCopy(claim.status);
-              const statusMessage = getStatusMessage(claim);
 
               return (
                 <section
@@ -236,8 +210,8 @@ export default function ClaimStatusPage() {
                     <div className="space-y-5">
                       <div className="border border-zinc-200 bg-zinc-50 px-5 py-5">
                         <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Status</p>
-                        <h3 className="mt-3 text-2xl font-bold tracking-tight text-zinc-950">{statusMessage.title}</h3>
-                        <p className="mt-3 text-sm leading-7 text-zinc-600">{statusMessage.description}</p>
+                        <h3 className="mt-3 text-2xl font-bold tracking-tight text-zinc-950">{statusCopy.title}</h3>
+                        <p className="mt-3 text-sm leading-7 text-zinc-600">{statusCopy.description}</p>
                       </div>
 
                       {claim.status === 'rejected' && claim.rejection_reason ? (

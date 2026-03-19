@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useId } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronDown, User, LogOut, Building, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -13,6 +13,7 @@ export default function UserMenu({ mobile = false }: UserMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const canAccessOwnerDashboard = hasApprovedClaim || profile?.role === 'admin';
+  const menuPanelId = `${useId()}-panel`;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -64,6 +65,8 @@ export default function UserMenu({ mobile = false }: UserMenuProps) {
     <div className={`relative ${mobile ? 'w-full' : ''}`} ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
+        aria-expanded={isOpen}
+        aria-controls={menuPanelId}
         className={`inline-flex items-center gap-3 border-2 border-zinc-200 bg-white px-3 py-2.5 font-sans text-[13px] font-semibold text-zinc-700 transition-all hover:border-zinc-900 hover:text-zinc-950 ${mobile ? 'w-full justify-between rounded-[1.15rem] px-4 py-3' : ''}`}
       >
         <span className="flex h-8 w-8 items-center justify-center border border-zinc-900 bg-zinc-900 text-white">
@@ -75,7 +78,7 @@ export default function UserMenu({ mobile = false }: UserMenuProps) {
       </button>
 
       {isOpen && (
-        <div className={`${mobile ? 'mt-3 w-full overflow-hidden rounded-[1.15rem] border border-zinc-200 bg-white shadow-sm' : 'absolute right-0 z-50 mt-2 w-56 rounded-sm border border-zinc-200 bg-white py-1 shadow-lg'}`}>
+        <div id={menuPanelId} className={`${mobile ? 'mt-3 w-full overflow-hidden rounded-[1.15rem] border border-zinc-200 bg-white shadow-sm' : 'absolute right-0 z-50 mt-2 w-56 rounded-sm border border-zinc-200 bg-white py-1 shadow-lg'}`}>
           <div className="px-4 py-3 border-b border-zinc-100">
             <p className="font-sans text-sm text-zinc-900 truncate">{user.email}</p>
             <p className="font-sans text-xs text-zinc-500 capitalize">{profile?.role?.replace('_', ' ') || 'Consumer'}</p>
