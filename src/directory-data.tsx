@@ -32,7 +32,7 @@ type DirectoryData = {
 
 type DirectoryDataState = DirectoryData & {
   isLoading: boolean;
-  source: 'database' | 'seed';
+  source: 'database' | 'seed' | 'error';
   error?: string;
 };
 
@@ -109,6 +109,11 @@ function filterDirectoryData(data: DirectoryData): DirectoryData {
 }
 
 let seedDataPromise: Promise<DirectoryData> | null = null;
+
+export function allowSeedFallbackOnError() {
+  const override = String(import.meta.env.VITE_ALLOW_SEED_FALLBACK ?? '').toLowerCase();
+  return import.meta.env.DEV || ['1', 'true', 'yes', 'on'].includes(override);
+}
 
 function loadSeedData() {
   if (!seedDataPromise) {
@@ -427,23 +432,33 @@ export function DirectoryDataProvider({ children }: { children: ReactNode }) {
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Unable to load directory data.';
       console.error('[directory-data] Refresh failed.', error);
-      try {
-        const seedData = await loadSeedData();
-        setState(() => {
-          const nextState = {
-            ...seedData,
+      if (allowSeedFallbackOnError()) {
+        try {
+          const seedData = await loadSeedData();
+          setState(() => {
+            const nextState = {
+              ...seedData,
+              isLoading: false,
+              source: 'seed',
+              error: message,
+            } satisfies DirectoryDataState;
+            cachedDirectoryDataState = nextState;
+            return nextState;
+          });
+        } catch (seedError: unknown) {
+          console.error('[directory-data] Seed refresh fallback failed.', seedError);
+          setState((current) => ({
+            ...current,
             isLoading: false,
-            source: 'seed',
+            source: 'error',
             error: message,
-          } satisfies DirectoryDataState;
-          cachedDirectoryDataState = nextState;
-          return nextState;
-        });
-      } catch (seedError: unknown) {
-        console.error('[directory-data] Seed refresh fallback failed.', seedError);
+          }));
+        }
+      } else {
         setState((current) => ({
           ...current,
           isLoading: false,
+          source: 'error',
           error: message,
         }));
       }
@@ -506,40 +521,53 @@ export function DirectoryDataProvider({ children }: { children: ReactNode }) {
 
         const message = error instanceof Error ? error.message : 'Unable to load directory data.';
         console.error('[directory-data] Initial load failed.', error);
-        loadSeedData()
-          .then((seedData) => {
-            if (!isActive) {
-              return;
-            }
+        if (allowSeedFallbackOnError()) {
+          loadSeedData()
+            .then((seedData) => {
+              if (!isActive) {
+                return;
+              }
 
-            setState(() => {
-              const nextState = {
-              ...seedData,
-              isLoading: false,
-              source: 'seed',
-              error: message,
-              } satisfies DirectoryDataState;
-              cachedDirectoryDataState = nextState;
-              return nextState;
+              setState(() => {
+                const nextState = {
+                  ...seedData,
+                  isLoading: false,
+                  source: 'seed',
+                  error: message,
+                } satisfies DirectoryDataState;
+                cachedDirectoryDataState = nextState;
+                return nextState;
+              });
+            })
+            .catch((seedError: unknown) => {
+              if (!isActive) {
+                return;
+              }
+
+              console.error('[directory-data] Seed fallback failed.', seedError);
+              setState(() => {
+                const nextState = {
+                  ...emptySeedData,
+                  isLoading: false,
+                  source: 'error',
+                  error: message,
+                } satisfies DirectoryDataState;
+                cachedDirectoryDataState = nextState;
+                return nextState;
+              });
             });
-          })
-          .catch((seedError: unknown) => {
-            if (!isActive) {
-              return;
-            }
-
-            console.error('[directory-data] Seed fallback failed.', seedError);
-            setState(() => {
-              const nextState = {
+        } else {
+          setState(() => {
+            const nextState = {
               ...emptySeedData,
               isLoading: false,
-              source: 'seed',
+              source: 'error',
               error: message,
-              } satisfies DirectoryDataState;
-              cachedDirectoryDataState = nextState;
-              return nextState;
-            });
+            } satisfies DirectoryDataState;
+            cachedDirectoryDataState = nextState;
+            return nextState;
           });
+        }
       });
 
     return () => {

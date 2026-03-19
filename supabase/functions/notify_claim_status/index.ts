@@ -93,9 +93,10 @@ serve(async (req) => {
     }
 
     // Atomic claim to prevent race conditions
+    const claimedAt = new Date().toISOString();
     const { data: claimResult, error: claimError } = await supabase
       .from('business_claims')
-      .update({ notification_sent_at: new Date().toISOString() })
+      .update({ notification_sent_at: claimedAt })
       .eq('id', record.id)
       .is('notification_sent_at', null)
       .select('id');
@@ -130,8 +131,7 @@ serve(async (req) => {
       `;
     }
 
-    // Send the email via Resend
-    if (resendApiKey) {
+    try {
       const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
@@ -150,16 +150,26 @@ serve(async (req) => {
         const errText = await res.text();
         throw new Error(`Resend Error: ${errText}`);
       }
-    } else {
-      console.log('RESEND_API_KEY is not set. Skipping email send (dry-run mode):', { to: record.claimant_email, subject: emailSubject });
-      // Don't mark as sent in dry-run mode
-      return new Response(JSON.stringify({ success: true, message: 'Dry-run: Notification skipped' }), { status: 200 });
+    } catch (sendError) {
+      const rollback = await supabase
+        .from('business_claims')
+        .update({ notification_sent_at: null })
+        .eq('id', record.id)
+        .eq('notification_sent_at', claimedAt);
+
+      if (rollback.error) {
+        console.error('Failed to roll back notification claim after delivery failure:', rollback.error);
+      }
+
+      const message = sendError instanceof Error ? sendError.message : String(sendError);
+      throw new Error(`Notification delivery failed and will be retried: ${message}`);
     }
 
     return new Response(JSON.stringify({ success: true, message: 'Notification sent successfully' }), { status: 200 });
 
   } catch (error: any) {
     console.error('Error processing webhook:', error);
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    const message = error instanceof Error ? error.message : String(error);
+    return new Response(JSON.stringify({ error: message, retryable: true }), { status: 500 });
   }
 });

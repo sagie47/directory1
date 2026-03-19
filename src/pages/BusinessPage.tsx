@@ -20,6 +20,7 @@ import Breadcrumbs from '../components/Breadcrumbs';
 import GalleryLightbox from '../components/GalleryLightbox';
 import Seo from '../components/Seo';
 import { useAuth } from '../contexts/AuthContext';
+import { allowSeedFallbackOnError } from '../directory-data';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import type { Category, City } from '../directory-data';
 
@@ -368,15 +369,39 @@ export default function BusinessPage() {
         console.error('[business-page] Failed to load listing.', error);
         const dbErrorMessage = error instanceof Error ? error.message : 'Unable to load this listing right now.';
 
-        try {
-          const module = await loadSeedDataFromJson();
-          const seedBusiness = module.businesses.find((entry) => entry.id === businessId) ?? null;
+        if (allowSeedFallbackOnError()) {
+          try {
+            const module = await loadSeedDataFromJson();
+            const seedBusiness = module.businesses.find((entry) => entry.id === businessId) ?? null;
 
-          if (!isActive) {
-            return;
-          }
+            if (!isActive) {
+              return;
+            }
 
-          if (!seedBusiness) {
+            if (!seedBusiness) {
+              setBusiness(null);
+              setCity(null);
+              setCategory(null);
+              setVerificationState('unverified');
+              setVerificationLookupWarning(null);
+              setLoadError(dbErrorMessage);
+              setIsLoading(false);
+              return;
+            }
+
+            setBusiness(seedBusiness);
+            setCity(module.cities.find((entry) => entry.id === seedBusiness.cityId) ?? null);
+            setCategory(module.categories.find((entry) => entry.id === seedBusiness.categoryId) ?? null);
+            setVerificationState('unknown');
+            setVerificationLookupWarning('Verified status could not be checked because the primary business lookup failed.');
+            setLoadError(null);
+            setIsLoading(false);
+          } catch (seedError: unknown) {
+            if (!isActive) {
+              return;
+            }
+
+            console.error('[business-page] Seed fallback also failed.', seedError);
             setBusiness(null);
             setCity(null);
             setCategory(null);
@@ -384,22 +409,8 @@ export default function BusinessPage() {
             setVerificationLookupWarning(null);
             setLoadError(dbErrorMessage);
             setIsLoading(false);
-            return;
           }
-
-          setBusiness(seedBusiness);
-          setCity(module.cities.find((entry) => entry.id === seedBusiness.cityId) ?? null);
-          setCategory(module.categories.find((entry) => entry.id === seedBusiness.categoryId) ?? null);
-          setVerificationState('unknown');
-          setVerificationLookupWarning('Verified status could not be checked because the primary business lookup failed.');
-          setLoadError(null);
-          setIsLoading(false);
-        } catch (seedError: unknown) {
-          if (!isActive) {
-            return;
-          }
-
-          console.error('[business-page] Seed fallback also failed.', seedError);
+        } else {
           setBusiness(null);
           setCity(null);
           setCategory(null);
