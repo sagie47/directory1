@@ -62,7 +62,6 @@ type SeedDataModule = {
 };
 
 type VerificationState = 'verified' | 'unverified' | 'unknown';
-
 let seedDataPromise: Promise<SeedDataModule> | null = null;
 
 function loadSeedDataFromJson(): Promise<SeedDataModule> {
