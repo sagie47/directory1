@@ -202,7 +202,11 @@ export default function BusinessPage() {
 
       setIsLoading(true);
       setLoadError(null);
-
+      setBusiness(null);
+      setCity(null);
+      setCategory(null);
+      setIsVerified(false);
+      setIsOwner(false);
       try {
         const { data: businessRow, error: businessError } = await supabase
           .from('businesses')
