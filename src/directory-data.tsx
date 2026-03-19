@@ -108,14 +108,7 @@ let seedDataPromise: Promise<DirectoryData> | null = null;
 
 function loadSeedData() {
   if (!seedDataPromise) {
-    seedDataPromise = fetch('/data.json')
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error(`Failed to load seed data: ${res.status}`);
-        }
-        return res.json();
-      })
-      .then((module) => filterDirectoryData({
+    seedDataPromise = import('./data').then((module) => filterDirectoryData({
         cities: module.cities,
         categoryGroups: module.categoryGroups,
         categories: module.categories,
