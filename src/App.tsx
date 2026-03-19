@@ -103,10 +103,10 @@ function AnimatedRoutes() {
             />
             <Route path=":cityId" element={<CityPage />} />
             <Route path=":cityId/:categoryId" element={<CategoryPage />} />
-            <Route path=":cityId/:categoryId/:businessId" element={<BusinessPage />} />
           </Route>
 
           {/* Public routes without directory data */}
+          <Route path=":cityId/:categoryId/:businessId" element={<BusinessPage />} />
           <Route path="signup" element={<Navigate to="/claim" replace />} />
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />

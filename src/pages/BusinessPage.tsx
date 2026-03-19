@@ -19,84 +19,293 @@ import {
 import Breadcrumbs from '../components/Breadcrumbs';
 import GalleryLightbox from '../components/GalleryLightbox';
 import Seo from '../components/Seo';
-import { useDirectoryData } from '../directory-data';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import type { Category, City } from '../directory-data';
 
 const INITIAL_MOBILE_REVIEW_COUNT = 1;
 const MOBILE_REVIEW_BATCH_SIZE = 2;
 
+type BusinessRow = {
+  id: string;
+  name: string;
+  city_id: string;
+  category_id: string;
+  description: string | null;
+  rating: number | null;
+  review_count: number | null;
+  service_areas: unknown;
+  category_tags: unknown;
+  specialties: unknown;
+  photos: unknown;
+  reviews: unknown;
+  hours: unknown;
+  coordinates: unknown;
+  contact: unknown;
+  source: unknown;
+};
+
+type BusinessOverrideRow = {
+  business_id: string;
+  name: string | null;
+  description: string | null;
+  contact: unknown;
+  service_areas: unknown;
+  hours: unknown;
+  photos: unknown;
+};
+
+function isMissingTableError(error: { code?: string; message?: string } | null | undefined) {
+  if (!error) {
+    return false;
+  }
+
+  return error.code === '42P01'
+    || error.code === 'PGRST205'
+    || error.message?.includes("Could not find the table 'public.business_overrides'") === true
+    || error.message?.includes("Could not find the table 'public.verified_businesses'") === true;
+}
+
+function asStringArray(value: unknown) {
+  return Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === 'string') : [];
+}
+
+function asRecord(value: unknown) {
+  return value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
+}
+
+function asReviews(value: unknown) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((entry) => {
+    if (!entry || typeof entry !== 'object') {
+      return [];
+    }
+
+    const candidate = entry as Record<string, unknown>;
+    if (typeof candidate.author !== 'string' || typeof candidate.text !== 'string' || typeof candidate.rating !== 'number') {
+      return [];
+    }
+
+    return [{
+      author: candidate.author,
+      text: candidate.text,
+      rating: candidate.rating,
+    }];
+  });
+}
+
+function asCoordinates(value: unknown) {
+  if (!value || typeof value !== 'object') {
+    return undefined;
+  }
+
+  const coordinates = value as Record<string, unknown>;
+  return typeof coordinates.lat === 'number' && typeof coordinates.lng === 'number'
+    ? { lat: coordinates.lat, lng: coordinates.lng }
+    : undefined;
+}
+
+function mapBusinessRow(row: BusinessRow): Business {
+  const contact = asRecord(row.contact);
+  const source = asRecord(row.source);
+
+  return {
+    id: row.id,
+    name: row.name,
+    cityId: row.city_id,
+    categoryId: row.category_id,
+    description: row.description ?? undefined,
+    rating: typeof row.rating === 'number' ? row.rating : undefined,
+    reviewCount: typeof row.review_count === 'number' ? row.review_count : undefined,
+    serviceAreas: asStringArray(row.service_areas),
+    categoryTags: asStringArray(row.category_tags),
+    specialties: asStringArray(row.specialties),
+    photos: asStringArray(row.photos),
+    reviews: asReviews(row.reviews),
+    hours: asRecord(row.hours) as Record<string, string>,
+    coordinates: asCoordinates(row.coordinates),
+    contact: {
+      phone: typeof contact.phone === 'string' ? contact.phone : undefined,
+      website: typeof contact.website === 'string' ? contact.website : undefined,
+      address: typeof contact.address === 'string' ? contact.address : undefined,
+      email: typeof contact.email === 'string' ? contact.email : undefined,
+    },
+    source: {
+      provider: typeof source.provider === 'string' ? source.provider : undefined,
+      cid: typeof source.cid === 'string' ? source.cid : undefined,
+      placeId: typeof source.placeId === 'string' ? source.placeId : undefined,
+      category: typeof source.category === 'string' ? source.category : undefined,
+      mapsUrl: typeof source.mapsUrl === 'string' ? source.mapsUrl : undefined,
+    },
+  };
+}
+
+function mergeBusinessOverride(business: Business, override?: BusinessOverrideRow | null) {
+  if (!override) {
+    return business;
+  }
+
+  const contact = asRecord(override.contact);
+  const overrideServiceAreas = asStringArray(override.service_areas);
+  const overridePhotos = asStringArray(override.photos);
+  const overrideHours = asRecord(override.hours) as Record<string, string>;
+
+  return {
+    ...business,
+    name: typeof override.name === 'string' && override.name.trim().length > 0 ? override.name : business.name,
+    description: typeof override.description === 'string' ? override.description : business.description,
+    contact: {
+      ...business.contact,
+      phone: typeof contact.phone === 'string' ? contact.phone : business.contact.phone,
+      website: typeof contact.website === 'string' ? contact.website : business.contact.website,
+      address: typeof contact.address === 'string' ? contact.address : business.contact.address,
+      email: typeof contact.email === 'string' ? contact.email : business.contact.email,
+    },
+    serviceAreas: overrideServiceAreas.length > 0 ? overrideServiceAreas : business.serviceAreas,
+    hours: Object.keys(overrideHours).length > 0 ? overrideHours : business.hours,
+    photos: overridePhotos.length > 0 ? overridePhotos : business.photos,
+  };
+}
+
 export default function BusinessPage() {
   const { cityId, categoryId, businessId } = useParams<{ cityId: string, categoryId: string, businessId: string }>();
   const location = useLocation();
-  const { cities, categories, businesses, isLoading, verifiedBusinessIds } = useDirectoryData();
   const { user } = useAuth();
+  const [city, setCity] = useState<City | null>(null);
+  const [category, setCategory] = useState<Category | null>(null);
+  const [business, setBusiness] = useState<Business | null>(null);
+  const [isVerified, setIsVerified] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [isOwner, setIsOwner] = useState(false);
-  const [fallbackBusiness, setFallbackBusiness] = useState<Business | null>(null);
-  const [isFallbackBusinessLoading, setIsFallbackBusinessLoading] = useState(false);
   const [visibleMobileReviewCount, setVisibleMobileReviewCount] = useState(INITIAL_MOBILE_REVIEW_COUNT);
-  
-  const matchedBusiness = businesses.find(
-    (candidate) =>
-      candidate.id === businessId
-      && candidate.cityId === cityId
-      && candidate.categoryId === categoryId,
-  );
-  const business = matchedBusiness ?? fallbackBusiness;
-  const city = cities.find((candidate) => candidate.id === (business?.cityId ?? cityId));
-  const category = categories.find((candidate) => candidate.id === (business?.categoryId ?? categoryId));
   const canonicalPath = business ? `/${business.cityId}/${business.categoryId}/${business.id}` : null;
-
-  const isVerified = business ? verifiedBusinessIds.has(business.id) : false;
 
   useEffect(() => {
     let isActive = true;
 
-    if (!businessId || isLoading || matchedBusiness) {
-      setFallbackBusiness(null);
-      setIsFallbackBusinessLoading(false);
+    async function loadBusinessPage() {
+      if (!businessId || !supabase || !isSupabaseConfigured()) {
+        if (isActive) {
+          setBusiness(null);
+          setCity(null);
+          setCategory(null);
+          setIsVerified(false);
+          setLoadError(null);
+          setIsLoading(false);
+        }
+        return;
+      }
+
+      setIsLoading(true);
+      setLoadError(null);
+
+      try {
+        const { data: businessRow, error: businessError } = await supabase
+          .from('businesses')
+          .select('id, name, city_id, category_id, description, rating, review_count, service_areas, category_tags, specialties, photos, reviews, hours, coordinates, contact, source')
+          .eq('id', businessId)
+          .maybeSingle();
+
+        if (businessError) {
+          throw businessError;
+        }
+
+        if (!businessRow) {
+          if (isActive) {
+            setBusiness(null);
+            setCity(null);
+            setCategory(null);
+            setIsVerified(false);
+          }
+          return;
+        }
+
+        const [
+          overrideResult,
+          cityResult,
+          categoryResult,
+          verifiedResult,
+        ] = await Promise.all([
+          supabase.from('business_overrides').select('business_id, name, description, contact, service_areas, hours, photos').eq('business_id', businessId).maybeSingle(),
+          supabase.from('cities').select('id, name, description').eq('id', businessRow.city_id).maybeSingle(),
+          supabase.from('categories').select('id, name, icon, group_id').eq('id', businessRow.category_id).maybeSingle(),
+          supabase.from('verified_businesses').select('business_id').eq('business_id', businessId).maybeSingle(),
+        ]);
+
+        const overrideError = isMissingTableError(overrideResult.error) ? null : overrideResult.error;
+        const verifiedError = isMissingTableError(verifiedResult.error) ? null : verifiedResult.error;
+
+        if (overrideError) {
+          throw overrideError;
+        }
+        if (cityResult.error) {
+          throw cityResult.error;
+        }
+        if (categoryResult.error) {
+          throw categoryResult.error;
+        }
+        if (verifiedError) {
+          console.warn('[business-page] verified_businesses lookup failed; continuing without verified badge.', verifiedError);
+        }
+
+        if (!isActive) {
+          return;
+        }
+
+        setBusiness(
+          mergeBusinessOverride(
+            mapBusinessRow(businessRow as BusinessRow),
+            (overrideResult.data ?? null) as BusinessOverrideRow | null,
+          ),
+        );
+        setCity((cityResult.data ?? null) as City | null);
+        setCategory(categoryResult.data ? {
+          id: categoryResult.data.id,
+          name: categoryResult.data.name,
+          icon: categoryResult.data.icon ?? undefined,
+          groupId: categoryResult.data.group_id ?? undefined,
+        } : null);
+        setIsVerified(Boolean(verifiedResult.data));
+      } catch (error: unknown) {
+        if (!isActive) {
+          return;
+        }
+
+        console.error('[business-page] Failed to load listing.', error);
+        setBusiness(null);
+        setCity(null);
+        setCategory(null);
+        setIsVerified(false);
+        setLoadError(error instanceof Error ? error.message : 'Unable to load this listing right now.');
+      } finally {
+        if (isActive) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void loadBusinessPage();
+
+    return () => {
+      isActive = false;
+    };
+  }, [businessId]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    if (!business || !user || !supabase || !isSupabaseConfigured()) {
+      setIsOwner(false);
       return () => {
         isActive = false;
       };
     }
 
-    setIsFallbackBusinessLoading(true);
-
-    import('../data')
-      .then((module) => {
-        if (!isActive) {
-          return;
-        }
-
-        const seedBusiness = module.businesses.find((candidate) => candidate.id === businessId) ?? null;
-        setFallbackBusiness(seedBusiness);
-      })
-      .catch((error: unknown) => {
-        if (!isActive) {
-          return;
-        }
-
-        console.error('[business-page] Seed fallback lookup failed.', error);
-        setFallbackBusiness(null);
-      })
-      .finally(() => {
-        if (isActive) {
-          setIsFallbackBusinessLoading(false);
-        }
-      });
-
-    return () => {
-      isActive = false;
-    };
-  }, [businessId, isLoading, matchedBusiness]);
-
-  useEffect(() => {
     const checkOwnership = async () => {
-      if (!business || !user || !supabase || !isSupabaseConfigured()) {
-        setIsOwner(false);
-        return;
-      }
-
       const { data } = await supabase
         .from('business_claims')
         .select('id')
@@ -105,10 +314,16 @@ export default function BusinessPage() {
         .eq('status', 'approved')
         .maybeSingle();
 
-      setIsOwner(!!data);
+      if (isActive) {
+        setIsOwner(!!data);
+      }
     };
 
-    checkOwnership();
+    void checkOwnership();
+
+    return () => {
+      isActive = false;
+    };
   }, [business, user]);
 
   useEffect(() => {
@@ -119,7 +334,7 @@ export default function BusinessPage() {
     setVisibleMobileReviewCount(INITIAL_MOBILE_REVIEW_COUNT);
   }, [business?.id]);
 
-  if ((isLoading || isFallbackBusinessLoading) && !business) {
+  if (isLoading && !business) {
     return (
       <motion.div
         initial={{ opacity: 0 }}
@@ -153,7 +368,7 @@ export default function BusinessPage() {
           <p className="font-mono text-[10px] font-bold uppercase tracking-[0.24em] text-zinc-400">Listing unavailable</p>
           <h1 className="mt-4 text-3xl font-bold uppercase tracking-tight text-zinc-900">This business link could not be resolved.</h1>
           <p className="mt-4 text-base leading-relaxed text-zinc-600">
-            The listing may have moved, been removed, or the URL may be outdated.
+            {loadError ?? 'The listing may have moved, been removed, or the URL may be outdated.'}
           </p>
           <div className="mt-8 flex justify-center">
             <Link

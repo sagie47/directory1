@@ -8,8 +8,6 @@ import {
   Save,
   ShieldCheck,
 } from 'lucide-react';
-import { motion } from 'motion/react';
-
 import type { Business, BusinessHours } from '@/src/business';
 import OwnerProfileChecklist from '@/src/components/OwnerProfileChecklist';
 import SectionEyebrow from '@/src/components/SectionEyebrow';
@@ -28,14 +26,17 @@ interface BusinessClaim {
 
 interface BusinessOverride {
   business_id: string;
+  name?: string;
   description?: string;
   contact?: {
     phone?: string;
     website?: string;
+    address?: string;
     email?: string;
   };
   service_areas?: string[];
   hours?: BusinessHours;
+  photos?: string[];
 }
 
 const defaultHours: BusinessHours = {
@@ -55,6 +56,13 @@ function normalizeHours(hours?: BusinessHours) {
   };
 }
 
+function parseListValues(value: string) {
+  return value
+    .split('\n')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
 export default function OwnerDashboardPage() {
   const { user, loading: authLoading } = useAuth();
   const { businesses, cities, isLoading: directoryLoading, refresh } = useDirectoryData();
@@ -69,11 +77,14 @@ export default function OwnerDashboardPage() {
   const ownerToolsAvailable = Boolean(supabase && isSupabaseConfigured());
 
   const [formData, setFormData] = useState({
+    name: '',
     description: '',
     phone: '',
     website: '',
+    address: '',
     email: '',
     serviceAreas: '',
+    photos: '',
     hours: { ...defaultHours },
   });
 
@@ -99,11 +110,14 @@ export default function OwnerDashboardPage() {
 
     const override = (overrideData ?? null) as BusinessOverride | null;
     setFormData({
+      name: override?.name || matchedBusiness?.name || '',
       description: override?.description || matchedBusiness?.description || '',
       phone: override?.contact?.phone || matchedBusiness?.contact?.phone || '',
       website: override?.contact?.website || matchedBusiness?.contact?.website || '',
+      address: override?.contact?.address || matchedBusiness?.contact?.address || '',
       email: override?.contact?.email || matchedBusiness?.contact?.email || '',
       serviceAreas: override?.service_areas?.join(', ') || matchedBusiness?.serviceAreas?.join(', ') || '',
+      photos: override?.photos?.join('\n') || matchedBusiness?.photos?.join('\n') || '',
       hours: normalizeHours(override?.hours || matchedBusiness?.hours),
     });
   }
@@ -146,16 +160,20 @@ export default function OwnerDashboardPage() {
   const city = cities.find((entry) => entry.id === business?.cityId);
   const listingPath = getBusinessListingPath(business);
   const formSnapshot = useMemo(() => ({
+    name: formData.name,
     description: formData.description,
     contact: {
       phone: formData.phone,
       website: formData.website,
+      address: formData.address,
       email: formData.email,
     },
     serviceAreas: formData.serviceAreas.split(',').map((value) => value.trim()).filter(Boolean),
+    photos: parseListValues(formData.photos),
     hours: formData.hours,
   }), [formData]);
   const progress = useMemo(() => getOwnerProfileProgress(formSnapshot), [formSnapshot]);
+  const photoUrls = useMemo(() => parseListValues(formData.photos), [formData.photos]);
   const recommendation = getOwnerRecommendation({ business: formSnapshot, claimStatus: 'approved' });
 
   useEffect(() => {
@@ -179,13 +197,16 @@ export default function OwnerDashboardPage() {
         .from('business_overrides')
         .upsert({
           business_id: approvedClaim.business_id,
+          name: formData.name.trim() || null,
           description: formData.description || null,
           contact: {
             phone: formData.phone || null,
             website: formData.website || null,
+            address: formData.address || null,
             email: formData.email || null,
           },
           service_areas: formData.serviceAreas.split(',').map((value) => value.trim()).filter(Boolean),
+          photos: parseListValues(formData.photos),
           hours: formData.hours,
           updated_by: user.id,
         }, { onConflict: 'business_id' });
@@ -259,7 +280,7 @@ export default function OwnerDashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-zinc-900 font-sans selection:bg-indigo-200 selection:text-indigo-900">
-      <section className="border-b-2 border-zinc-900 bg-white px-4 py-10 sm:px-6 sm:py-12 lg:px-10 lg:py-14">
+      <section className="border-b-2 border-zinc-900 bg-white px-4 py-12 sm:px-6 sm:py-14 lg:px-10 lg:py-16">
         <div className="mx-auto max-w-[96rem]">
           <SectionEyebrow
             icon={ShieldCheck}
@@ -290,7 +311,7 @@ export default function OwnerDashboardPage() {
               <div className="mt-4 space-y-3 text-sm text-zinc-600">
                 <div className="flex items-end justify-between gap-4 border-b border-zinc-200 pb-3">
                   <span>Listing health</span>
-                  <span className="text-3xl font-bold tracking-tight text-zinc-950">{progress.completedCount}/{progress.totalCount}</span>
+                  <span className="text-3xl font-bold tracking-tight text-zinc-950">{progress.completed}/{progress.total}</span>
                 </div>
                 <div className="flex items-end justify-between gap-4 border-b border-zinc-200 pb-3">
                   <span>Complete</span>
@@ -331,7 +352,7 @@ export default function OwnerDashboardPage() {
 
       <main className="px-4 py-8 sm:px-6 sm:py-10 lg:px-10 lg:py-12">
         <div className="mx-auto grid max-w-[96rem] gap-8 xl:grid-cols-[minmax(0,1.2fr)_22rem]">
-          <motion.form initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
             {error ? (
               <div className="flex items-start gap-3 border border-rose-200 bg-rose-50 px-4 py-4 text-sm text-rose-700">
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
@@ -348,6 +369,16 @@ export default function OwnerDashboardPage() {
             <section className="border-2 border-zinc-900 bg-white p-6 sm:p-8">
               <h2 className="text-2xl font-bold tracking-tight text-zinc-950">Public profile</h2>
               <div className="mt-6 space-y-6">
+                <div>
+                  <label className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Business name</label>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(event) => setFormData({ ...formData, name: event.target.value })}
+                    className="mt-3 w-full border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none transition-colors focus:border-zinc-900 focus:bg-white"
+                    placeholder="Business name"
+                  />
+                </div>
                 <div>
                   <label className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Business description</label>
                   <textarea
@@ -389,6 +420,16 @@ export default function OwnerDashboardPage() {
                       placeholder="name@business.com"
                     />
                   </div>
+                  <div className="md:col-span-2">
+                    <label className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Address</label>
+                    <input
+                      type="text"
+                      value={formData.address}
+                      onChange={(event) => setFormData({ ...formData, address: event.target.value })}
+                      className="mt-3 w-full border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none transition-colors focus:border-zinc-900 focus:bg-white"
+                      placeholder="123 Main St, Kelowna, BC"
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Service areas</label>
@@ -401,6 +442,35 @@ export default function OwnerDashboardPage() {
                   />
                 </div>
               </div>
+            </section>
+
+            <section className="border border-zinc-200 bg-white p-6 sm:p-8">
+              <h2 className="text-2xl font-bold tracking-tight text-zinc-950">Listing images</h2>
+              <p className="mt-3 text-sm leading-6 text-zinc-600">
+                Add one public image URL per line. These will replace the photo set shown on the listing.
+              </p>
+              <div className="mt-6">
+                <label className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Photo URLs</label>
+                <textarea
+                  value={formData.photos}
+                  onChange={(event) => setFormData({ ...formData, photos: event.target.value })}
+                  rows={6}
+                  className="mt-3 w-full resize-none border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-900 focus:bg-white"
+                  placeholder={'https://example.com/photo-1.jpg\nhttps://example.com/photo-2.jpg'}
+                />
+              </div>
+              {photoUrls.length > 0 ? (
+                <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                  {photoUrls.slice(0, 4).map((photoUrl) => (
+                    <div key={photoUrl} className="overflow-hidden border border-zinc-200 bg-zinc-50">
+                      <img src={photoUrl} alt="" className="h-40 w-full object-cover" loading="lazy" decoding="async" />
+                      <div className="border-t border-zinc-200 px-3 py-2">
+                        <p className="truncate text-xs text-zinc-500">{photoUrl}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
             </section>
 
             <section className="border border-zinc-200 bg-white p-6 sm:p-8">
@@ -427,15 +497,26 @@ export default function OwnerDashboardPage() {
               </div>
             </section>
 
-            <button
-              type="submit"
-              disabled={saving}
-              className="inline-flex items-center justify-center gap-3 border-2 border-zinc-900 bg-zinc-900 px-6 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white transition-all hover:border-orange-500 hover:bg-orange-500 disabled:opacity-60"
-            >
-              {saving ? 'Saving...' : 'Save listing changes'}
-              {!saving ? <Save className="h-4 w-4" strokeWidth={2.2} /> : null}
-            </button>
-          </motion.form>
+            <div className="flex flex-col gap-3 border-t border-zinc-100 pt-2 sm:flex-row">
+              <button
+                type="submit"
+                disabled={saving}
+                className="inline-flex items-center justify-center gap-3 border-2 border-zinc-900 bg-zinc-900 px-6 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white transition-all hover:border-orange-500 hover:bg-orange-500 disabled:opacity-60"
+              >
+                {saving ? 'Saving...' : 'Save listing changes'}
+                {!saving ? <Save className="h-4 w-4" strokeWidth={2.2} /> : null}
+              </button>
+              {listingPath ? (
+                <Link
+                  to={listingPath}
+                  className="inline-flex items-center justify-center gap-2 border border-zinc-200 bg-white px-6 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-700 transition-colors hover:bg-zinc-50 hover:text-zinc-950"
+                >
+                  View live listing
+                  <ExternalLink className="h-4 w-4" strokeWidth={2.2} />
+                </Link>
+              ) : null}
+            </div>
+          </form>
 
           <aside className="space-y-6 xl:sticky xl:top-24">
             <OwnerProfileChecklist
@@ -445,8 +526,8 @@ export default function OwnerDashboardPage() {
               compact
             />
 
-            <section className="border border-zinc-200 bg-white p-5">
-              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Recommended next move</p>
+            <section className="border border-zinc-200 bg-zinc-50 p-5">
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Next opportunity</p>
               <h2 className="mt-3 text-2xl font-bold tracking-tight text-zinc-950">{recommendation.title}</h2>
               <p className="mt-3 text-sm leading-6 text-zinc-600">{recommendation.description}</p>
               {recommendation.href && recommendation.ctaLabel ? (

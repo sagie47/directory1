@@ -158,7 +158,7 @@ export default function Layout({ children }: { children: ReactNode }) {
               <div className={`flex items-center justify-end gap-2 transition-all duration-200 sm:gap-3 sm:py-4 lg:gap-4 ${isHeaderCollapsed ? 'py-1' : 'py-1.5 sm:py-2'}`}>
                 <div className="hidden items-center gap-3 md:flex">
                   <Link
-                    to="/claim-business"
+                    to="/claim"
                     className="inline-flex min-h-11 items-center justify-center border-2 border-zinc-900 bg-zinc-900 px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white shadow-[4px_4px_0px_0px_rgba(24,24,27,1)] transition-all hover:translate-x-0.5 hover:translate-y-0.5 hover:border-orange-500 hover:bg-orange-500 hover:shadow-none active:scale-[0.98]"
                   >
                     Claim Business
@@ -246,7 +246,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                 <div className="relative z-10 mt-5 flex flex-col gap-4 border-t border-zinc-900/8 pt-4">
                     <div className="grid grid-cols-2 gap-3">
                     <Link
-                      to="/claim-business"
+                      to="/claim"
                       className="group flex min-h-12 items-center justify-center gap-2 rounded-[1.15rem] border border-zinc-900 bg-zinc-900 px-3 py-3 text-center font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-white shadow-[0_16px_28px_rgba(24,24,27,0.16)] transition-all hover:-translate-y-0.5 hover:border-orange-500 hover:bg-orange-500"
                       onClick={() => setIsMenuOpen(false)}
                     >
@@ -261,8 +261,8 @@ export default function Layout({ children }: { children: ReactNode }) {
                         For Business
                       </Link>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <UserMenu />
+                    <div className="flex flex-col gap-3">
+                      <UserMenu mobile />
                       <div className="font-mono text-[9px] uppercase tracking-widest text-zinc-300">v2.4.0</div>
                     </div>
                 </div>

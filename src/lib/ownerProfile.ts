@@ -3,18 +3,21 @@ import type { Business, BusinessHours } from '@/src/business';
 export type ClaimStatus = 'pending' | 'approved' | 'rejected' | 'revoked';
 
 export interface OwnerProfileSnapshot {
+  name?: string;
   description?: string;
   contact?: {
     phone?: string;
     website?: string;
+    address?: string;
     email?: string;
   };
   serviceAreas?: string[];
   hours?: BusinessHours;
+  photos?: string[];
 }
 
 export interface OwnerProfileField {
-  id: 'description' | 'phone' | 'website' | 'service-areas' | 'hours';
+  id: 'name' | 'description' | 'phone' | 'website' | 'address' | 'service-areas' | 'hours' | 'photos';
   label: string;
   description: string;
   complete: boolean;
@@ -29,6 +32,13 @@ export function hasBusinessHours(hours?: BusinessHours) {
 
 export function getOwnerProfileFields(profile?: OwnerProfileSnapshot | null): OwnerProfileField[] {
   return [
+    {
+      id: 'name',
+      label: 'Business name',
+      description: 'Keep the public listing name accurate and recognizable.',
+      complete: Boolean(profile?.name?.trim()),
+      priority: 'required',
+    },
     {
       id: 'description',
       label: 'Business description',
@@ -51,6 +61,13 @@ export function getOwnerProfileFields(profile?: OwnerProfileSnapshot | null): Ow
       priority: 'recommended',
     },
     {
+      id: 'address',
+      label: 'Address',
+      description: 'Useful when customers need a physical service location or mailing address.',
+      complete: Boolean(profile?.contact?.address?.trim()),
+      priority: 'recommended',
+    },
+    {
       id: 'service-areas',
       label: 'Service areas',
       description: 'Show where you actually work so the right customers find you.',
@@ -63,6 +80,13 @@ export function getOwnerProfileFields(profile?: OwnerProfileSnapshot | null): Ow
       description: 'Set expectations for when customers can call or expect a reply.',
       complete: hasBusinessHours(profile?.hours),
       priority: 'required',
+    },
+    {
+      id: 'photos',
+      label: 'Photos',
+      description: 'Show recent work, branding, or your team so the listing feels real.',
+      complete: Boolean(profile?.photos?.filter((entry) => entry.trim().length > 0).length),
+      priority: 'recommended',
     },
   ];
 }

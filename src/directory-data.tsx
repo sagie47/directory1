@@ -52,15 +52,16 @@ type BusinessRow = {
   category_tags: unknown;
   specialties: unknown;
   photos: unknown;
-  reviews: unknown;
   hours: unknown;
-  coordinates: unknown;
   contact: unknown;
-  source: unknown;
+  reviews?: unknown;
+  coordinates?: unknown;
+  source?: unknown;
 };
 
 type BusinessOverrideRow = {
   business_id: string;
+  name: string | null;
   description: string | null;
   contact: unknown;
   service_areas: unknown;
@@ -105,6 +106,11 @@ function filterDirectoryData(data: DirectoryData): DirectoryData {
 let seedDataPromise: Promise<DirectoryData> | null = null;
 
 function loadSeedData() {
+  if (!import.meta.env.DEV) {
+    console.warn('[directory-data] Static seed data is disabled in production builds.');
+    return Promise.resolve(emptySeedData);
+  }
+
   if (!seedDataPromise) {
     seedDataPromise = import('./data').then((module) => filterDirectoryData({
       cities: module.cities,
@@ -224,11 +230,13 @@ function mergeBusinessOverride(business: Business, override?: BusinessOverrideRo
 
   return {
     ...business,
+    name: typeof override.name === 'string' && override.name.trim().length > 0 ? override.name : business.name,
     description: typeof override.description === 'string' ? override.description : business.description,
     contact: {
       ...business.contact,
       phone: typeof contact.phone === 'string' ? contact.phone : business.contact.phone,
       website: typeof contact.website === 'string' ? contact.website : business.contact.website,
+      address: typeof contact.address === 'string' ? contact.address : business.contact.address,
       email: typeof contact.email === 'string' ? contact.email : business.contact.email,
     },
     serviceAreas: overrideServiceAreas.length > 0 ? overrideServiceAreas : business.serviceAreas,
@@ -278,7 +286,7 @@ async function fetchDirectoryData(): Promise<DirectoryData> {
     fetchAllRows<BusinessRow>(async (from, to) => {
       const result = await supabase
         .from('businesses')
-        .select('id, name, city_id, category_id, description, rating, review_count, service_areas, category_tags, specialties, photos, reviews, hours, coordinates, contact, source')
+        .select('id, name, city_id, category_id, description, rating, review_count, service_areas, category_tags, specialties, photos, hours, contact')
         .order('name')
         .range(from, to);
 
@@ -287,7 +295,7 @@ async function fetchDirectoryData(): Promise<DirectoryData> {
         error: result.error ? { message: result.error.message } : null,
       };
     }),
-    supabase.from('business_overrides').select('business_id, description, contact, service_areas, hours, photos'),
+    supabase.from('business_overrides').select('business_id, name, description, contact, service_areas, hours, photos'),
     supabase.from('verified_businesses').select('business_id'),
   ]);
 
@@ -385,7 +393,7 @@ export function DirectoryDataProvider({ children }: { children: ReactNode }) {
       });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Unable to load directory data.';
-      console.error('[directory-data] Refresh failed. Falling back to local seed data.', error);
+      console.error('[directory-data] Refresh failed.', error);
       const seedData = await loadSeedData();
       setState(() => {
         const nextState = {
@@ -455,7 +463,7 @@ export function DirectoryDataProvider({ children }: { children: ReactNode }) {
         }
 
         const message = error instanceof Error ? error.message : 'Unable to load directory data.';
-        console.error('[directory-data] Initial load failed. Falling back to local seed data.', error);
+        console.error('[directory-data] Initial load failed.', error);
         loadSeedData()
           .then((seedData) => {
             if (!isActive) {

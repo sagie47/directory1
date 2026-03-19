@@ -127,6 +127,7 @@ create table if not exists public.business_claims (
 
 create table if not exists public.business_overrides (
   business_id text primary key references public.businesses (id) on delete cascade,
+  name text,
   description text,
   contact jsonb,
   service_areas text[],
@@ -135,6 +136,8 @@ create table if not exists public.business_overrides (
   updated_by uuid not null references public.profiles (id) on delete cascade,
   updated_at timestamptz not null default now()
 );
+
+alter table public.business_overrides add column if not exists name text;
 
 create index if not exists business_claims_user_id_idx on public.business_claims (user_id);
 create index if not exists business_claims_business_id_idx on public.business_claims (business_id);
@@ -293,6 +296,8 @@ on public.business_overrides
 for insert
 to authenticated
 with check (
+  updated_by = auth.uid()
+  and
   exists (
     select 1
     from public.business_claims bc
@@ -317,6 +322,8 @@ using (
   )
 )
 with check (
+  updated_by = auth.uid()
+  and
   exists (
     select 1
     from public.business_claims bc

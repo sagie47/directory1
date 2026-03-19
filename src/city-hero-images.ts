@@ -1,22 +1,21 @@
 import kelownaHero from './photos/kelowna.jpg';
-import vernonHero from './photos/vernon.jpg';
-import pentictonHero from './photos/Penticton_Okanagan_Beach_Lakeshore.jpg';
-import westKelownaHero from './photos/westkelowna.jpg';
+import vernonHero from './photos/1746202255761.jpg';
+import pentictonHero from './photos/lake-country-header-gillian-min.jpg';
+import westKelownaHero from './photos/2024_active_transportation_construction_hintringer_63.jpg';
 import lakeCountryHero from './photos/lake-country-header-gillian-min.jpg';
 import summerlandHero from './photos/summerland.jpg';
-import oliverHero from './photos/Oliver_-_panoramio.jpg';
+import oliverHero from './photos/millwright-quesnel-2-2024.tmb-1000px.jpg';
 import kamloopsHero from './photos/26716-PowerPoint-2400px.webp';
-import { preferSupabaseImage } from './supabase-images';
 
-const cityHeroAssets: Record<string, { fallback: string; storagePath: string }> = {
-  kelowna: { fallback: kelownaHero, storagePath: 'kelowna.jpg' },
-  vernon: { fallback: vernonHero, storagePath: 'vernon.jpg' },
-  penticton: { fallback: pentictonHero, storagePath: 'Penticton_Okanagan_Beach_Lakeshore.jpg' },
-  'west-kelowna': { fallback: westKelownaHero, storagePath: 'westkelowna.jpg' },
-  'lake-country': { fallback: lakeCountryHero, storagePath: 'lake-country-header-gillian-min.jpg' },
-  summerland: { fallback: summerlandHero, storagePath: 'summerland.jpg' },
-  oliver: { fallback: oliverHero, storagePath: 'Oliver_-_panoramio.jpg' },
-  kamloops: { fallback: kamloopsHero, storagePath: '26716-PowerPoint-2400px.webp' },
+const cityHeroAssets: Record<string, string> = {
+  kelowna: kelownaHero,
+  vernon: vernonHero,
+  penticton: pentictonHero,
+  'west-kelowna': westKelownaHero,
+  'lake-country': lakeCountryHero,
+  summerland: summerlandHero,
+  oliver: oliverHero,
+  kamloops: kamloopsHero,
 };
 
 export function getCityHeroImage(cityId?: string | null) {
@@ -24,8 +23,7 @@ export function getCityHeroImage(cityId?: string | null) {
     return undefined;
   }
 
-  const asset = cityHeroAssets[cityId];
-  return asset ? preferSupabaseImage(asset.storagePath, asset.fallback) : undefined;
+  return cityHeroAssets[cityId];
 }
 
 export function getCityHeroFallbackImage(cityId?: string | null) {
@@ -33,5 +31,5 @@ export function getCityHeroFallbackImage(cityId?: string | null) {
     return undefined;
   }
 
-  return cityHeroAssets[cityId]?.fallback;
+  return cityHeroAssets[cityId];
 }

@@ -58,12 +58,40 @@ function isDuplicateOrConsumedPkceError(error: unknown) {
     || normalizedMessage.includes('both auth code and code verifier should be non-empty');
 }
 
+const AUTH_CALLBACK_PARAM_KEYS = [
+  'code',
+  'type',
+  'token_hash',
+  'access_token',
+  'refresh_token',
+  'token_type',
+  'expires_in',
+  'expires_at',
+  'provider_token',
+  'provider_refresh_token',
+  'error',
+  'error_code',
+  'error_description',
+] as const;
+
+function hasAuthCallbackParams(currentUrl: URL) {
+  const hashParams = new URLSearchParams(currentUrl.hash.startsWith('#') ? currentUrl.hash.slice(1) : currentUrl.hash);
+
+  return AUTH_CALLBACK_PARAM_KEYS.some((key) =>
+    currentUrl.searchParams.has(key) || hashParams.has(key)
+  );
+}
+
 function clearAuthCallbackParams(currentUrl: URL) {
-  currentUrl.searchParams.delete('code');
-  currentUrl.searchParams.delete('type');
-  currentUrl.searchParams.delete('error');
-  currentUrl.searchParams.delete('error_code');
-  currentUrl.searchParams.delete('error_description');
+  const hashParams = new URLSearchParams(currentUrl.hash.startsWith('#') ? currentUrl.hash.slice(1) : currentUrl.hash);
+
+  AUTH_CALLBACK_PARAM_KEYS.forEach((key) => {
+    currentUrl.searchParams.delete(key);
+    hashParams.delete(key);
+  });
+
+  const nextHash = hashParams.toString();
+  currentUrl.hash = nextHash ? `#${nextHash}` : '';
   window.history.replaceState({}, document.title, `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`);
 }
 
@@ -176,19 +204,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const initAuth = async () => {
       try {
         const currentUrl = new URL(window.location.href);
-        const authCode = currentUrl.searchParams.get('code');
+        const hadAuthCallbackParams = hasAuthCallbackParams(currentUrl);
+        const { error: initializeError } = await supabase.auth.initialize();
 
-        if (authCode) {
-          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(authCode);
-
-          if (exchangeError) {
-            if (isDuplicateOrConsumedPkceError(exchangeError)) {
-              console.warn('[auth] PKCE code was already consumed before manual exchange; continuing with restored session.', exchangeError);
-            } else {
-              throw exchangeError;
-            }
+        if (initializeError) {
+          if (isDuplicateOrConsumedPkceError(initializeError)) {
+            console.warn('[auth] Supabase callback was already consumed before session restore; continuing with stored session.', initializeError);
+          } else {
+            throw initializeError;
           }
+        }
 
+        if (hadAuthCallbackParams) {
           clearAuthCallbackParams(currentUrl);
         }
 
@@ -209,8 +236,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (isDuplicateOrConsumedPkceError(sessionError)) {
           console.warn('[auth] Ignoring duplicate PKCE callback error while restoring session.', sessionError);
+
+          const { data } = await supabase.auth.getSession();
+          syncSessionState(data.session ?? null);
           setError(null);
-          setLoading(false);
           return;
         }
 
