@@ -93,7 +93,11 @@ function isMissingTableError(error: { code?: string; message?: string } | null |
 
   return error.code === '42P01'
     || error.code === 'PGRST205'
-    || error.message?.includes("Could not find the table 'public.business_overrides'") === true;
+    || error.message?.includes("Could not find the table 'public.business_overrides'") === true
+    || (
+      error.code === '42703'
+      && error.message?.includes('business_overrides.name') === true
+    );
 }
 
 function filterDirectoryData(data: DirectoryData): DirectoryData {
