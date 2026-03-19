@@ -1,5 +1,6 @@
 import 'dotenv/config';
 
+import {createHash} from 'node:crypto';
 import {readFile} from 'node:fs/promises';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -112,6 +113,8 @@ type NormalizedBusiness = {
 
 type Counters = {
   total: number;
+  deduped: number;
+  staged: number;
   normalized: number;
   skipped: number;
   matched: number;
@@ -120,18 +123,44 @@ type Counters = {
   errors: number;
 };
 
+type ImportOptions = {
+  input: string;
+  dryRun: boolean;
+  skipExisting: boolean;
+  batchSize: number;
+  limit: number;
+  cityId: string | null;
+  queriesFile: string | null;
+  forceRun: boolean;
+  disableRunTracking: boolean;
+  scraperVersion: string;
+};
+
+type RunContext = {
+  runId: string;
+  queryHash: string;
+  queryCount: number;
+};
+
+type RunCreationResult = RunContext | null | {skipImport: true; existingRunId: string};
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..');
 
 const PAGE_SIZE = 1000;
 
 function parseArgs(argv: string[]) {
-  const options = {
+  const options: ImportOptions = {
     input: '',
     dryRun: false,
     skipExisting: false,
     batchSize: 50,
     limit: Number.POSITIVE_INFINITY,
+    cityId: null,
+    queriesFile: null,
+    forceRun: false,
+    disableRunTracking: false,
+    scraperVersion: 'gosom/google-maps-scraper',
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -163,6 +192,34 @@ function parseArgs(argv: string[]) {
     if (arg === '--limit' && next) {
       options.limit = Math.max(1, Number(next));
       index += 1;
+      continue;
+    }
+
+    if (arg === '--city' && next) {
+      options.cityId = next.trim() || null;
+      index += 1;
+      continue;
+    }
+
+    if (arg === '--queries-file' && next) {
+      options.queriesFile = path.resolve(repoRoot, next);
+      index += 1;
+      continue;
+    }
+
+    if (arg === '--force-run') {
+      options.forceRun = true;
+      continue;
+    }
+
+    if (arg === '--disable-run-tracking') {
+      options.disableRunTracking = true;
+      continue;
+    }
+
+    if (arg === '--scraper-version' && next) {
+      options.scraperVersion = next.trim() || options.scraperVersion;
+      index += 1;
     }
   }
 
@@ -171,6 +228,171 @@ function parseArgs(argv: string[]) {
   }
 
   return options;
+}
+
+function sha256(value: string) {
+  return createHash('sha256').update(value).digest('hex');
+}
+
+function countNonEmptyLines(value: string) {
+  return value
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .length;
+}
+
+function isMissingTableError(error: {code?: string; message?: string} | null | undefined) {
+  if (!error) {
+    return false;
+  }
+
+  return error.code === '42P01'
+    || error.code === 'PGRST205'
+    || error.message?.includes("Could not find the table 'public.gmaps_scrape_runs'") === true
+    || error.message?.includes("Could not find the table 'public.gmaps_raw_places'") === true;
+}
+
+async function readQueryFile(queryFile: string | null) {
+  if (!queryFile) {
+    return {queryFile: null, queryCount: 0, queryHashSource: ''};
+  }
+
+  const content = await readFile(queryFile, 'utf8');
+  return {
+    queryFile,
+    queryCount: countNonEmptyLines(content),
+    queryHashSource: content,
+  };
+}
+
+async function createRunContext(options: ImportOptions, inputRaw: string): Promise<RunCreationResult> {
+  if (options.disableRunTracking || options.dryRun) {
+    return null;
+  }
+
+  const queryData = await readQueryFile(options.queriesFile);
+  const queryHash = sha256(
+    queryData.queryHashSource.length > 0
+      ? queryData.queryHashSource
+      : `${path.basename(options.input)}::${inputRaw}`,
+  );
+
+  const existingRunQuery = supabase
+    .from('gmaps_scrape_runs')
+    .select('id, status, created_at')
+    .eq('query_hash', queryHash)
+    .order('created_at', {ascending: false})
+    .limit(1);
+
+  const existingRunResult = options.cityId
+    ? await existingRunQuery.eq('city_id', options.cityId).maybeSingle()
+    : await existingRunQuery.is('city_id', null).maybeSingle();
+
+  if (existingRunResult.error) {
+    if (isMissingTableError(existingRunResult.error)) {
+      console.warn('[import:gmaps] run tracking tables are missing. Continuing without run tracking.');
+      return null;
+    }
+    throw new Error(`Failed to check existing gmaps run: ${existingRunResult.error.message}`);
+  }
+
+  if (existingRunResult.data && !options.forceRun && ['running', 'staged', 'imported'].includes(existingRunResult.data.status)) {
+    console.log(
+      `[import:gmaps] Skipping run. query_hash ${queryHash} already processed in run ${existingRunResult.data.id} (${existingRunResult.data.status}). Use --force-run to override.`,
+    );
+    return {skipImport: true, existingRunId: existingRunResult.data.id} as const;
+  }
+
+  const insertPayload = {
+    city_id: options.cityId,
+    query_hash: queryHash,
+    query_file: queryData.queryFile ? path.relative(repoRoot, queryData.queryFile) : null,
+    result_file: path.relative(repoRoot, options.input),
+    scraper_version: options.scraperVersion,
+    status: 'running',
+    query_count: queryData.queryCount,
+    started_at: new Date().toISOString(),
+  };
+
+  const runInsert = await supabase
+    .from('gmaps_scrape_runs')
+    .insert(insertPayload)
+    .select('id')
+    .single();
+
+  if (runInsert.error) {
+    if (isMissingTableError(runInsert.error)) {
+      console.warn('[import:gmaps] run tracking tables are missing. Continuing without run tracking.');
+      return null;
+    }
+    throw new Error(`Failed to create gmaps run: ${runInsert.error.message}`);
+  }
+
+  return {
+    runId: runInsert.data.id,
+    queryHash,
+    queryCount: queryData.queryCount,
+  } satisfies RunContext;
+}
+
+async function stageRawPlaces(runContext: RunContext, sourceFile: string, dedupedPlaces: Array<{dedupeKey: string; place: ScrapedPlace}>) {
+  if (dedupedPlaces.length === 0) {
+    return {stagedCount: 0, stagingDisabled: false};
+  }
+
+  const payload = dedupedPlaces.map(({dedupeKey, place}) => ({
+    run_id: runContext.runId,
+    dedupe_key: dedupeKey,
+    query_hash: runContext.queryHash,
+    source_file: sourceFile,
+    place_id: place.place_id ?? null,
+    cid: place.cid ?? null,
+    city_id: inferCityId(place),
+    inferred_category_id: inferCategoryId(place),
+    title: place.title ?? null,
+    address: buildAddress(place) ?? null,
+    web_site: place.web_site ?? null,
+    phone: place.phone ?? null,
+    review_count: place.review_count ?? null,
+    review_rating: place.review_rating ?? null,
+    latitude: place.latitude ?? null,
+    longitude: place.longtitude ?? null,
+    payload: place,
+  }));
+
+  const batchSize = 500;
+  let stagedCount = 0;
+
+  for (let offset = 0; offset < payload.length; offset += batchSize) {
+    const batch = payload.slice(offset, offset + batchSize);
+    const result = await supabase
+      .from('gmaps_raw_places')
+      .upsert(batch, {onConflict: 'run_id,dedupe_key', ignoreDuplicates: false});
+
+    if (result.error) {
+      if (isMissingTableError(result.error)) {
+        console.warn('[import:gmaps] gmaps_raw_places is missing. Continuing without staging raw places.');
+        return {stagedCount: 0, stagingDisabled: true};
+      }
+      throw new Error(`Failed to stage raw places: ${result.error.message}`);
+    }
+
+    stagedCount += batch.length;
+  }
+
+  return {stagedCount, stagingDisabled: false};
+}
+
+async function updateRun(runId: string, payload: Record<string, unknown>) {
+  const result = await supabase
+    .from('gmaps_scrape_runs')
+    .update(payload)
+    .eq('id', runId);
+
+  if (result.error && !isMissingTableError(result.error)) {
+    throw new Error(`Failed to update gmaps run ${runId}: ${result.error.message}`);
+  }
 }
 
 function slugify(value: string) {
@@ -439,8 +661,7 @@ function chooseBestPlace(places: ScrapedPlace[]) {
   return best;
 }
 
-async function readInputFile(filepath: string): Promise<ScrapedPlace[]> {
-  const content = await readFile(filepath, 'utf8');
+function parseInputContent(content: string): ScrapedPlace[] {
   const trimmed = content.trim();
 
   if (trimmed.startsWith('[')) {
@@ -605,6 +826,8 @@ async function main() {
   const options = parseArgs(process.argv.slice(2));
   const counters: Counters = {
     total: 0,
+    deduped: 0,
+    staged: 0,
     normalized: 0,
     skipped: 0,
     matched: 0,
@@ -612,171 +835,256 @@ async function main() {
     created: 0,
     errors: 0,
   };
+  let runContext: RunContext | null = null;
 
   console.log(`Reading input from ${path.relative(repoRoot, options.input)}...`);
-  const allPlaces = await readInputFile(options.input);
+  const inputRaw = await readFile(options.input, 'utf8');
+  const runCreationResult = await createRunContext(options, inputRaw);
+  if (runCreationResult && 'skipImport' in runCreationResult) {
+    return;
+  }
+  runContext = runCreationResult && 'runId' in runCreationResult ? runCreationResult : null;
+
+  const allPlaces = parseInputContent(inputRaw);
   counters.total = allPlaces.length;
   console.log(`Found ${counters.total} scraped records.`);
 
-  const limitedPlaces = allPlaces.slice(0, options.limit);
+  try {
+    const limitedPlaces = allPlaces.slice(0, options.limit);
 
-  console.log('Fetching existing businesses from Supabase...');
-  const existingRows = await fetchAllBusinesses(supabase);
-  console.log(`Fetched ${existingRows.length} existing businesses.`);
+    console.log('Fetching existing businesses from Supabase...');
+    const existingRows = await fetchAllBusinesses(supabase);
+    console.log(`Fetched ${existingRows.length} existing businesses.`);
 
-  const byPlaceId = new Map<string, ExistingBusinessRow>();
-  const byCid = new Map<string, ExistingBusinessRow>();
-  const byFallback = new Map<string, ExistingBusinessRow>();
+    const byPlaceId = new Map<string, ExistingBusinessRow>();
+    const byCid = new Map<string, ExistingBusinessRow>();
+    const byFallback = new Map<string, ExistingBusinessRow>();
 
-  for (const row of existingRows) {
-    if (row.source?.placeId) {
-      byPlaceId.set(row.source.placeId, row);
+    for (const row of existingRows) {
+      if (row.source?.placeId) {
+        byPlaceId.set(row.source.placeId, row);
+      }
+
+      if (row.source?.cid) {
+        byCid.set(row.source.cid, row);
+      }
+
+      byFallback.set(getExistingFallbackKey(row), row);
     }
 
-    if (row.source?.cid) {
-      byCid.set(row.source.cid, row);
+    const usedIds = new Set(existingRows.map((row) => row.id));
+
+    const incomingByKey = new Map<string, ScrapedPlace[]>();
+    for (const place of limitedPlaces) {
+      const key = getPlaceKey(place) ?? getPlaceFallbackKey(place, inferCityId(place));
+      const existing = incomingByKey.get(key);
+      if (existing) {
+        existing.push(place);
+      } else {
+        incomingByKey.set(key, [place]);
+      }
+    }
+    counters.deduped = incomingByKey.size;
+
+    const dedupedPlacesForStage: Array<{dedupeKey: string; place: ScrapedPlace}> = [];
+    for (const [dedupeKey, duplicates] of incomingByKey.entries()) {
+      const best = chooseBestPlace(duplicates);
+      if (best) {
+        dedupedPlacesForStage.push({dedupeKey, place: best});
+      }
     }
 
-    byFallback.set(getExistingFallbackKey(row), row);
-  }
-
-  const usedIds = new Set(existingRows.map((row) => row.id));
-
-  const incomingByKey = new Map<string, ScrapedPlace[]>();
-  for (const place of limitedPlaces) {
-    const key = getPlaceKey(place) ?? getPlaceFallbackKey(place, inferCityId(place));
-    const existing = incomingByKey.get(key);
-    if (existing) {
-      existing.push(place);
-    } else {
-      incomingByKey.set(key, [place]);
-    }
-  }
-
-  const rowsToUpsert: NormalizedBusiness[] = [];
-  const processedExistingIds = new Set<string>();
-
-  for (const duplicates of incomingByKey.values()) {
-    const best = chooseBestPlace(duplicates);
-    if (!best) {
-      counters.skipped += 1;
-      continue;
+    if (runContext) {
+      const {stagedCount, stagingDisabled} = await stageRawPlaces(
+        runContext,
+        path.relative(repoRoot, options.input),
+        dedupedPlacesForStage,
+      );
+      counters.staged = stagedCount;
+      if (!stagingDisabled) {
+        await updateRun(runContext.runId, {
+          status: 'staged',
+          raw_count: limitedPlaces.length,
+          deduped_count: counters.deduped,
+        });
+      }
     }
 
-    const placeId = best.place_id;
-    const cid = best.cid;
+    const rowsToUpsert: NormalizedBusiness[] = [];
+    const processedExistingIds = new Set<string>();
 
-    let matchedRow: ExistingBusinessRow | undefined;
-
-    if (placeId && byPlaceId.has(placeId)) {
-      matchedRow = byPlaceId.get(placeId);
-    } else if (cid && byCid.has(cid)) {
-      matchedRow = byCid.get(cid);
-    } else {
-      const cityId = inferCityId(best);
-      const fallbackKey = getPlaceFallbackKey(best, cityId);
-      matchedRow = byFallback.get(fallbackKey);
-    }
-
-    if (matchedRow) {
-      if (options.skipExisting) {
+    for (const duplicates of incomingByKey.values()) {
+      const best = chooseBestPlace(duplicates);
+      if (!best) {
         counters.skipped += 1;
         continue;
       }
 
-      if (processedExistingIds.has(matchedRow.id)) {
-        counters.skipped += 1;
-        continue;
+      const placeId = best.place_id;
+      const cid = best.cid;
+
+      let matchedRow: ExistingBusinessRow | undefined;
+
+      if (placeId && byPlaceId.has(placeId)) {
+        matchedRow = byPlaceId.get(placeId);
+      } else if (cid && byCid.has(cid)) {
+        matchedRow = byCid.get(cid);
+      } else {
+        const cityId = inferCityId(best);
+        const fallbackKey = getPlaceFallbackKey(best, cityId);
+        matchedRow = byFallback.get(fallbackKey);
       }
 
-      counters.matched += 1;
-      counters.updated += 1;
-      processedExistingIds.add(matchedRow.id);
-      const mergedRow = mergePlaceIntoRow(matchedRow, best);
-      rowsToUpsert.push(mergedRow);
-      if (best.place_id) {
-        byPlaceId.set(best.place_id, matchedRow);
-      }
-      if (best.cid) {
-        byCid.set(best.cid, matchedRow);
-      }
-      const mergedAddress = typeof mergedRow.contact.address === 'string' ? mergedRow.contact.address : undefined;
-      byFallback.set(getFallbackKey(mergedRow.name, mergedAddress, mergedRow.city_id), matchedRow);
-      counters.normalized += 1;
-    } else {
-      const categoryId = inferCategoryId(best);
-      const cityId = inferCityId(best);
-      const address = buildAddress(best);
+      if (matchedRow) {
+        if (options.skipExisting) {
+          counters.skipped += 1;
+          continue;
+        }
 
-      if (!categoryId || !cityId || !best.title?.trim() || !address) {
-        counters.skipped += 1;
-        continue;
-      }
+        if (processedExistingIds.has(matchedRow.id)) {
+          counters.skipped += 1;
+          continue;
+        }
 
-      const city = cities.find((entry) => entry.id === cityId);
-      const category = categories.find((entry) => entry.id === categoryId);
+        counters.matched += 1;
+        counters.updated += 1;
+        processedExistingIds.add(matchedRow.id);
+        const mergedRow = mergePlaceIntoRow(matchedRow, best);
+        rowsToUpsert.push(mergedRow);
+        if (best.place_id) {
+          byPlaceId.set(best.place_id, matchedRow);
+        }
+        if (best.cid) {
+          byCid.set(best.cid, matchedRow);
+        }
+        const mergedAddress = typeof mergedRow.contact.address === 'string' ? mergedRow.contact.address : undefined;
+        byFallback.set(getFallbackKey(mergedRow.name, mergedAddress, mergedRow.city_id), matchedRow);
+        counters.normalized += 1;
+      } else {
+        const categoryId = inferCategoryId(best);
+        const cityId = inferCityId(best);
+        const address = buildAddress(best);
 
-      if (!city || !category) {
-        counters.skipped += 1;
-        continue;
-      }
+        if (!categoryId || !cityId || !best.title?.trim() || !address) {
+          counters.skipped += 1;
+          continue;
+        }
 
-      const id = generateStableId(cityId, categoryId, best, usedIds);
-      usedIds.add(id);
-      counters.created += 1;
-      counters.normalized += 1;
-      const createdRow = normalizePlaceToRow(best, cityId, categoryId, id);
-      rowsToUpsert.push(createdRow);
-      const createdExistingRow = toExistingBusinessRow(createdRow);
-      if (best.place_id) {
-        byPlaceId.set(best.place_id, createdExistingRow);
+        const city = cities.find((entry) => entry.id === cityId);
+        const category = categories.find((entry) => entry.id === categoryId);
+
+        if (!city || !category) {
+          counters.skipped += 1;
+          continue;
+        }
+
+        const id = generateStableId(cityId, categoryId, best, usedIds);
+        usedIds.add(id);
+        counters.created += 1;
+        counters.normalized += 1;
+        const createdRow = normalizePlaceToRow(best, cityId, categoryId, id);
+        rowsToUpsert.push(createdRow);
+        const createdExistingRow = toExistingBusinessRow(createdRow);
+        if (best.place_id) {
+          byPlaceId.set(best.place_id, createdExistingRow);
+        }
+        if (best.cid) {
+          byCid.set(best.cid, createdExistingRow);
+        }
+        const createdAddress = typeof createdRow.contact.address === 'string' ? createdRow.contact.address : undefined;
+        byFallback.set(getFallbackKey(createdRow.name, createdAddress, createdRow.city_id), createdExistingRow);
       }
-      if (best.cid) {
-        byCid.set(best.cid, createdExistingRow);
-      }
-      const createdAddress = typeof createdRow.contact.address === 'string' ? createdRow.contact.address : undefined;
-      byFallback.set(getFallbackKey(createdRow.name, createdAddress, createdRow.city_id), createdExistingRow);
     }
-  }
 
-  console.log(`\nNormalized: ${counters.normalized}`);
-  console.log(`  Matched (existing): ${counters.matched}`);
-  console.log(`  Created (new): ${counters.created}`);
-  console.log(`  Skipped: ${counters.skipped}`);
+    console.log(`\nNormalized: ${counters.normalized}`);
+    console.log(`  Matched (existing): ${counters.matched}`);
+    console.log(`  Created (new): ${counters.created}`);
+    console.log(`  Skipped: ${counters.skipped}`);
 
-  if (rowsToUpsert.length === 0) {
-    console.log('Nothing to upsert.');
+    if (rowsToUpsert.length === 0) {
+      console.log('Nothing to upsert.');
+      if (runContext) {
+        await updateRun(runContext.runId, {
+          status: 'imported',
+          raw_count: limitedPlaces.length,
+          deduped_count: counters.deduped,
+          normalized_count: counters.normalized,
+          matched_count: counters.matched,
+          created_count: counters.created,
+          updated_count: counters.updated,
+          skipped_count: counters.skipped,
+          error_count: counters.errors,
+          completed_at: new Date().toISOString(),
+        });
+      }
+      printSummary(counters);
+      return;
+    }
+
+    if (options.dryRun) {
+      console.log(`\n[dry-run] Would upsert ${rowsToUpsert.length} rows.`);
+      printSummary(counters);
+      return;
+    }
+
+    console.log(`\nUpserting ${rowsToUpsert.length} rows (batch size ${options.batchSize})...`);
+
+    for (let offset = 0; offset < rowsToUpsert.length; offset += options.batchSize) {
+      const batch = rowsToUpsert.slice(offset, offset + options.batchSize);
+      const {error} = await supabase
+        .from('businesses')
+        .upsert(batch, {onConflict: 'id', ignoreDuplicates: false});
+
+      if (error) {
+        counters.errors += 1;
+        console.error(`Batch error at offset ${offset}: ${error.message}`);
+      }
+    }
+
+    if (runContext) {
+      const status = counters.errors > 0 ? 'failed' : 'imported';
+      await updateRun(runContext.runId, {
+        status,
+        raw_count: limitedPlaces.length,
+        deduped_count: counters.deduped,
+        normalized_count: counters.normalized,
+        matched_count: counters.matched,
+        created_count: counters.created,
+        updated_count: counters.updated,
+        skipped_count: counters.skipped,
+        error_count: counters.errors,
+        completed_at: new Date().toISOString(),
+      });
+    }
+
     printSummary(counters);
-    return;
-  }
-
-  if (options.dryRun) {
-    console.log(`\n[dry-run] Would upsert ${rowsToUpsert.length} rows.`);
-    printSummary(counters);
-    return;
-  }
-
-  console.log(`\nUpserting ${rowsToUpsert.length} rows (batch size ${options.batchSize})...`);
-
-  for (let offset = 0; offset < rowsToUpsert.length; offset += options.batchSize) {
-    const batch = rowsToUpsert.slice(offset, offset + options.batchSize);
-    const {error} = await supabase
-      .from('businesses')
-      .upsert(batch, {onConflict: 'id', ignoreDuplicates: false});
-
-    if (error) {
-      counters.errors += 1;
-      console.error(`Batch error at offset ${offset}: ${error.message}`);
+  } catch (error) {
+    if (runContext) {
+      const message = error instanceof Error ? error.message : String(error);
+      await updateRun(runContext.runId, {
+        status: 'failed',
+        raw_count: Math.min(counters.total, options.limit),
+        deduped_count: counters.deduped,
+        normalized_count: counters.normalized,
+        matched_count: counters.matched,
+        created_count: counters.created,
+        updated_count: counters.updated,
+        skipped_count: counters.skipped,
+        error_count: counters.errors + 1,
+        error_text: message,
+        completed_at: new Date().toISOString(),
+      });
     }
+    throw error;
   }
-
-  printSummary(counters);
 }
 
 function printSummary(counters: Counters) {
   console.log('');
   console.log('--- Import Summary ---');
   console.log(`Total scraped:   ${counters.total}`);
+  console.log(`Deduped:         ${counters.deduped}`);
+  console.log(`Raw staged:      ${counters.staged}`);
   console.log(`Normalized:      ${counters.normalized}`);
   console.log(`Skipped:         ${counters.skipped}`);
   console.log(`Matched:         ${counters.matched}`);

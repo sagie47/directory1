@@ -520,3 +520,92 @@ from public.business_claims
 where status = 'approved';
 
 grant select on public.verified_businesses to anon, authenticated;
+
+create table if not exists public.gmaps_scrape_runs (
+  id uuid primary key default gen_random_uuid(),
+  city_id text references public.cities (id) on delete set null,
+  query_hash text not null,
+  query_file text,
+  result_file text,
+  scraper_version text not null default 'gosom/google-maps-scraper',
+  status text not null default 'running' check (status in ('running', 'staged', 'imported', 'skipped', 'failed')),
+  query_count integer not null default 0,
+  raw_count integer not null default 0,
+  deduped_count integer not null default 0,
+  normalized_count integer not null default 0,
+  matched_count integer not null default 0,
+  created_count integer not null default 0,
+  updated_count integer not null default 0,
+  skipped_count integer not null default 0,
+  error_count integer not null default 0,
+  error_text text,
+  started_at timestamptz not null default now(),
+  completed_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists gmaps_scrape_runs_city_idx on public.gmaps_scrape_runs (city_id);
+create index if not exists gmaps_scrape_runs_query_hash_idx on public.gmaps_scrape_runs (query_hash);
+create index if not exists gmaps_scrape_runs_status_idx on public.gmaps_scrape_runs (status);
+
+drop trigger if exists gmaps_scrape_runs_set_updated_at on public.gmaps_scrape_runs;
+create trigger gmaps_scrape_runs_set_updated_at
+before update on public.gmaps_scrape_runs
+for each row
+execute function public.set_updated_at();
+
+create table if not exists public.gmaps_raw_places (
+  id uuid primary key default gen_random_uuid(),
+  run_id uuid not null references public.gmaps_scrape_runs (id) on delete cascade,
+  dedupe_key text not null,
+  query_hash text not null,
+  source_file text,
+  place_id text,
+  cid text,
+  city_id text references public.cities (id) on delete set null,
+  inferred_category_id text references public.categories (id) on delete set null,
+  title text,
+  address text,
+  web_site text,
+  phone text,
+  review_count integer,
+  review_rating numeric(3, 2),
+  latitude double precision,
+  longitude double precision,
+  payload jsonb not null,
+  scraped_at timestamptz not null default now(),
+  created_at timestamptz not null default now()
+);
+
+create unique index if not exists gmaps_raw_places_run_dedupe_key_unique
+  on public.gmaps_raw_places (run_id, dedupe_key);
+create index if not exists gmaps_raw_places_query_hash_idx on public.gmaps_raw_places (query_hash);
+create index if not exists gmaps_raw_places_place_id_idx on public.gmaps_raw_places (place_id);
+create index if not exists gmaps_raw_places_cid_idx on public.gmaps_raw_places (cid);
+create index if not exists gmaps_raw_places_city_id_idx on public.gmaps_raw_places (city_id);
+
+create unique index if not exists businesses_source_place_id_unique_idx
+  on public.businesses ((source->>'placeId'))
+  where source->>'placeId' is not null and source->>'placeId' <> '';
+
+create unique index if not exists businesses_source_cid_unique_idx
+  on public.businesses ((source->>'cid'))
+  where source->>'cid' is not null and source->>'cid' <> '';
+
+alter table public.gmaps_scrape_runs enable row level security;
+alter table public.gmaps_raw_places enable row level security;
+
+drop policy if exists "gmaps_scrape_runs_select_admin" on public.gmaps_scrape_runs;
+create policy "gmaps_scrape_runs_select_admin"
+on public.gmaps_scrape_runs
+for select
+to authenticated
+using (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'));
+
+drop policy if exists "gmaps_raw_places_select_admin" on public.gmaps_raw_places;
+create policy "gmaps_raw_places_select_admin"
+on public.gmaps_raw_places
+for select
+to authenticated
+using (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'));
