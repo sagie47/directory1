@@ -61,6 +61,19 @@ type SeedDataModule = {
   categories: Category[];
 };
 
+let seedDataPromise: Promise<SeedDataModule> | null = null;
+
+function loadSeedDataFromJson(): Promise<SeedDataModule> {
+  if (!seedDataPromise) {
+    seedDataPromise = import('../data').then((module) => ({
+      businesses: module.businesses,
+      cities: module.cities,
+      categories: module.categories,
+    }));
+  }
+  return seedDataPromise;
+}
+
 function isMissingTableError(error: { code?: string; message?: string } | null | undefined) {
   if (!error) {
     return false;
@@ -217,7 +230,7 @@ export default function BusinessPage() {
 
       if (!supabase || !isSupabaseConfigured()) {
         try {
-          const module = await import('../data') as SeedDataModule;
+          const module = await loadSeedDataFromJson();
           const seedBusiness = module.businesses.find((entry) => entry.id === businessId) ?? null;
 
           if (!isActive) {
@@ -317,11 +330,45 @@ export default function BusinessPage() {
         }
 
         console.error('[business-page] Failed to load listing.', error);
-        setBusiness(null);
-        setCity(null);
-        setCategory(null);
-        setIsVerified(false);
-        setLoadError(error instanceof Error ? error.message : 'Unable to load this listing right now.');
+        const dbErrorMessage = error instanceof Error ? error.message : 'Unable to load this listing right now.';
+
+        try {
+          const module = await loadSeedDataFromJson();
+          const seedBusiness = module.businesses.find((entry) => entry.id === businessId) ?? null;
+
+          if (!isActive) {
+            return;
+          }
+
+          if (!seedBusiness) {
+            setBusiness(null);
+            setCity(null);
+            setCategory(null);
+            setIsVerified(false);
+            setLoadError(dbErrorMessage);
+            setIsLoading(false);
+            return;
+          }
+
+          setBusiness(seedBusiness);
+          setCity(module.cities.find((entry) => entry.id === seedBusiness.cityId) ?? null);
+          setCategory(module.categories.find((entry) => entry.id === seedBusiness.categoryId) ?? null);
+          setIsVerified(false);
+          setLoadError(null);
+          setIsLoading(false);
+        } catch (seedError: unknown) {
+          if (!isActive) {
+            return;
+          }
+
+          console.error('[business-page] Seed fallback also failed.', seedError);
+          setBusiness(null);
+          setCity(null);
+          setCategory(null);
+          setIsVerified(false);
+          setLoadError(dbErrorMessage);
+          setIsLoading(false);
+        }
       } finally {
         if (isActive) {
           setIsLoading(false);
