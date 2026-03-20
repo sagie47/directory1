@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
+    "prebuild": "npm run generate:seed-json",
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist",
@@ -14,8 +15,10 @@
     "enrich:serper": "tsx scripts/enrich-serper.ts",
     "export:gmaps": "tsx scripts/export-gmaps-scraper-input.ts",
     "enrich:gmaps": "tsx scripts/enrich-gmaps-scraper.ts",
+    "import:gmaps:supabase": "tsx scripts/import-gmaps-supabase.ts",
     "enrich:contacts": "node --import tsx/esm scripts/enrich-business-contacts.ts",
     "generate:descriptions": "tsx scripts/generate-business-descriptions.ts",
+    "generate:seed-json": "tsx scripts/generate-seed-json.ts",
     "generate:sitemap": "tsx scripts/generate-sitemap.ts",
     "export:supabase-seed": "tsx scripts/export-supabase-seed.ts",
     "sync:supabase": "tsx scripts/sync-supabase.ts"

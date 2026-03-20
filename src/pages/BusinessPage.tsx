@@ -20,6 +20,8 @@ import Breadcrumbs from '../components/Breadcrumbs';
 import GalleryLightbox from '../components/GalleryLightbox';
 import Seo from '../components/Seo';
 import { useAuth } from '../contexts/AuthContext';
+import { allowSeedFallbackOnError } from '../directory-data';
+import { loadSeedDataFromJson } from '../lib/seedData';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import type { Category, City } from '../directory-data';
 
@@ -55,25 +57,7 @@ type BusinessOverrideRow = {
   photos: unknown;
 };
 
-type SeedDataModule = {
-  businesses: Business[];
-  cities: City[];
-  categories: Category[];
-};
-
 type VerificationState = 'verified' | 'unverified' | 'unknown';
-let seedDataPromise: Promise<SeedDataModule> | null = null;
-
-function loadSeedDataFromJson(): Promise<SeedDataModule> {
-  if (!seedDataPromise) {
-    seedDataPromise = import('../data').then((module) => ({
-      businesses: module.businesses,
-      cities: module.cities,
-      categories: module.categories,
-    }));
-  }
-  return seedDataPromise;
-}
 
 function isMissingTableError(error: { code?: string; message?: string } | null | undefined) {
   if (!error) {
@@ -83,7 +67,11 @@ function isMissingTableError(error: { code?: string; message?: string } | null |
   return error.code === '42P01'
     || error.code === 'PGRST205'
     || error.message?.includes("Could not find the table 'public.business_overrides'") === true
-    || error.message?.includes("Could not find the table 'public.verified_businesses'") === true;
+    || error.message?.includes("Could not find the table 'public.verified_businesses'") === true
+    || (
+      error.code === '42703'
+      && error.message?.includes('business_overrides.name') === true
+    );
 }
 
 function asStringArray(value: unknown) {
@@ -364,15 +352,39 @@ export default function BusinessPage() {
         console.error('[business-page] Failed to load listing.', error);
         const dbErrorMessage = error instanceof Error ? error.message : 'Unable to load this listing right now.';
 
-        try {
-          const module = await loadSeedDataFromJson();
-          const seedBusiness = module.businesses.find((entry) => entry.id === businessId) ?? null;
+        if (allowSeedFallbackOnError()) {
+          try {
+            const module = await loadSeedDataFromJson();
+            const seedBusiness = module.businesses.find((entry) => entry.id === businessId) ?? null;
 
-          if (!isActive) {
-            return;
-          }
+            if (!isActive) {
+              return;
+            }
 
-          if (!seedBusiness) {
+            if (!seedBusiness) {
+              setBusiness(null);
+              setCity(null);
+              setCategory(null);
+              setVerificationState('unverified');
+              setVerificationLookupWarning(null);
+              setLoadError(dbErrorMessage);
+              setIsLoading(false);
+              return;
+            }
+
+            setBusiness(seedBusiness);
+            setCity(module.cities.find((entry) => entry.id === seedBusiness.cityId) ?? null);
+            setCategory(module.categories.find((entry) => entry.id === seedBusiness.categoryId) ?? null);
+            setVerificationState('unknown');
+            setVerificationLookupWarning('Verified status could not be checked because the primary business lookup failed.');
+            setLoadError(null);
+            setIsLoading(false);
+          } catch (seedError: unknown) {
+            if (!isActive) {
+              return;
+            }
+
+            console.error('[business-page] Seed fallback also failed.', seedError);
             setBusiness(null);
             setCity(null);
             setCategory(null);
@@ -380,22 +392,8 @@ export default function BusinessPage() {
             setVerificationLookupWarning(null);
             setLoadError(dbErrorMessage);
             setIsLoading(false);
-            return;
           }
-
-          setBusiness(seedBusiness);
-          setCity(module.cities.find((entry) => entry.id === seedBusiness.cityId) ?? null);
-          setCategory(module.categories.find((entry) => entry.id === seedBusiness.categoryId) ?? null);
-          setVerificationState('unknown');
-          setVerificationLookupWarning('Verified status could not be checked because the primary business lookup failed.');
-          setLoadError(null);
-          setIsLoading(false);
-        } catch (seedError: unknown) {
-          if (!isActive) {
-            return;
-          }
-
-          console.error('[business-page] Seed fallback also failed.', seedError);
+        } else {
           setBusiness(null);
           setCity(null);
           setCategory(null);
