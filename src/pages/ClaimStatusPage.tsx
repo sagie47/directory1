@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   AlertCircle,
@@ -197,6 +197,7 @@ export default function ClaimStatusPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const claimsAvailable = Boolean(supabase && isSupabaseConfigured());
+  const trackedRecommendationViews = useRef(new Set<string>());
   const showSubmittedBanner = searchParams.get('submitted') === '1';
 
   const businessesById = useMemo(() => new Map(businesses.map((business) => [business.id, business])), [businesses]);
@@ -222,9 +223,14 @@ export default function ClaimStatusPage() {
 
   useEffect(() => {
     for (const claim of claimsWithRecommendations) {
-      if (claim.status === 'pending' || claim.status === 'approved') {
+      if (
+        (claim.status === 'pending' || claim.status === 'approved') &&
+        claim.recommendation.type !== 'none' &&
+        !trackedRecommendationViews.current.has(claim.id)
+      ) {
         const hasPrimaryCta = Boolean(
           claim.recommendation.href &&
+          claim.recommendation.ctaLabel &&
           (claim.recommendation.type !== 'complete_profile' || claim.status === 'approved')
         );
         trackEvent('claim_status_recommendation_viewed', {
@@ -235,6 +241,7 @@ export default function ClaimStatusPage() {
           has_primary_cta: hasPrimaryCta,
           cta_target: claim.recommendation.href,
         });
+        trackedRecommendationViews.current.add(claim.id);
       }
     }
   }, [claimsWithRecommendations]);
