@@ -367,7 +367,9 @@ declare
   v_constraint_name text;
 begin
   if v_user_id is null then
-    raise exception 'Not authenticated';
+    raise exception using
+      sqlstate = 'P0001',
+      message = 'Not authenticated';
   end if;
 
   if exists (
@@ -377,7 +379,9 @@ begin
       and business_id = p_business_id
       and status = 'pending'
   ) then
-    raise exception 'You already have a pending claim for this business.';
+    raise exception using
+      sqlstate = 'P1001',
+      message = 'You already have a pending claim for this business.';
   end if;
 
   if exists (
@@ -387,7 +391,9 @@ begin
       and business_id = p_business_id
       and status = 'approved'
   ) then
-    raise exception 'You already have an approved claim for this business.';
+    raise exception using
+      sqlstate = 'P1002',
+      message = 'You already have an approved claim for this business.';
   end if;
 
   if exists (
@@ -397,7 +403,9 @@ begin
       and status = 'approved'
       and user_id <> v_user_id
   ) then
-    raise exception 'This business has already been claimed by another user.';
+    raise exception using
+      sqlstate = 'P1003',
+      message = 'This business has already been claimed by another user.';
   end if;
 
   delete from public.business_claims
@@ -430,11 +438,17 @@ begin
       get stacked diagnostics v_constraint_name = constraint_name;
 
       if v_constraint_name = 'business_claims_one_pending_per_user_business_idx' then
-        raise exception 'You already have a pending claim for this business.';
+        raise exception using
+          sqlstate = 'P1001',
+          message = 'You already have a pending claim for this business.';
       elsif v_constraint_name = 'business_claims_one_approved_per_business_idx' then
-        raise exception 'This business has already been claimed by another user.';
+        raise exception using
+          sqlstate = 'P1003',
+          message = 'This business has already been claimed by another user.';
       else
-        raise exception 'A claim was submitted at the same time. Please refresh and try again.';
+        raise exception using
+          sqlstate = 'P1004',
+          message = 'A claim was submitted at the same time. Please refresh and try again.';
       end if;
   end;
 
@@ -485,16 +499,22 @@ begin
     from public.profiles
     where id = auth.uid() and role = 'admin'
   ) then
-    raise exception 'Not authorized';
+    raise exception using
+      sqlstate = 'P1010',
+      message = 'Not authorized';
   end if;
 
   if p_status not in ('approved', 'rejected') then
-    raise exception 'Invalid status';
+    raise exception using
+      sqlstate = 'P1011',
+      message = 'Invalid status';
   end if;
 
   if p_status = 'rejected'
      and nullif(btrim(coalesce(p_rejection_reason, '')), '') is null then
-    raise exception 'Rejection reason required';
+    raise exception using
+      sqlstate = 'P1012',
+      message = 'Rejection reason required';
   end if;
 
   update public.business_claims
@@ -509,7 +529,9 @@ begin
     and status = 'pending';
 
   if not found then
-    raise exception 'Claim not found or no longer pending';
+    raise exception using
+      sqlstate = 'P1013',
+      message = 'Claim not found or no longer pending';
   end if;
 end;
 $$;

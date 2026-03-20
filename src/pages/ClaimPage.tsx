@@ -177,25 +177,6 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
     setSubmitting(true);
 
     try {
-      // Fast-path existing claims for redirect UX; the RPC still enforces submission atomically.
-      const { data: existingClaim } = await supabase
-        .from('business_claims')
-        .select('status')
-        .eq('user_id', user.id)
-        .eq('business_id', selectedBusiness.id)
-        .in('status', ['pending', 'approved'])
-        .maybeSingle();
-
-      if (existingClaim?.status === 'pending') {
-        navigate('/claim/status');
-        return;
-      }
-
-      if (existingClaim?.status === 'approved') {
-        navigate('/owner/dashboard');
-        return;
-      }
-
       const { data: claimId, error: submitError } = await supabase.rpc('submit_business_claim', {
         p_business_id: selectedBusiness.id,
         p_claimant_name: claimData.claimantName,
@@ -206,26 +187,31 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
       });
 
       if (submitError) {
-        if (submitError.message.includes('pending claim')) {
+        const msg = submitError.message ?? '';
+        const code = submitError.code ?? '';
+
+        if (code === 'P1001' || msg.includes('pending claim')) {
           navigate('/claim/status');
           return;
         }
 
-        if (submitError.message.includes('approved claim')) {
+        if (code === 'P1002' || msg.includes('approved claim')) {
           navigate('/owner/dashboard');
           return;
         }
 
         if (
-          submitError.code === '23505'
-          || submitError.message.includes('same time')
-          || submitError.message.includes('already been claimed')
+          code === 'P1003'
+          || code === 'P1004'
+          || code === '23505'
+          || msg.includes('same time')
+          || msg.includes('already been claimed')
         ) {
-          setError(submitError.message);
+          setError('Another claim for this listing is already in review. Please check the status page.');
           return;
         }
 
-        setError(submitError.message);
+        setError('Your claim could not be submitted. Please try again or contact support.');
         return;
       }
 

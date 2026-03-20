@@ -943,7 +943,7 @@ export default function BusinessPage() {
                 <div className="bg-white p-6 rounded-xl border border-zinc-200 shadow-sm">
                   <AlertCircle className="w-5 h-5 text-zinc-500 mb-4" />
                   <h4 className="font-black text-sm text-zinc-900 uppercase tracking-widest mb-2">Is this your business?</h4>
-                  <p className="text-sm text-zinc-600 mb-6 font-medium leading-relaxed">Claim this page to update your services, hours, and contact info.</p>
+                  <p className="text-sm text-zinc-600 mb-6 font-medium leading-relaxed">Claim this listing to update your services, hours, and contact info.</p>
                   <div className="space-y-3">
                     <Link to={claimEntryPath} className="inline-flex items-center justify-between w-full bg-zinc-900 text-white rounded-lg shadow-sm px-4 py-3 font-sans text-xs font-semibold tracking-wide hover:bg-orange-500 hover:-translate-y-0.5 hover:shadow-md transition-all">
                       <span>Claim Business</span>
@@ -952,10 +952,6 @@ export default function BusinessPage() {
                     {ownerCheckError ? (
                       <p className="rounded-lg border border-zinc-200 bg-white px-4 py-3 text-xs text-zinc-600">{ownerCheckError}</p>
                     ) : null}
-                    <Link to="/never-miss-a-lead" className="inline-flex items-center justify-between w-full rounded-lg border border-zinc-200 bg-white px-4 py-3 font-sans text-xs font-semibold tracking-wide text-zinc-900 hover:border-zinc-900 hover:-translate-y-0.5 hover:shadow-md transition-all">
-                      <span>Need help handling leads?</span>
-                      <ArrowRight className="w-3 h-3" />
-                    </Link>
                   </div>
                 </div>
               </div>
@@ -975,11 +971,12 @@ export default function BusinessPage() {
                         <span>Owner Dashboard</span>
                         <ArrowRight className="w-3 h-3" />
                       </Link>
-                    ) : null}
-                    <Link to="/contact" className="inline-flex items-center justify-between w-full bg-zinc-900 text-white rounded-lg shadow-sm px-4 py-3 font-sans text-xs font-semibold tracking-wide hover:bg-orange-500 hover:-translate-y-0.5 hover:shadow-md transition-all">
-                      <span>Contact support</span>
-                      <ArrowRight className="w-3 h-3" />
-                    </Link>
+                    ) : (
+                      <Link to={claimEntryPath} className="inline-flex items-center justify-between w-full bg-zinc-900 text-white rounded-lg shadow-sm px-4 py-3 font-sans text-xs font-semibold tracking-wide hover:bg-orange-500 hover:-translate-y-0.5 hover:shadow-md transition-all">
+                        <span>Claim Business</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </Link>
+                    )}
                     {ownerCheckError ? (
                       <p className="rounded-lg border border-zinc-200 bg-white px-4 py-3 text-xs text-zinc-600">{ownerCheckError}</p>
                     ) : null}
@@ -1004,18 +1001,12 @@ export default function BusinessPage() {
                   ) : (
                     <>
                       <p className="text-sm text-zinc-600 mb-6 font-medium leading-relaxed">
-                        This business has been verified as legitimately operated. If you need to manage access or ownership, contact support and reference this listing.
+                        This business has been verified as legitimately operated. To request ownership or manage this listing, contact our support team.
                       </p>
-                      <div className="space-y-3">
-                        <Link to="/contact" className="inline-flex items-center justify-between w-full bg-zinc-900 text-white rounded-lg shadow-sm px-4 py-3 font-sans text-xs font-semibold tracking-wide hover:bg-orange-500 hover:-translate-y-0.5 hover:shadow-md transition-all">
-                          <span>Request ownership transfer</span>
-                          <ArrowRight className="w-3 h-3" />
-                        </Link>
-                        <Link to="/contact" className="inline-flex items-center justify-between w-full rounded-lg border border-zinc-200 bg-white px-4 py-3 font-sans text-xs font-semibold tracking-wide text-zinc-900 hover:border-zinc-900 hover:-translate-y-0.5 hover:shadow-md transition-all">
-                          <span>Contact support</span>
-                          <ArrowRight className="w-3 h-3" />
-                        </Link>
-                      </div>
+                      <Link to="/contact" className="inline-flex items-center justify-between w-full bg-zinc-900 text-white rounded-lg shadow-sm px-4 py-3 font-sans text-xs font-semibold tracking-wide hover:bg-orange-500 hover:-translate-y-0.5 hover:shadow-md transition-all">
+                        <span>Contact Support</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </Link>
                     </>
                   )}
                 </div>

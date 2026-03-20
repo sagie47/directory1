@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import {
   AlertCircle,
+  Bell,
   CheckCircle2,
   Clock3,
   RefreshCw,
@@ -120,6 +121,9 @@ export default function AdminClaimsPage() {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<ClaimFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [notifyStatus, setNotifyStatus] = useState<Record<string, 'idle' | 'sending' | 'sent' | 'failed'>>({});
+  const [notifyRetries, setNotifyRetries] = useState<Record<string, number>>({});
+  const MAX_NOTIFY_RETRIES = 3;
 
   const businessDirectoryMap = useMemo(
     () => new Map(businesses.map((business) => [business.id, business])),
@@ -332,13 +336,83 @@ export default function AdminClaimsPage() {
       });
 
       if (notifyError) {
+        setNotifyStatus((current) => ({ ...current, [claimId]: 'failed' }));
+        setNotifyRetries((current) => ({ ...current, [claimId]: 1 }));
         setClaimWarnings((current) => ({
           ...current,
-          [claimId]: `Claim ${statusLabel}, but the status notification could not be sent: ${notifyError.message}`,
+          [claimId]: `Claim ${statusLabel}, but the status notification could not be sent: ${notifyError.message}. You can retry up to ${MAX_NOTIFY_RETRIES} times.`,
         }));
+      } else {
+        setNotifyStatus((current) => ({ ...current, [claimId]: 'sent' }));
+        setClaimWarnings((current) => {
+          const nextWarnings = { ...current };
+          delete nextWarnings[claimId];
+          return nextWarnings;
+        });
       }
     } finally {
       setProcessingId(null);
+    }
+  }
+
+  async function resendNotification(claimId: string) {
+    if (!supabase || !user) {
+      return;
+    }
+
+    const currentRetries = notifyRetries[claimId] ?? 0;
+    if (currentRetries >= MAX_NOTIFY_RETRIES) {
+      return;
+    }
+
+    const claim = claims.find((c) => c.id === claimId);
+    if (!claim || claim.status === 'pending') {
+      return;
+    }
+
+    setNotifyStatus((current) => ({ ...current, [claimId]: 'sending' }));
+
+    try {
+      const { error: notifyError } = await supabase.functions.invoke('notify_claim_status', {
+        body: {
+          type: 'UPDATE' as const,
+          record: claim,
+          old_record: {
+            ...claim,
+            status: 'pending' as const,
+          },
+        },
+      });
+
+      if (notifyError) {
+        const nextRetries = currentRetries + 1;
+        setNotifyRetries((current) => ({ ...current, [claimId]: nextRetries }));
+        setNotifyStatus((current) => ({ ...current, [claimId]: 'failed' }));
+        setClaimWarnings((current) => ({
+          ...current,
+          [claimId]: `Notification could not be sent: ${notifyError.message}. Retry ${nextRetries} of ${MAX_NOTIFY_RETRIES}.`,
+        }));
+      } else {
+        setNotifyStatus((current) => ({ ...current, [claimId]: 'sent' }));
+        setNotifyRetries((current) => {
+          const next = { ...current };
+          delete next[claimId];
+          return next;
+        });
+        setClaimWarnings((current) => {
+          const nextWarnings = { ...current };
+          delete nextWarnings[claimId];
+          return nextWarnings;
+        });
+      }
+    } catch {
+      const nextRetries = currentRetries + 1;
+      setNotifyRetries((current) => ({ ...current, [claimId]: nextRetries }));
+      setNotifyStatus((current) => ({ ...current, [claimId]: 'failed' }));
+      setClaimWarnings((current) => ({
+        ...current,
+        [claimId]: `Notification could not be sent. Retry ${nextRetries} of ${MAX_NOTIFY_RETRIES}.`,
+      }));
     }
   }
 
@@ -605,6 +679,28 @@ export default function AdminClaimsPage() {
                               <XCircle className="h-4 w-4" strokeWidth={2.2} />
                               {processingId === claim.id ? 'Processing' : 'Reject claim'}
                             </button>
+
+                            {claimWarnings[claim.id] ? (
+                              <div className="mt-4 border border-amber-200 bg-amber-50 px-3 py-3 text-xs text-amber-800">
+                                <div className="flex items-start gap-2">
+                                  <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                                  <div className="flex-1">
+                                    <p className="font-medium">Notification issue</p>
+                                    <p className="mt-1 text-amber-700">{claimWarnings[claim.id]}</p>
+                                    {notifyStatus[claim.id] === 'failed' && (notifyRetries[claim.id] ?? 0) < MAX_NOTIFY_RETRIES && (
+                                      <button
+                                        type="button"
+                                        onClick={() => void resendNotification(claim.id)}
+                                        className="mt-2 inline-flex items-center gap-1.5 border border-amber-300 bg-amber-100 px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-amber-800 transition-colors hover:bg-amber-200"
+                                      >
+                                        <Bell className="h-3 w-3" strokeWidth={2.2} />
+                                        Retry notification ({MAX_NOTIFY_RETRIES - (notifyRetries[claim.id] ?? 0)} left)
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ) : null}
                           </div>
                         </div>
                       </motion.article>
@@ -701,6 +797,35 @@ export default function AdminClaimsPage() {
                             {statusMeta.label}
                           </div>
                         </div>
+
+                        {claimWarnings[claim.id] && notifyStatus[claim.id] === 'failed' ? (
+                          <div className="mt-4 border border-amber-200 bg-amber-50 px-3 py-3 text-xs text-amber-800">
+                            <div className="flex items-start gap-2">
+                              <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                              <div className="flex-1">
+                                <p className="font-medium">Notification issue</p>
+                                <p className="mt-1 text-amber-700">{claimWarnings[claim.id]}</p>
+                                {(notifyRetries[claim.id] ?? 0) < MAX_NOTIFY_RETRIES && (
+                                  <button
+                                    type="button"
+                                    onClick={() => void resendNotification(claim.id)}
+                                    className="mt-2 inline-flex items-center gap-1.5 border border-amber-300 bg-amber-100 px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-amber-800 transition-colors hover:bg-amber-200"
+                                  >
+                                    <Bell className="h-3 w-3" strokeWidth={2.2} />
+                                    Retry notification ({MAX_NOTIFY_RETRIES - (notifyRetries[claim.id] ?? 0)} left)
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ) : null}
+
+                        {notifyStatus[claim.id] === 'sent' ? (
+                          <div className="mt-4 flex items-center gap-2 text-xs text-emerald-700">
+                            <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={2.2} />
+                            <span className="font-mono text-[10px] font-bold uppercase tracking-[0.1em]">Notification sent</span>
+                          </div>
+                        ) : null}
                       </motion.article>
                     );
                   })}
