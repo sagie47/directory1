@@ -148,6 +148,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, '..');
 
 const PAGE_SIZE = 1000;
+const MAX_CONCURRENT_PREFETCH = 4;
+const RUN_TRACKING_TABLE_NAMES = ['gmaps_scrape_runs', 'gmaps_raw_places'] as const;
 
 function parseArgs(argv: string[]) {
   const options: ImportOptions = {
@@ -247,10 +249,17 @@ function isMissingTableError(error: {code?: string; message?: string} | null | u
     return false;
   }
 
+  const normalizedMessage = error.message?.toLowerCase() ?? '';
+
   return error.code === '42P01'
     || error.code === 'PGRST205'
-    || error.message?.includes("Could not find the table 'public.gmaps_scrape_runs'") === true
-    || error.message?.includes("Could not find the table 'public.gmaps_raw_places'") === true;
+    || RUN_TRACKING_TABLE_NAMES.some((tableName) =>
+      normalizedMessage.includes(`public.${tableName}`)
+      || normalizedMessage.includes(`table '${tableName}'`)
+      || normalizedMessage.includes(`table 'public.${tableName}'`)
+      || normalizedMessage.includes(`relation "${tableName}"`)
+      || normalizedMessage.includes(`relation "public.${tableName}"`),
+    );
 }
 
 async function readQueryFile(queryFile: string | null) {
@@ -675,26 +684,55 @@ function parseInputContent(content: string): ScrapedPlace[] {
     .map((line) => JSON.parse(line) as ScrapedPlace);
 }
 
+async function fetchBusinessesPage(client: SupabaseClient, offset: number) {
+  const {data, error} = await client
+    .from('businesses')
+    .select('id, name, city_id, category_id, rating, review_count, description, service_areas, category_tags, specialties, photos, reviews, hours, coordinates, contact, source')
+    .range(offset, offset + PAGE_SIZE - 1);
+
+  if (error) {
+    throw new Error(`Failed to fetch businesses at offset ${offset}: ${error.message}`);
+  }
+
+  return (data ?? []) as ExistingBusinessRow[];
+}
+
 async function fetchAllBusinesses(client: SupabaseClient) {
   const allRows: ExistingBusinessRow[] = [];
-  let offset = 0;
+  let nextOffset = 0;
 
   for (;;) {
-    const {data, error} = await client
-      .from('businesses')
-      .select('id, name, city_id, category_id, rating, review_count, description, service_areas, category_tags, specialties, photos, reviews, hours, coordinates, contact, source')
-      .range(offset, offset + PAGE_SIZE - 1);
-
-    if (error) {
-      throw new Error(`Failed to fetch businesses: ${error.message}`);
+    const offsets: number[] = [];
+    for (let index = 0; index < MAX_CONCURRENT_PREFETCH; index += 1) {
+      offsets.push(nextOffset);
+      nextOffset += PAGE_SIZE;
     }
 
-    if (!data || data.length === 0) {
+    const prefetchedPages = await Promise.all(
+      offsets.map(async (offset) => ({
+        offset,
+        rows: await fetchBusinessesPage(client, offset),
+      })),
+    );
+    prefetchedPages.sort((left, right) => left.offset - right.offset);
+
+    let exhausted = false;
+    for (const page of prefetchedPages) {
+      if (page.rows.length === 0) {
+        exhausted = true;
+        break;
+      }
+
+      allRows.push(...page.rows);
+      if (page.rows.length < PAGE_SIZE) {
+        exhausted = true;
+        break;
+      }
+    }
+
+    if (exhausted) {
       break;
     }
-
-    allRows.push(...(data as ExistingBusinessRow[]));
-    offset += data.length;
   }
 
   return allRows;
