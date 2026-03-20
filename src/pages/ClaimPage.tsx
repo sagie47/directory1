@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useMemo, useState } from 'react';
+import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   AlertCircle,
@@ -19,9 +19,9 @@ import SectionEyebrow from '@/src/components/SectionEyebrow';
 import type { Business } from '@/src/business';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useDirectoryData } from '@/src/directory-data';
-import { trackEvent } from '@/src/lib/analytics';
 import { getBusinessListingPath } from '@/src/lib/ownerProfile';
 import { isSupabaseConfigured, supabase } from '@/src/lib/supabase';
+import { trackEvent } from '@/src/lib/analytics';
 import businessBg from '@/src/photos/businessown/thumbnail_G74A6639.jpg';
 import { createImageFallbackHandler, preferSupabaseImage } from '@/src/supabase-images';
 
@@ -78,9 +78,19 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
   const [submitting, setSubmitting] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const trackedClaimStarts = useRef(new Set<string>());
   const claimsAvailable = Boolean(supabase && isSupabaseConfigured());
   const selectedBusinessId = searchParams.get('businessId');
   const businessBgSrc = preferSupabaseImage('thumbnail_G74A6639.jpg', businessBg);
+
+  function trackClaimStartedOnce(businessId: string) {
+    if (trackedClaimStarts.current.has(businessId)) {
+      return;
+    }
+
+    trackedClaimStarts.current.add(businessId);
+    trackEvent('claim_started', { business_id: businessId });
+  }
 
   useEffect(() => {
     if (user?.email) {
@@ -117,6 +127,7 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
     setSelectedBusiness(matchedBusiness);
     setStep(2);
     setError(null);
+    trackClaimStartedOnce(matchedBusiness.id);
   }, [businesses, directoryLoading, selectedBusinessId, user]);
 
   const filteredBusinesses = useMemo(() => {
@@ -159,7 +170,7 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
     setError(null);
     setStep(2);
     setSearchParams({ businessId: business.id });
-    trackEvent('claim_started', { businessId: business.id });
+    trackClaimStartedOnce(business.id);
   }
 
   function handleBackToSearch() {
@@ -222,8 +233,8 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
         return;
       }
 
-      trackEvent('claim_submitted', { businessId: selectedBusiness.id });
       onClaimComplete?.();
+      trackEvent('claim_submitted', { business_id: selectedBusiness.id });
       navigate(`/claim/status?submitted=1&businessId=${selectedBusiness.id}`);
     } catch {
       setError('An unexpected error occurred. Please try again.');

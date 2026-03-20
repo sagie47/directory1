@@ -1,15 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   AlertCircle,
   ArrowRight,
   CheckCircle2,
+  Check,
+  Circle,
   Clock3,
   ShieldCheck,
   XCircle,
 } from 'lucide-react';
 
-import OwnerProfileChecklist from '@/src/components/OwnerProfileChecklist';
 import SectionEyebrow from '@/src/components/SectionEyebrow';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useDirectoryData } from '@/src/directory-data';
@@ -17,7 +18,6 @@ import { trackEvent } from '@/src/lib/analytics';
 import { getBusinessListingPath, getClaimStatusCopy, getOwnerProfileFields } from '@/src/lib/ownerProfile';
 import { getOwnerRecommendation } from '@/src/lib/recommendations';
 import { isSupabaseConfigured, supabase } from '@/src/lib/supabase';
-import type { Business } from '@/src/business';
 
 interface BusinessClaim {
   id: string;
@@ -26,6 +26,11 @@ interface BusinessClaim {
   relationship_to_business: string;
   rejection_reason?: string;
   created_at: string;
+}
+
+interface ClaimWithRecommendation extends BusinessClaim {
+  recommendation: ReturnType<typeof getOwnerRecommendation>;
+  profileFields: ReturnType<typeof getOwnerProfileFields>;
 }
 
 function getStatusIcon(status: BusinessClaim['status']) {
@@ -41,147 +46,6 @@ function getStatusIcon(status: BusinessClaim['status']) {
   }
 }
 
-interface ClaimCardProps {
-  claim: BusinessClaim;
-  business?: Business | null;
-}
-
-function ClaimCard({ claim, business }: ClaimCardProps & { key?: string }) {
-  const listingPath = getBusinessListingPath(business);
-  const statusCopy = getClaimStatusCopy(claim.status);
-  const profileFields = business ? getOwnerProfileFields(business) : [];
-  const recommendation = getOwnerRecommendation({ business, claimStatus: claim.status });
-
-  useEffect(() => {
-    if (claim.status === 'pending' && recommendation.type !== 'none' && recommendation.type !== 'review_pending') {
-      trackEvent('claim_status_recommendation_viewed', {
-        claimId: claim.id,
-        businessId: claim.business_id,
-        claimStatus: claim.status,
-        recommendationType: recommendation.type,
-        hasPrimaryCta: Boolean(recommendation.href && recommendation.ctaLabel),
-        ctaTarget: recommendation.href,
-      });
-    }
-  }, [claim.id, claim.business_id, claim.status, recommendation.type, recommendation.href, recommendation.ctaLabel]);
-
-  return (
-    <section className="border-2 border-zinc-900 bg-white">
-      <div className="flex flex-col gap-5 border-b border-zinc-200 px-6 py-6 sm:px-8 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight text-zinc-950">{business?.name ?? claim.business_id}</h2>
-          <p className="mt-2 text-sm text-zinc-500">
-            Submitted on {new Date(claim.created_at).toLocaleDateString()} as {claim.relationship_to_business}
-          </p>
-        </div>
-        <div className={`inline-flex items-center gap-2 border px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] ${statusCopy.accentClassName}`}>
-          <span className={statusCopy.iconClassName}>{getStatusIcon(claim.status)}</span>
-          {statusCopy.shortLabel}
-        </div>
-      </div>
-
-      <div className="grid gap-6 px-6 py-6 sm:px-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
-        <div className="space-y-5">
-          <div className="border border-zinc-200 bg-zinc-50 px-5 py-5">
-            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Status</p>
-            <h3 className="mt-3 text-2xl font-bold tracking-tight text-zinc-950">{statusCopy.title}</h3>
-            <p className="mt-3 text-sm leading-7 text-zinc-600">{statusCopy.description}</p>
-          </div>
-
-          {claim.status === 'rejected' && claim.rejection_reason ? (
-            <div className="border border-rose-200 bg-rose-50 px-5 py-5 text-sm leading-7 text-rose-700">
-              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em]">Review note</p>
-              <p className="mt-3">{claim.rejection_reason}</p>
-            </div>
-          ) : null}
-
-          {claim.status === 'pending' && business ? (
-            <OwnerProfileChecklist
-              items={profileFields.slice(0, 4)}
-              title="Profile tasks"
-              description="These are the fields customers see first. You'll be able to update these after approval."
-              compact
-            />
-          ) : null}
-
-          {claim.status === 'pending' && recommendation.type !== 'none' && recommendation.type !== 'review_pending' ? (
-            <div className="border border-zinc-200 bg-zinc-50 p-5">
-              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Next opportunity</p>
-              <h3 className="mt-3 text-xl font-bold tracking-tight text-zinc-950">{recommendation.title}</h3>
-              <p className="mt-2 text-sm leading-6 text-zinc-600">{recommendation.description}</p>
-              {recommendation.href && recommendation.ctaLabel ? (
-                <Link
-                  to={recommendation.href}
-                  onClick={() => trackEvent('claim_status_recommendation_clicked', {
-                    claimId: claim.id,
-                    businessId: claim.business_id,
-                    claimStatus: claim.status,
-                    recommendationType: recommendation.type,
-                  })}
-                  className="mt-4 inline-flex items-center gap-2 font-medium text-zinc-900 underline underline-offset-4 transition-colors hover:text-orange-600"
-                >
-                  {recommendation.ctaLabel}
-                  <ArrowRight className="h-4 w-4" strokeWidth={2.2} />
-                </Link>
-              ) : null}
-            </div>
-          ) : null}
-        </div>
-
-        <div className="border border-zinc-200 bg-zinc-50 p-5">
-          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Next action</p>
-          <div className="mt-4 space-y-3">
-            {claim.status === 'approved' ? (
-              <Link
-                to="/owner/dashboard"
-                className="inline-flex w-full items-center justify-center gap-3 border-2 border-zinc-900 bg-zinc-900 px-5 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white transition-all hover:border-orange-500 hover:bg-orange-500"
-              >
-                Open owner dashboard
-                <ArrowRight className="h-4 w-4" strokeWidth={2.6} />
-              </Link>
-            ) : null}
-
-            {claim.status === 'rejected' ? (
-              <Link
-                to={`/claim?businessId=${claim.business_id}`}
-                className="inline-flex w-full items-center justify-center gap-3 border-2 border-zinc-900 bg-zinc-900 px-5 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white transition-all hover:border-orange-500 hover:bg-orange-500"
-              >
-                Retry this claim
-                <ArrowRight className="h-4 w-4" strokeWidth={2.6} />
-              </Link>
-            ) : null}
-
-            {claim.status === 'revoked' ? (
-              <Link
-                to="/contact"
-                className="inline-flex w-full items-center justify-center gap-3 border-2 border-zinc-900 bg-zinc-900 px-5 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white transition-all hover:border-orange-500 hover:bg-orange-500"
-              >
-                Contact support
-                <ArrowRight className="h-4 w-4" strokeWidth={2.6} />
-              </Link>
-            ) : null}
-
-            {listingPath ? (
-              <Link
-                to={listingPath}
-                className="inline-flex w-full items-center justify-center border border-zinc-200 bg-zinc-50 px-5 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-700 transition-colors hover:border-zinc-900 hover:bg-white hover:text-zinc-950"
-              >
-                View public listing
-              </Link>
-            ) : null}
-
-            {claim.status === 'pending' ? (
-              <p className="text-sm leading-6 text-zinc-600">
-                No action is needed while review is still pending.
-              </p>
-            ) : null}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 export default function ClaimStatusPage() {
   const [searchParams] = useSearchParams();
   const { user, loading: authLoading } = useAuth();
@@ -190,13 +54,54 @@ export default function ClaimStatusPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const claimsAvailable = Boolean(supabase && isSupabaseConfigured());
+  const trackedRecommendationViews = useRef(new Set<string>());
   const showSubmittedBanner = searchParams.get('submitted') === '1';
 
   const businessesById = useMemo(() => new Map(businesses.map((business) => [business.id, business])), [businesses]);
 
+  const claimsWithRecommendations = useMemo<ClaimWithRecommendation[]>(() => {
+    return claims.map((claim) => {
+      const business = businessesById.get(claim.business_id) ?? null;
+      const recommendation = getOwnerRecommendation({ business, claimStatus: claim.status });
+      const profileFields = claim.status === 'pending' && business
+        ? getOwnerProfileFields(business).slice(0, 4)
+        : [];
+      return {
+        ...claim,
+        recommendation,
+        profileFields,
+      };
+    });
+  }, [claims, businessesById]);
+
   useEffect(() => {
     trackEvent('claim_status_viewed');
   }, []);
+
+  useEffect(() => {
+    for (const claim of claimsWithRecommendations) {
+      if (
+        (claim.status === 'pending' || claim.status === 'approved') &&
+        claim.recommendation.type !== 'none' &&
+        !trackedRecommendationViews.current.has(claim.id)
+      ) {
+        const hasPrimaryCta = Boolean(
+          claim.recommendation.href &&
+          claim.recommendation.ctaLabel &&
+          (claim.recommendation.type !== 'complete_profile' || claim.status === 'approved')
+        );
+        trackEvent('claim_status_recommendation_viewed', {
+          claim_id: claim.id,
+          business_id: claim.business_id,
+          claim_status: claim.status,
+          recommendation_type: claim.recommendation.type,
+          has_primary_cta: hasPrimaryCta,
+          cta_target: claim.recommendation.href,
+        });
+        trackedRecommendationViews.current.add(claim.id);
+      }
+    }
+  }, [claimsWithRecommendations]);
 
   useEffect(() => {
     async function fetchClaims() {
@@ -327,13 +232,146 @@ export default function ClaimStatusPage() {
               </div>
             </div>
           ) : (
-            claims.map((claim) => (
-              <ClaimCard
-                key={claim.id}
-                claim={claim}
-                business={businessesById.get(claim.business_id)}
-              />
-            ))
+            claimsWithRecommendations.map((claim) => {
+              const business = businessesById.get(claim.business_id);
+              const listingPath = getBusinessListingPath(business);
+              const statusCopy = getClaimStatusCopy(claim.status);
+              const { recommendation, profileFields } = claim;
+
+              return (
+                <section
+                  key={claim.id}
+                  className="border-2 border-zinc-900 bg-white"
+                >
+                  <div className="flex flex-col gap-5 border-b border-zinc-200 px-6 py-6 sm:px-8 lg:flex-row lg:items-start lg:justify-between">
+                    <div>
+                      <h2 className="text-2xl font-bold tracking-tight text-zinc-950">{business?.name ?? claim.business_id}</h2>
+                      <p className="mt-2 text-sm text-zinc-500">
+                        Submitted on {new Date(claim.created_at).toLocaleDateString()} as {claim.relationship_to_business}
+                      </p>
+                    </div>
+                    <div className={`inline-flex items-center gap-2 border px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] ${statusCopy.accentClassName}`}>
+                      <span className={statusCopy.iconClassName}>{getStatusIcon(claim.status)}</span>
+                      {statusCopy.shortLabel}
+                    </div>
+                  </div>
+
+                  <div className="grid gap-6 px-6 py-6 sm:px-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
+                    <div className="space-y-5">
+                      <div className="border border-zinc-200 bg-zinc-50 px-5 py-5">
+                        <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Status</p>
+                        <h3 className="mt-3 text-2xl font-bold tracking-tight text-zinc-950">{statusCopy.title}</h3>
+                        <p className="mt-3 text-sm leading-7 text-zinc-600">{statusCopy.description}</p>
+                      </div>
+
+                      {claim.status === 'rejected' && claim.rejection_reason ? (
+                        <div className="border border-rose-200 bg-rose-50 px-5 py-5 text-sm leading-7 text-rose-700">
+                          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em]">Review note</p>
+                          <p className="mt-3">{claim.rejection_reason}</p>
+                        </div>
+                      ) : null}
+
+                      {claim.status === 'pending' && profileFields.length > 0 ? (
+                        <div className="border border-zinc-200 bg-zinc-50 px-5 py-5">
+                          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Profile completeness</p>
+                          <p className="mt-2 text-sm text-zinc-600">You&apos;ll be able to complete these after approval.</p>
+                          <div className="mt-4 space-y-3">
+                            {profileFields.map((field) => (
+                              <div key={field.id} className="flex items-start gap-3">
+                                <div className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${field.complete ? 'border-emerald-300 bg-emerald-500 text-white' : 'border-zinc-300 bg-white text-zinc-300'}`}>
+                                  {field.complete ? (
+                                    <Check className="h-3 w-3" strokeWidth={3} />
+                                  ) : (
+                                    <Circle className="h-3 w-3" strokeWidth={2.2} />
+                                  )}
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium text-zinc-900">{field.label}</p>
+                                  <p className="text-xs text-zinc-500">{field.description}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+
+                      {(claim.status === 'pending' || claim.status === 'approved') && recommendation.type !== 'none' ? (
+                        <div className="border border-zinc-200 bg-zinc-50 px-5 py-5">
+                          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Next opportunity</p>
+                          <h3 className="mt-3 text-xl font-bold tracking-tight text-zinc-950">{recommendation.title}</h3>
+                          <p className="mt-2 text-sm leading-6 text-zinc-600">{recommendation.description}</p>
+                          {recommendation.href && recommendation.ctaLabel && (recommendation.type !== 'complete_profile' || claim.status === 'approved') ? (
+                            <Link
+                              to={recommendation.href}
+                              onClick={() => trackEvent('claim_status_recommendation_clicked', {
+                                claim_id: claim.id,
+                                business_id: claim.business_id,
+                                claim_status: claim.status,
+                                recommendation_type: recommendation.type,
+                              })}
+                              className="mt-4 inline-flex items-center gap-2 font-medium text-zinc-900 underline underline-offset-4 transition-colors hover:text-orange-600"
+                            >
+                              {recommendation.ctaLabel}
+                              <ArrowRight className="h-4 w-4" strokeWidth={2.2} />
+                            </Link>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <div className="border border-zinc-200 bg-zinc-50 p-5">
+                      <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Next action</p>
+                      <div className="mt-4 space-y-3">
+                        {claim.status === 'approved' ? (
+                          <Link
+                            to="/owner/dashboard"
+                            className="inline-flex w-full items-center justify-center gap-3 border-2 border-zinc-900 bg-zinc-900 px-5 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white transition-all hover:border-orange-500 hover:bg-orange-500"
+                          >
+                            Open owner dashboard
+                            <ArrowRight className="h-4 w-4" strokeWidth={2.6} />
+                          </Link>
+                        ) : null}
+
+                        {claim.status === 'rejected' ? (
+                          <Link
+                            to={`/claim?businessId=${claim.business_id}`}
+                            className="inline-flex w-full items-center justify-center gap-3 border-2 border-zinc-900 bg-zinc-900 px-5 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white transition-all hover:border-orange-500 hover:bg-orange-500"
+                          >
+                            Retry this claim
+                            <ArrowRight className="h-4 w-4" strokeWidth={2.6} />
+                          </Link>
+                        ) : null}
+
+                        {claim.status === 'revoked' ? (
+                          <Link
+                            to="/contact"
+                            className="inline-flex w-full items-center justify-center gap-3 border-2 border-zinc-900 bg-zinc-900 px-5 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white transition-all hover:border-orange-500 hover:bg-orange-500"
+                          >
+                            Contact support
+                            <ArrowRight className="h-4 w-4" strokeWidth={2.6} />
+                          </Link>
+                        ) : null}
+
+                        {listingPath ? (
+                          <Link
+                            to={listingPath}
+                            className="inline-flex w-full items-center justify-center border border-zinc-200 bg-zinc-50 px-5 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-700 transition-colors hover:border-zinc-900 hover:bg-white hover:text-zinc-950"
+                          >
+                            View public listing
+                          </Link>
+                        ) : null}
+
+                        {claim.status === 'pending' ? (
+                          <p className="text-sm leading-6 text-zinc-600">
+                            No action is needed while review is still pending.
+                          </p>
+                        ) : null}
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              );
+            })
           )}
         </div>
       </main>
