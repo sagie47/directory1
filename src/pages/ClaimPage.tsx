@@ -159,7 +159,7 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
     setError(null);
     setStep(2);
     setSearchParams({ businessId: business.id });
-    trackEvent('claim_started', { businessId: business.id });
+    trackEvent('claim_started', { business_id: business.id });
   }
 
   function handleBackToSearch() {
@@ -224,6 +224,7 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
 
       trackEvent('claim_submitted', { businessId: selectedBusiness.id });
       onClaimComplete?.();
+      trackEvent('claim_submitted', { business_id: selectedBusiness.id });
       navigate(`/claim/status?submitted=1&businessId=${selectedBusiness.id}`);
     } catch {
       setError('An unexpected error occurred. Please try again.');
