@@ -53,7 +53,7 @@ function ClaimCard({ claim, business }: ClaimCardProps & { key?: string }) {
   const recommendation = getOwnerRecommendation({ business, claimStatus: claim.status });
 
   useEffect(() => {
-    if (claim.status === 'pending' && recommendation.type !== 'none' && recommendation.type !== 'review_pending') {
+    if (claim.status === 'pending' && recommendation.type !== 'none' && recommendation.type !== 'review_pending' && recommendation.type !== 'complete_profile') {
       trackEvent('claim_status_recommendation_viewed', {
         claimId: claim.id,
         businessId: claim.business_id,
@@ -109,7 +109,7 @@ function ClaimCard({ claim, business }: ClaimCardProps & { key?: string }) {
               <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Next opportunity</p>
               <h3 className="mt-3 text-xl font-bold tracking-tight text-zinc-950">{recommendation.title}</h3>
               <p className="mt-2 text-sm leading-6 text-zinc-600">{recommendation.description}</p>
-              {recommendation.href && recommendation.ctaLabel ? (
+              {recommendation.href && recommendation.ctaLabel && recommendation.type !== 'complete_profile' ? (
                 <Link
                   to={recommendation.href}
                   onClick={() => trackEvent('claim_status_recommendation_clicked', {
