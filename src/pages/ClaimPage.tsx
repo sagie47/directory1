@@ -19,6 +19,7 @@ import SectionEyebrow from '@/src/components/SectionEyebrow';
 import type { Business } from '@/src/business';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useDirectoryData } from '@/src/directory-data';
+import { trackEvent } from '@/src/lib/analytics';
 import { getBusinessListingPath } from '@/src/lib/ownerProfile';
 import { isSupabaseConfigured, supabase } from '@/src/lib/supabase';
 import businessBg from '@/src/photos/businessown/thumbnail_G74A6639.jpg';
@@ -158,6 +159,7 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
     setError(null);
     setStep(2);
     setSearchParams({ businessId: business.id });
+    trackEvent('claim_started', { businessId: business.id });
   }
 
   function handleBackToSearch() {
@@ -220,6 +222,7 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
         return;
       }
 
+      trackEvent('claim_submitted', { businessId: selectedBusiness.id });
       onClaimComplete?.();
       navigate(`/claim/status?submitted=1&businessId=${selectedBusiness.id}`);
     } catch {
