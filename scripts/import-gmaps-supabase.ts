@@ -632,7 +632,19 @@ function mergeServiceAreas(...groups: Array<string[] | undefined>) {
     .map((entry) => entry.trim())
     .filter(Boolean);
 
-  return [...new Set(values)];
+  const deduped: string[] = [];
+  const seen = new Set<string>();
+
+  for (const value of values) {
+    const normalized = value.toLowerCase();
+    if (seen.has(normalized)) {
+      continue;
+    }
+    seen.add(normalized);
+    deduped.push(value);
+  }
+
+  return deduped;
 }
 
 function computeRichnessScore(place: ScrapedPlace) {
@@ -738,8 +750,15 @@ async function fetchAllBusinesses(client: SupabaseClient) {
   return allRows;
 }
 
-function normalizePlaceToRow(place: ScrapedPlace, cityId: string, categoryId: string, id: string): NormalizedBusiness {
+function normalizePlaceToRow(
+  place: ScrapedPlace,
+  cityId: string,
+  categoryId: string,
+  id: string,
+  queryCityId?: string | null,
+): NormalizedBusiness {
   const city = cities.find((entry) => entry.id === cityId);
+  const queryCity = queryCityId ? cities.find((entry) => entry.id === queryCityId) : undefined;
   const category = categories.find((entry) => entry.id === categoryId);
   const address = buildAddress(place);
   const categoryTags = buildCategoryTags(place, category?.name);
@@ -752,7 +771,10 @@ function normalizePlaceToRow(place: ScrapedPlace, cityId: string, categoryId: st
     rating: place.review_rating ?? null,
     review_count: place.review_count ?? null,
     description: place.description?.trim() ?? null,
-    service_areas: mergeServiceAreas(city ? [city.name] : undefined),
+    service_areas: mergeServiceAreas(
+      city ? [city.name] : undefined,
+      queryCity && queryCity.id !== cityId ? [queryCity.name] : undefined,
+    ),
     category_tags: categoryTags,
     specialties: buildSpecialties(place),
     photos: buildPhotos(place),
@@ -777,7 +799,8 @@ function normalizePlaceToRow(place: ScrapedPlace, cityId: string, categoryId: st
   };
 }
 
-function mergePlaceIntoRow(row: ExistingBusinessRow, place: ScrapedPlace): NormalizedBusiness {
+function mergePlaceIntoRow(row: ExistingBusinessRow, place: ScrapedPlace, queryCityId?: string | null): NormalizedBusiness {
+  const queryCity = queryCityId ? cities.find((entry) => entry.id === queryCityId) : undefined;
   const address = buildAddress(place);
   const categoryTags = buildCategoryTags(
     place,
@@ -796,7 +819,10 @@ function mergePlaceIntoRow(row: ExistingBusinessRow, place: ScrapedPlace): Norma
     rating: place.review_rating ?? row.rating,
     review_count: place.review_count ?? row.review_count,
     description: row.description ?? place.description?.trim() ?? null,
-    service_areas: row.service_areas,
+    service_areas: mergeServiceAreas(
+      row.service_areas,
+      queryCity && queryCity.id !== row.city_id ? [queryCity.name] : undefined,
+    ),
     category_tags: categoryTags.length > 0 ? categoryTags : row.category_tags,
     specialties: specialties.length > 0 ? specialties : row.specialties,
     photos: photos.length > 0 ? photos : row.photos,
@@ -987,7 +1013,7 @@ async function main() {
         counters.matched += 1;
         counters.updated += 1;
         processedExistingIds.add(matchedRow.id);
-        const mergedRow = mergePlaceIntoRow(matchedRow, best);
+        const mergedRow = mergePlaceIntoRow(matchedRow, best, options.cityId);
         rowsToUpsert.push(mergedRow);
         if (best.place_id) {
           byPlaceId.set(best.place_id, matchedRow);
@@ -1020,7 +1046,7 @@ async function main() {
         usedIds.add(id);
         counters.created += 1;
         counters.normalized += 1;
-        const createdRow = normalizePlaceToRow(best, cityId, categoryId, id);
+        const createdRow = normalizePlaceToRow(best, cityId, categoryId, id, options.cityId);
         rowsToUpsert.push(createdRow);
         const createdExistingRow = toExistingBusinessRow(createdRow);
         if (best.place_id) {

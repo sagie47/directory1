@@ -6,7 +6,7 @@ import {motion} from 'motion/react';
 import Breadcrumbs from '../components/Breadcrumbs';
 import MobileDirectorySearch from '../components/MobileDirectorySearch';
 import BusinessCard from '../components/BusinessCard';
-import {Business} from '../business';
+import {Business, businessServesCity} from '../business';
 import {useDirectoryData} from '../directory-data';
 
 function normalizeSearchValue(value: string) {
@@ -73,7 +73,19 @@ export default function SearchPage() {
   const city = cities.find((entry) => entry.id === inferredCityId);
 
   const results = useMemo(() => {
-    const filteredByCity = inferredCityId ? businesses.filter((business) => business.cityId === inferredCityId) : businesses;
+    const filteredByCity = (() => {
+      if (!inferredCityId) {
+        return businesses;
+      }
+
+      // Keep search city filtering deterministic: an unknown city id yields no matches,
+      // and a known city uses the same based-city OR service-area logic as city/category pages.
+      if (!city) {
+        return [];
+      }
+
+      return businesses.filter((business) => businessServesCity(business, city.id, city.name));
+    })();
 
     if (!deferredQuery) {
       return [...filteredByCity]
@@ -99,7 +111,7 @@ export default function SearchPage() {
         return tokenGroups.every((group) => group.some((token) => haystack.includes(token)));
       })
       .sort((left, right) => (right.rating ?? 0) - (left.rating ?? 0) || (right.reviewCount ?? 0) - (left.reviewCount ?? 0)) as Business[];
-  }, [deferredQuery, inferredCityId, tokenGroups]);
+  }, [businesses, categories, cities, city, deferredQuery, inferredCityId, tokenGroups]);
 
   return (
     <motion.div

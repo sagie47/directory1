@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { type MouseEvent, useEffect } from 'react';
 import { ArrowRight, Globe, LayoutTemplate, Smartphone, ShieldCheck, Wrench, LayoutGrid, Zap, HelpCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 
@@ -8,6 +9,7 @@ import SectionEyebrow from '../components/SectionEyebrow';
 import BusinessFAQ from '../components/BusinessFAQ';
 import websiteHero from '../photos/businessown/AA_BCConstruction.jpg';
 import { createImageFallbackHandler, preferSupabaseImage } from '../supabase-images';
+import { trackOfferCtaClicked, trackOfferPageViewed } from '../lib/analytics';
 
 const whatItDoes = [
   {
@@ -70,6 +72,33 @@ const faqs = [
 export default function WebsitesForTradesPage() {
   const websiteHeroSrc = preferSupabaseImage('AA_BCConstruction.jpg', websiteHero);
 
+  useEffect(() => {
+    trackOfferPageViewed({
+      offer: 'website',
+      page: '/websites-for-trades',
+    });
+  }, []);
+
+  const handleOfferCtaClick = (event: MouseEvent<HTMLElement>) => {
+    if (typeof window === 'undefined') return;
+
+    const target = event.target as HTMLElement | null;
+    const anchor = target?.closest('a[href]') as HTMLAnchorElement | null;
+    if (!anchor) return;
+
+    const destination = new URL(anchor.href, window.location.origin);
+    if (destination.pathname !== '/book-call') return;
+    if (destination.searchParams.get('offer') !== 'website') return;
+
+    trackOfferCtaClicked({
+      offer: 'website',
+      source_page: 'websites-for-trades',
+      cta_label: anchor.textContent?.trim() ?? 'Schedule a Website Call',
+      destination: `${destination.pathname}${destination.search}`,
+      cta_location: 'offer_page',
+    });
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -77,6 +106,7 @@ export default function WebsitesForTradesPage() {
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
       className="min-h-screen bg-[#FAFAFA] font-sans text-zinc-900 selection:bg-indigo-200 selection:text-indigo-900"
+      onClickCapture={handleOfferCtaClick}
     >
       <Seo
         title="Websites for Trades | Okanagan Trades"

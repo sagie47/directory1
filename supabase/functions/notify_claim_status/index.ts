@@ -82,12 +82,27 @@ serve(async (req) => {
       return new Response(JSON.stringify({ message: 'Ignored: Status did not change to a terminal state' }), { status: 200 });
     }
 
+    const { data: dbClaim, error: dbClaimError } = await supabase
+      .from('business_claims')
+      .select('id, status, claimant_email, rejection_reason')
+      .eq('id', record.id)
+      .maybeSingle();
+
+    if (dbClaimError || !dbClaim) {
+      console.error('Failed to read claim for notification:', dbClaimError);
+      return new Response(JSON.stringify({ message: 'Ignored: Claim row not available' }), { status: 200 });
+    }
+
+    if (dbClaim.status !== 'approved' && dbClaim.status !== 'rejected') {
+      return new Response(JSON.stringify({ message: 'Ignored: Claim is not in a terminal status in DB' }), { status: 200 });
+    }
+
     // Check dry-run mode BEFORE claiming to avoid marking as sent
     if (!resendApiKey) {
       console.log('RESEND_API_KEY is not set. Skipping notification (dry-run mode):', {
-        claimId: record.id,
-        status: record.status,
-        to: record.claimant_email,
+        claimId: dbClaim.id,
+        status: dbClaim.status,
+        to: dbClaim.claimant_email,
       });
       return new Response(JSON.stringify({ success: true, message: 'Dry-run: Notification skipped, DB not updated' }), { status: 200 });
     }
@@ -99,7 +114,7 @@ serve(async (req) => {
       .update({ notification_sent_at: claimedAt })
       .eq('id', record.id)
       .is('notification_sent_at', null)
-      .select('id');
+      .select('id, status, claimant_email, rejection_reason');
 
     if (claimError) {
       console.error('Failed to claim notification:', claimError);
@@ -113,7 +128,9 @@ serve(async (req) => {
     let emailSubject = '';
     let emailHtml = '';
 
-    if (record.status === 'approved') {
+    const claimedClaim = claimResult[0];
+
+    if (claimedClaim.status === 'approved') {
       emailSubject = 'Your Business Claim has been Approved!';
       emailHtml = `
         <h2>Congratulations!</h2>
@@ -121,12 +138,12 @@ serve(async (req) => {
         <p>You can now access your Owner Dashboard to manage your listing, respond to inquiries, and update your business details.</p>
         <p><a href="https://okanagantradesdirectory.com/owner/dashboard">Go to Owner Dashboard</a></p>
       `;
-    } else if (record.status === 'rejected') {
+    } else if (claimedClaim.status === 'rejected') {
       emailSubject = 'Update on your Business Claim Request';
       emailHtml = `
         <h2>Claim Status Update</h2>
         <p>Unfortunately, your request to claim the business has been <strong>rejected</strong>.</p>
-        ${record.rejection_reason ? `<p><strong>Reason provided:</strong> ${escapeHtml(record.rejection_reason)}</p>` : ''}
+        ${claimedClaim.rejection_reason ? `<p><strong>Reason provided:</strong> ${escapeHtml(claimedClaim.rejection_reason)}</p>` : ''}
         <p>If you believe this is an error, please reach out to our support team.</p>
       `;
     }
@@ -140,7 +157,7 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           from: 'Okanagan Trades <noreply@okanagantradesdirectory.com>',
-          to: record.claimant_email,
+          to: claimedClaim.claimant_email,
           subject: emailSubject,
           html: emailHtml,
         }),

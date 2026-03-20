@@ -11,7 +11,7 @@ import BusinessCTA from '../components/BusinessCTA';
 import businessHero from '../photos/businessown/AA_BCConstruction.jpg';
 import businessStoryPhoto from '../photos/businessown/thumbnail_G74A6639.jpg';
 import businessOperationsPhoto from '../photos/businessown/plumbing_career_social jpg.jpg';
-import { trackEvent } from '../lib/analytics';
+import { trackEvent, trackOfferCtaClicked } from '../lib/analytics';
 
 const offerLanes = [
   {
@@ -111,6 +111,14 @@ const faqs = [
 ];
 
 export default function ForBusinessPage() {
+  const getLaneOffer = (href: string) => {
+    if (href === '/never-miss-a-lead') return 'never-miss-a-lead';
+    if (href === '/websites-for-trades') return 'website';
+    if (href === '/managed-growth') return 'managed-growth';
+    if (href === '/claim') return 'claim';
+    return 'unknown';
+  };
+
   useEffect(() => {
     trackEvent('for_business_viewed');
   }, []);
@@ -315,6 +323,15 @@ export default function ForBusinessPage() {
                 <div className="mt-8">
                   <Link
                     to={lane.href}
+                    onClick={() =>
+                      trackOfferCtaClicked({
+                        offer: getLaneOffer(lane.href),
+                        source_page: 'for-business',
+                        cta_label: lane.cta,
+                        destination: lane.href,
+                        cta_location: 'business_lane_card',
+                      })
+                    }
                     className="inline-flex items-center gap-3 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-zinc-500 transition-colors group-hover:text-orange-500"
                   >
                     {lane.cta}
