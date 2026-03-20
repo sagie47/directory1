@@ -609,3 +609,39 @@ on public.gmaps_raw_places
 for select
 to authenticated
 using (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'));
+
+create table if not exists public.call_requests (
+  id uuid primary key default gen_random_uuid(),
+  offer text not null check (offer in ('website', 'managed-growth')),
+  name text not null,
+  business_name text not null,
+  trade text not null,
+  city text not null,
+  phone text not null,
+  email text not null,
+  website text,
+  team_size text,
+  primary_need text not null,
+  stripe_payment_url text,
+  schedule_url text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists call_requests_offer_idx on public.call_requests (offer);
+create index if not exists call_requests_created_at_idx on public.call_requests (created_at desc);
+
+alter table public.call_requests enable row level security;
+
+drop policy if exists "call_requests_insert_public" on public.call_requests;
+create policy "call_requests_insert_public"
+on public.call_requests
+for insert
+to anon, authenticated
+with check (true);
+
+drop policy if exists "call_requests_select_admin" on public.call_requests;
+create policy "call_requests_select_admin"
+on public.call_requests
+for select
+to authenticated
+using (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'));

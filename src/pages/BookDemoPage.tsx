@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Check, Building2, Clock, AlertCircle, BarChart3 } from 'lucide-react';
 import { motion } from 'motion/react';
 import SectionEyebrow from '../components/SectionEyebrow';
+import { submitDemoRequest } from '../lib/submissions';
 
 const trades = [
   { value: '', label: 'Select your trade' },
@@ -42,6 +43,7 @@ const reassuranceItems = [
 export default function BookDemoPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     businessName: '',
@@ -54,15 +56,20 @@ export default function BookDemoPage() {
     biggestIssue: ''
   });
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
 
-    // TODO: Replace this with backend or CRM submission.
-    setTimeout(() => {
-      setLoading(false);
+    const result = await submitDemoRequest(formData);
+
+    setLoading(false);
+
+    if (result.success) {
       navigate('/demo-requested');
-    }, 1000);
+    } else {
+      setError(result.error ?? 'Submission failed. Please try again.');
+    }
   };
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -201,6 +208,12 @@ export default function BookDemoPage() {
                   {loading ? 'Submitting...' : <>Request My Demo <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" strokeWidth={2.5} /></>}
                 </button>
               </div>
+
+              {error && (
+                <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+                  {error}
+                </div>
+              )}
 
               <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500 text-center mt-4">
                 No commitment required. We respect your time.

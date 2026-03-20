@@ -1,6 +1,7 @@
 import { type ChangeEvent, type FormEvent, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
+  AlertCircle,
   ArrowRight,
   Building2,
   CreditCard,
@@ -11,6 +12,7 @@ import { motion } from 'motion/react';
 
 import SectionEyebrow from '@/src/components/SectionEyebrow';
 import { getCallOffer, getCallOfferConfig } from '@/src/lib/callOffers';
+import { submitCallRequest } from '@/src/lib/submitCallRequest';
 
 export default function BookCallPage() {
   const [searchParams] = useSearchParams();
@@ -18,6 +20,7 @@ export default function BookCallPage() {
   const offer = getCallOffer(searchParams.get('offer'));
   const content = getCallOfferConfig(offer);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     businessName: '',
@@ -50,20 +53,39 @@ export default function BookCallPage() {
     }));
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
+    setError(null);
 
-    setTimeout(() => {
-      setLoading(false);
+    const result = await submitCallRequest({
+      offer,
+      name: formData.name,
+      businessName: formData.businessName,
+      trade: formData.trade,
+      city: formData.city,
+      phone: formData.phone,
+      email: formData.email,
+      website: formData.website || undefined,
+      teamSize: formData.teamSize || undefined,
+      primaryNeed: formData.primaryNeed,
+      stripePaymentUrl: content.stripePaymentUrl,
+      scheduleUrl: content.scheduleUrl,
+    });
 
-      if (content.stripePaymentUrl) {
-        window.location.assign(content.stripePaymentUrl);
-        return;
-      }
+    setLoading(false);
 
-      navigate(`/call-requested?offer=${offer}`);
-    }, 500);
+    if (!result.success) {
+      setError(result.error ?? 'Submission failed. Please try again.');
+      return;
+    }
+
+    if (content.stripePaymentUrl) {
+      window.location.assign(content.stripePaymentUrl);
+      return;
+    }
+
+    navigate(`/call-requested?offer=${offer}`);
   }
 
   return (
@@ -206,9 +228,24 @@ export default function BookCallPage() {
               </div>
 
               <button type="submit" disabled={loading} className="inline-flex w-full items-center justify-center gap-3 rounded-xl border border-zinc-900 bg-zinc-900 px-8 py-5 font-sans text-sm font-bold uppercase tracking-wider text-white shadow-sm transition-all hover:bg-zinc-800 hover:-translate-y-1 active:scale-95 disabled:pointer-events-none disabled:opacity-50">
-                {loading ? 'Submitting...' : hasStripePayment ? content.cta : 'Request Call'}
-                <ArrowRight className="h-5 w-5" strokeWidth={2.5} />
+                {loading ? (
+                  <>
+                    <svg className="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Submitting...
+                  </>
+                ) : hasStripePayment ? content.cta : 'Request Call'}
+                {!loading && <ArrowRight className="h-5 w-5" strokeWidth={2.5} />}
               </button>
+
+              {error && (
+                <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+                  <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-500" />
+                  <p className="text-sm font-medium text-red-700">{error}</p>
+                </div>
+              )}
 
               <p className="text-center font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">
                 {hasStripePayment
