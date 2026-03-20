@@ -4,12 +4,12 @@ import {
   AlertCircle,
   ArrowRight,
   CheckCircle2,
-  Check,
   Clock3,
   ShieldCheck,
   XCircle,
 } from 'lucide-react';
 
+import OwnerProfileChecklist from '@/src/components/OwnerProfileChecklist';
 import SectionEyebrow from '@/src/components/SectionEyebrow';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useDirectoryData } from '@/src/directory-data';
@@ -17,6 +17,7 @@ import { trackEvent } from '@/src/lib/analytics';
 import { getBusinessListingPath, getClaimStatusCopy, getOwnerProfileFields } from '@/src/lib/ownerProfile';
 import { getOwnerRecommendation } from '@/src/lib/recommendations';
 import { isSupabaseConfigured, supabase } from '@/src/lib/supabase';
+import type { Business } from '@/src/business';
 
 interface BusinessClaim {
   id: string;
@@ -38,6 +39,147 @@ function getStatusIcon(status: BusinessClaim['status']) {
     case 'revoked':
       return <AlertCircle className="h-4 w-4" strokeWidth={2.2} />;
   }
+}
+
+interface ClaimCardProps {
+  claim: BusinessClaim;
+  business?: Business | null;
+}
+
+function ClaimCard({ claim, business }: ClaimCardProps & { key?: string }) {
+  const listingPath = getBusinessListingPath(business);
+  const statusCopy = getClaimStatusCopy(claim.status);
+  const profileFields = business ? getOwnerProfileFields(business) : [];
+  const recommendation = getOwnerRecommendation({ business, claimStatus: claim.status });
+
+  useEffect(() => {
+    if (claim.status === 'pending' && recommendation.type !== 'none' && recommendation.type !== 'review_pending') {
+      trackEvent('claim_status_recommendation_viewed', {
+        claimId: claim.id,
+        businessId: claim.business_id,
+        claimStatus: claim.status,
+        recommendationType: recommendation.type,
+        hasPrimaryCta: Boolean(recommendation.href && recommendation.ctaLabel),
+        ctaTarget: recommendation.href,
+      });
+    }
+  }, [claim.id, claim.business_id, claim.status, recommendation.type, recommendation.href, recommendation.ctaLabel]);
+
+  return (
+    <section className="border-2 border-zinc-900 bg-white">
+      <div className="flex flex-col gap-5 border-b border-zinc-200 px-6 py-6 sm:px-8 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight text-zinc-950">{business?.name ?? claim.business_id}</h2>
+          <p className="mt-2 text-sm text-zinc-500">
+            Submitted on {new Date(claim.created_at).toLocaleDateString()} as {claim.relationship_to_business}
+          </p>
+        </div>
+        <div className={`inline-flex items-center gap-2 border px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] ${statusCopy.accentClassName}`}>
+          <span className={statusCopy.iconClassName}>{getStatusIcon(claim.status)}</span>
+          {statusCopy.shortLabel}
+        </div>
+      </div>
+
+      <div className="grid gap-6 px-6 py-6 sm:px-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
+        <div className="space-y-5">
+          <div className="border border-zinc-200 bg-zinc-50 px-5 py-5">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Status</p>
+            <h3 className="mt-3 text-2xl font-bold tracking-tight text-zinc-950">{statusCopy.title}</h3>
+            <p className="mt-3 text-sm leading-7 text-zinc-600">{statusCopy.description}</p>
+          </div>
+
+          {claim.status === 'rejected' && claim.rejection_reason ? (
+            <div className="border border-rose-200 bg-rose-50 px-5 py-5 text-sm leading-7 text-rose-700">
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em]">Review note</p>
+              <p className="mt-3">{claim.rejection_reason}</p>
+            </div>
+          ) : null}
+
+          {claim.status === 'pending' && business ? (
+            <OwnerProfileChecklist
+              items={profileFields.slice(0, 4)}
+              title="Profile tasks"
+              description="These are the fields customers see first. You'll be able to update these after approval."
+              compact
+            />
+          ) : null}
+
+          {claim.status === 'pending' && recommendation.type !== 'none' && recommendation.type !== 'review_pending' ? (
+            <div className="border border-zinc-200 bg-zinc-50 p-5">
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Next opportunity</p>
+              <h3 className="mt-3 text-xl font-bold tracking-tight text-zinc-950">{recommendation.title}</h3>
+              <p className="mt-2 text-sm leading-6 text-zinc-600">{recommendation.description}</p>
+              {recommendation.href && recommendation.ctaLabel ? (
+                <Link
+                  to={recommendation.href}
+                  onClick={() => trackEvent('claim_status_recommendation_clicked', {
+                    claimId: claim.id,
+                    businessId: claim.business_id,
+                    claimStatus: claim.status,
+                    recommendationType: recommendation.type,
+                  })}
+                  className="mt-4 inline-flex items-center gap-2 font-medium text-zinc-900 underline underline-offset-4 transition-colors hover:text-orange-600"
+                >
+                  {recommendation.ctaLabel}
+                  <ArrowRight className="h-4 w-4" strokeWidth={2.2} />
+                </Link>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+
+        <div className="border border-zinc-200 bg-zinc-50 p-5">
+          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Next action</p>
+          <div className="mt-4 space-y-3">
+            {claim.status === 'approved' ? (
+              <Link
+                to="/owner/dashboard"
+                className="inline-flex w-full items-center justify-center gap-3 border-2 border-zinc-900 bg-zinc-900 px-5 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white transition-all hover:border-orange-500 hover:bg-orange-500"
+              >
+                Open owner dashboard
+                <ArrowRight className="h-4 w-4" strokeWidth={2.6} />
+              </Link>
+            ) : null}
+
+            {claim.status === 'rejected' ? (
+              <Link
+                to={`/claim?businessId=${claim.business_id}`}
+                className="inline-flex w-full items-center justify-center gap-3 border-2 border-zinc-900 bg-zinc-900 px-5 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white transition-all hover:border-orange-500 hover:bg-orange-500"
+              >
+                Retry this claim
+                <ArrowRight className="h-4 w-4" strokeWidth={2.6} />
+              </Link>
+            ) : null}
+
+            {claim.status === 'revoked' ? (
+              <Link
+                to="/contact"
+                className="inline-flex w-full items-center justify-center gap-3 border-2 border-zinc-900 bg-zinc-900 px-5 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white transition-all hover:border-orange-500 hover:bg-orange-500"
+              >
+                Contact support
+                <ArrowRight className="h-4 w-4" strokeWidth={2.6} />
+              </Link>
+            ) : null}
+
+            {listingPath ? (
+              <Link
+                to={listingPath}
+                className="inline-flex w-full items-center justify-center border border-zinc-200 bg-zinc-50 px-5 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-700 transition-colors hover:border-zinc-900 hover:bg-white hover:text-zinc-950"
+              >
+                View public listing
+              </Link>
+            ) : null}
+
+            {claim.status === 'pending' ? (
+              <p className="text-sm leading-6 text-zinc-600">
+                No action is needed while review is still pending.
+              </p>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
 }
 
 export default function ClaimStatusPage() {
@@ -185,188 +327,16 @@ export default function ClaimStatusPage() {
               </div>
             </div>
           ) : (
-            claims.map((claim) => {
-              const business = businessesById.get(claim.business_id);
-              const listingPath = getBusinessListingPath(business);
-              const statusCopy = getClaimStatusCopy(claim.status);
-
-              return (
-                <section
-                  key={claim.id}
-                  className="border-2 border-zinc-900 bg-white"
-                >
-                  <div className="flex flex-col gap-5 border-b border-zinc-200 px-6 py-6 sm:px-8 lg:flex-row lg:items-start lg:justify-between">
-                    <div>
-                      <h2 className="text-2xl font-bold tracking-tight text-zinc-950">{business?.name ?? claim.business_id}</h2>
-                      <p className="mt-2 text-sm text-zinc-500">
-                        Submitted on {new Date(claim.created_at).toLocaleDateString()} as {claim.relationship_to_business}
-                      </p>
-                    </div>
-                    <div className={`inline-flex items-center gap-2 border px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] ${statusCopy.accentClassName}`}>
-                      <span className={statusCopy.iconClassName}>{getStatusIcon(claim.status)}</span>
-                      {statusCopy.shortLabel}
-                    </div>
-                  </div>
-
-                  <div className="grid gap-6 px-6 py-6 sm:px-8 lg:grid-cols-[minmax(0,1fr)_18rem]">
-                    <div className="space-y-5">
-                      <div className="border border-zinc-200 bg-zinc-50 px-5 py-5">
-                        <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Status</p>
-                        <h3 className="mt-3 text-2xl font-bold tracking-tight text-zinc-950">{statusCopy.title}</h3>
-                        <p className="mt-3 text-sm leading-7 text-zinc-600">{statusCopy.description}</p>
-                      </div>
-
-                      {claim.status === 'rejected' && claim.rejection_reason ? (
-                        <div className="border border-rose-200 bg-rose-50 px-5 py-5 text-sm leading-7 text-rose-700">
-                          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em]">Review note</p>
-                          <p className="mt-3">{claim.rejection_reason}</p>
-                        </div>
-                      ) : null}
-
-                      {claim.status === 'pending' && business ? (
-                        <ClaimPendingTasks business={business} claimId={claim.id} />
-                      ) : null}
-                    </div>
-
-                    <div className="space-y-5">
-                      <div className="border border-zinc-200 bg-zinc-50 p-5">
-                        <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Next action</p>
-                        <div className="mt-4 space-y-3">
-                          {claim.status === 'approved' ? (
-                            <Link
-                              to="/owner/dashboard"
-                              className="inline-flex w-full items-center justify-center gap-3 border-2 border-zinc-900 bg-zinc-900 px-5 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white transition-all hover:border-orange-500 hover:bg-orange-500"
-                            >
-                              Open owner dashboard
-                              <ArrowRight className="h-4 w-4" strokeWidth={2.6} />
-                            </Link>
-                          ) : null}
-
-                          {claim.status === 'rejected' ? (
-                            <Link
-                              to={`/claim?businessId=${claim.business_id}`}
-                              className="inline-flex w-full items-center justify-center gap-3 border-2 border-zinc-900 bg-zinc-900 px-5 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white transition-all hover:border-orange-500 hover:bg-orange-500"
-                            >
-                              Retry this claim
-                              <ArrowRight className="h-4 w-4" strokeWidth={2.6} />
-                            </Link>
-                          ) : null}
-
-                          {claim.status === 'revoked' ? (
-                            <Link
-                              to="/contact"
-                              className="inline-flex w-full items-center justify-center gap-3 border-2 border-zinc-900 bg-zinc-900 px-5 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white transition-all hover:border-orange-500 hover:bg-orange-500"
-                            >
-                              Contact support
-                              <ArrowRight className="h-4 w-4" strokeWidth={2.6} />
-                            </Link>
-                          ) : null}
-
-                          {listingPath ? (
-                            <Link
-                              to={listingPath}
-                              className="inline-flex w-full items-center justify-center border border-zinc-200 bg-zinc-50 px-5 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-700 transition-colors hover:border-zinc-900 hover:bg-white hover:text-zinc-950"
-                            >
-                              View public listing
-                            </Link>
-                          ) : null}
-
-                          {claim.status === 'pending' ? (
-                            <p className="text-sm leading-6 text-zinc-600">
-                              No action is needed while review is still pending.
-                            </p>
-                          ) : null}
-                        </div>
-                      </div>
-
-                      {claim.status === 'pending' && business ? (
-                        <ClaimRecommendationCard business={business} claimId={claim.id} />
-                      ) : null}
-                    </div>
-                  </div>
-                </section>
-              );
-            })
+            claims.map((claim) => (
+              <ClaimCard
+                key={claim.id}
+                claim={claim}
+                business={businessesById.get(claim.business_id)}
+              />
+            ))
           )}
         </div>
       </main>
-    </div>
-  );
-}
-
-function ClaimPendingTasks({ business, claimId }: { business: import('@/src/business').Business; claimId: string }) {
-  const fields = getOwnerProfileFields(business);
-  const requiredFields = fields.filter((f) => f.priority === 'required');
-  const recommendedFields = fields.filter((f) => f.priority === 'recommended');
-  const displayFields = [...requiredFields.slice(0, 3), ...recommendedFields.slice(0, 1)].slice(0, 4);
-
-  return (
-    <div className="border border-zinc-200 bg-zinc-50 px-5 py-5">
-      <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Profile completeness</p>
-      <p className="mt-2 text-xs text-zinc-500">You&apos;ll be able to complete these after approval.</p>
-      <ul className="mt-4 space-y-3">
-        {displayFields.map((field) => (
-          <li key={field.id} className="flex items-start gap-3">
-            {field.complete ? (
-              <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" strokeWidth={2.5} />
-            ) : (
-              <div className="mt-0.5 h-4 w-4 shrink-0 rounded-full border-2 border-zinc-300" />
-            )}
-            <span className={`text-sm ${field.complete ? 'text-zinc-500 line-through' : 'text-zinc-700'}`}>
-              {field.label}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function ClaimRecommendationCard({ business, claimId }: { business: import('@/src/business').Business; claimId: string }) {
-  const recommendation = getOwnerRecommendation({ business, claimStatus: 'pending' });
-
-  useEffect(() => {
-    trackEvent('claim_status_recommendation_viewed', {
-      claimId,
-      businessId: business.id,
-      claimStatus: 'pending',
-      recommendationType: recommendation.type,
-      hasPrimaryCta: Boolean(recommendation.href && recommendation.ctaLabel),
-      ctaTarget: recommendation.href,
-    });
-  }, [claimId, business.id, recommendation]);
-
-  const handleRecommendationClick = () => {
-    trackEvent('claim_status_recommendation_clicked', {
-      claimId,
-      businessId: business.id,
-      claimStatus: 'pending',
-      recommendationType: recommendation.type,
-      ctaTarget: recommendation.href,
-    });
-  };
-
-  const hasPrimaryCta = recommendation.href && recommendation.ctaLabel && recommendation.type !== 'complete_profile';
-
-  return (
-    <div className="border border-zinc-200 bg-white p-5">
-      <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Recommended next step</p>
-      <h3 className="mt-3 text-xl font-bold tracking-tight text-zinc-950">{recommendation.title}</h3>
-      <p className="mt-2 text-sm leading-6 text-zinc-600">{recommendation.description}</p>
-      {hasPrimaryCta ? (
-        <Link
-          to={recommendation.href!}
-          onClick={handleRecommendationClick}
-          className="mt-4 inline-flex items-center gap-2 font-medium text-zinc-900 underline underline-offset-4 transition-colors hover:text-orange-600"
-        >
-          {recommendation.ctaLabel}
-          <ArrowRight className="h-4 w-4" strokeWidth={2.2} />
-        </Link>
-      ) : (
-        <p className="mt-4 text-xs text-zinc-500">
-          {recommendation.type === 'complete_profile' ? "You'll be able to update this after your claim is approved." : 'Check back after approval to take the next step.'}
-        </p>
-      )}
     </div>
   );
 }
