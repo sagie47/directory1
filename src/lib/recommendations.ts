@@ -58,6 +58,27 @@ export function getOwnerRecommendation({
   }
 
   if (claimStatus === 'pending') {
+    const progress = getOwnerProfileProgress(business);
+    const hasRequiredGaps = progress.requiredCompleted < progress.requiredTotal;
+
+    if (hasRequiredGaps) {
+      return {
+        type: 'complete_profile',
+        title: 'Complete Your Profile',
+        description: 'Your listing is still missing core details that help customers trust and contact your business.',
+      };
+    }
+
+    if (!business.contact?.website) {
+      return {
+        type: 'website_fix',
+        title: 'Add A Website',
+        description: 'Your core listing details are in place. A website gives customers one more reason to trust you before they call.',
+        href: '/websites-for-trades',
+        ctaLabel: 'Explore Websites',
+      };
+    }
+
     return {
       type: 'review_pending',
       title: 'Review In Progress',
