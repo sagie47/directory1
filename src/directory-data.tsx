@@ -29,6 +29,7 @@ type DirectoryData = {
   categories: Category[];
   businesses: Business[];
   verifiedBusinessIds: Set<string>;
+  verifiedLookupDegraded: boolean;
 };
 
 type DirectoryDataState = DirectoryData & {
@@ -122,6 +123,7 @@ async function loadSeedData() {
     categories: seed.categories,
     businesses: seed.businesses,
     verifiedBusinessIds: new Set<string>(),
+    verifiedLookupDegraded: false,
   });
 }
 
@@ -131,6 +133,7 @@ const emptySeedData: DirectoryData = {
   categories: [],
   businesses: [],
   verifiedBusinessIds: new Set<string>(),
+  verifiedLookupDegraded: false,
 };
 
 let cachedDirectoryDataState: DirectoryDataState | null = null;
@@ -345,6 +348,8 @@ async function fetchDirectoryData(): Promise<DirectoryData> {
       : ((verifiedResult.data ?? []) as { business_id: string }[]).map((row) => row.business_id)
   );
 
+  const verifiedLookupDegraded = !!verifiedError;
+
   const data = {
     cities: citiesResult.data ?? emptySeedData.cities,
     categoryGroups: (groupResult.data ?? []).map((group) => ({
@@ -362,6 +367,7 @@ async function fetchDirectoryData(): Promise<DirectoryData> {
       mergeBusinessOverride(mapBusinessRow(row), overridesByBusinessId.get(row.id))
     ),
     verifiedBusinessIds,
+    verifiedLookupDegraded,
   };
 
   console.info('[directory-data] Supabase read completed.', {
