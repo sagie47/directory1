@@ -1,6 +1,7 @@
 import { createContext, startTransition, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import { Business } from './business';
+import { loadSeedDataFromJson } from './lib/seedData';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
 
 export type City = {
@@ -108,25 +109,20 @@ function filterDirectoryData(data: DirectoryData): DirectoryData {
   };
 }
 
-let seedDataPromise: Promise<DirectoryData> | null = null;
-
 export function allowSeedFallbackOnError() {
   const override = String(import.meta.env.VITE_ALLOW_SEED_FALLBACK ?? '').toLowerCase();
   return import.meta.env.DEV || ['1', 'true', 'yes', 'on'].includes(override);
 }
 
-function loadSeedData() {
-  if (!seedDataPromise) {
-    seedDataPromise = import('./data').then((module) => filterDirectoryData({
-        cities: module.cities,
-        categoryGroups: module.categoryGroups,
-        categories: module.categories,
-        businesses: module.businesses,
-        verifiedBusinessIds: new Set<string>(),
-      }));
-  }
-
-  return seedDataPromise;
+async function loadSeedData() {
+  const seed = await loadSeedDataFromJson();
+  return filterDirectoryData({
+    cities: seed.cities,
+    categoryGroups: seed.categoryGroups,
+    categories: seed.categories,
+    businesses: seed.businesses,
+    verifiedBusinessIds: new Set<string>(),
+  });
 }
 
 const emptySeedData: DirectoryData = {

@@ -21,6 +21,7 @@ import GalleryLightbox from '../components/GalleryLightbox';
 import Seo from '../components/Seo';
 import { useAuth } from '../contexts/AuthContext';
 import { allowSeedFallbackOnError } from '../directory-data';
+import { loadSeedDataFromJson } from '../lib/seedData';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import type { Category, City } from '../directory-data';
 
@@ -56,25 +57,7 @@ type BusinessOverrideRow = {
   photos: unknown;
 };
 
-type SeedDataModule = {
-  businesses: Business[];
-  cities: City[];
-  categories: Category[];
-};
-
 type VerificationState = 'verified' | 'unverified' | 'unknown';
-let seedDataPromise: Promise<SeedDataModule> | null = null;
-
-function loadSeedDataFromJson(): Promise<SeedDataModule> {
-  if (!seedDataPromise) {
-    seedDataPromise = import('../data').then((module) => ({
-      businesses: module.businesses,
-      cities: module.cities,
-      categories: module.categories,
-    }));
-  }
-  return seedDataPromise;
-}
 
 function isMissingTableError(error: { code?: string; message?: string } | null | undefined) {
   if (!error) {
