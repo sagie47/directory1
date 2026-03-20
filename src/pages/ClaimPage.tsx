@@ -222,9 +222,8 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
         return;
       }
 
-      trackEvent('claim_submitted', { businessId: selectedBusiness.id });
-      onClaimComplete?.();
       trackEvent('claim_submitted', { business_id: selectedBusiness.id });
+      onClaimComplete?.();
       navigate(`/claim/status?submitted=1&businessId=${selectedBusiness.id}`);
     } catch {
       setError('An unexpected error occurred. Please try again.');
