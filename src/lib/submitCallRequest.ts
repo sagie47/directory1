@@ -63,5 +63,5 @@ export async function submitCallRequest(data: CallRequestData): Promise<SubmitCa
 
   console.error('Call request submission failed after retries:', lastError);
   trackEvent('call_request_submit_failed', { offer: data.offer, error: lastError });
-  return { success: false, error: lastError };
+  return { success: false, error: 'Submission failed. Please try again later.' };
 }

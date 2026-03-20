@@ -17,6 +17,12 @@ function enforceBuildBudgets() {
   return {
     name: 'enforce-build-budgets',
     closeBundle() {
+      const skipBudgetCheck = process.env.SKIP_BUDGET_CHECK;
+      if (skipBudgetCheck && ['true', '1'].includes(skipBudgetCheck.toLowerCase())) {
+        console.log('\x1b[33m⚠ Build budget check skipped via SKIP_BUDGET_CHECK\x1b[0m');
+        return;
+      }
+
       const distDir = path.join(__dirname, 'dist', 'assets');
       const overBudget: Array<{
         file: string;
