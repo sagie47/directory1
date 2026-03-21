@@ -117,6 +117,7 @@ create table if not exists public.business_claims (
   claimant_phone text,
   relationship_to_business text not null,
   message text,
+  evidence_urls text[] not null default '{}',
   reviewed_by uuid references public.profiles (id) on delete set null,
   reviewed_at timestamptz,
   rejection_reason text,
@@ -397,7 +398,8 @@ create or replace function public.submit_business_claim(
   p_claimant_email text,
   p_claimant_phone text default null,
   p_relationship_to_business text,
-  p_message text default null
+  p_message text default null,
+  p_evidence_urls text[] default '{}'
 )
 returns uuid
 language plpgsql
@@ -475,7 +477,8 @@ begin
       claimant_email,
       claimant_phone,
       relationship_to_business,
-      message
+      message,
+      evidence_urls
     )
     values (
       v_user_id,
@@ -484,7 +487,8 @@ begin
       v_claimant_email,
       p_claimant_phone,
       p_relationship_to_business,
-      p_message
+      p_message,
+      coalesce(p_evidence_urls, '{}')
     )
     returning id into v_claim_id;
   exception
@@ -516,7 +520,8 @@ grant execute on function public.submit_business_claim(
   text,
   text,
   text,
-  text
+  text,
+  text[]
 ) to authenticated;
 
 create or replace function public.delete_user_account()
@@ -758,3 +763,58 @@ on public.call_requests
 for select
 to authenticated
 using (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'));
+
+-- Storage bucket for claim evidence uploads
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'claims',
+  'claims',
+  false,
+  10485760,
+  array['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
+)
+on conflict (id) do update
+set
+  public = false,
+  file_size_limit = 10485760,
+  allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+
+-- Allow authenticated users to upload evidence to their own claims folder
+create policy "claims_upload_own"
+on storage.objects
+for insert
+to authenticated
+with check (
+  bucket_id = 'claims'
+  and (storage.foldername(name))[1] = auth.uid()::text
+);
+
+-- Allow authenticated users to read evidence from their own claims folder
+create policy "claims_read_own"
+on storage.objects
+for select
+to authenticated
+using (
+  bucket_id = 'claims'
+  and (storage.foldername(name))[1] = auth.uid()::text
+);
+
+-- Allow authenticated users to delete their own evidence
+create policy "claims_delete_own"
+on storage.objects
+for delete
+to authenticated
+using (
+  bucket_id = 'claims'
+  and (storage.foldername(name))[1] = auth.uid()::text
+);
+
+-- Allow admins to read all claim evidence
+create policy "claims_read_admin"
+on storage.objects
+for select
+to authenticated
+using (
+  bucket_id = 'claims'
+  and exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
+);
