@@ -20,7 +20,8 @@ import { useAuth } from '@/src/contexts/AuthContext';
 import { useDirectoryData } from '@/src/directory-data';
 import { getBusinessListingPath } from '@/src/lib/ownerProfile';
 import { isSupabaseConfigured, supabase } from '@/src/lib/supabase';
-import { trackEvent } from '@/src/lib/analytics';
+import { trackEvent, trackPaidPlanIntentClicked, trackPaidPlanIntentViewed } from '@/src/lib/analytics';
+import { DIRECTORY_PLAN_TIERS, VERIFIED_LAUNCH_NOTE } from '@/src/lib/pricing';
 import businessBg from '@/src/photos/businessown/thumbnail_G74A6639.jpg';
 import { createImageFallbackHandler, preferSupabaseImage } from '@/src/supabase-images';
 
@@ -51,6 +52,10 @@ const reviewPoints = [
   'Approved claims unlock dashboard access for the selected listing.',
   'Rejected claims can be retried with stronger ownership details.',
 ];
+
+const paidDirectoryPlans = DIRECTORY_PLAN_TIERS.filter(
+  (tier) => tier.id === 'verified' || tier.id === 'verified-pro',
+);
 
 export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
   const navigate = useNavigate();
@@ -118,6 +123,19 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
     trackClaimStartedOnce(matchedBusiness.id);
   }, [businesses, directoryLoading, selectedBusinessId, user]);
 
+  useEffect(() => {
+    trackPaidPlanIntentViewed({
+      plan_id: 'verified',
+      plan_category: 'directory',
+      source_page: '/claim',
+    });
+    trackPaidPlanIntentViewed({
+      plan_id: 'verified-pro',
+      plan_category: 'directory',
+      source_page: '/claim',
+    });
+  }, []);
+
   const filteredBusinesses = useMemo(() => {
     if (!searchQuery.trim()) {
       return [];
@@ -174,14 +192,27 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
       return;
     }
 
+    const accountEmail = user.email ?? (user.user_metadata as { email?: string } | null | undefined)?.email ?? null;
+    const trimmedClaimantName = claimData.claimantName.trim();
+
+    if (!trimmedClaimantName) {
+      setError('Please enter your full name before submitting.');
+      return;
+    }
+
+    if (!accountEmail) {
+      setError('Your account is missing an email address. Add an email in Account settings, then try again.');
+      return;
+    }
+
     setError(null);
     setSubmitting(true);
 
     try {
       const { data: claimId, error: submitError } = await supabase.rpc('submit_business_claim', {
         p_business_id: selectedBusiness.id,
-        p_claimant_name: claimData.claimantName,
-        p_claimant_email: user.email ?? '',
+        p_claimant_name: trimmedClaimantName,
+        p_claimant_email: accountEmail,
         p_claimant_phone: claimData.claimantPhone || null,
         p_relationship_to_business: claimData.relationshipToBusiness,
         p_message: claimData.message || null,
@@ -190,6 +221,7 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
       if (submitError) {
         const msg = submitError.message ?? '';
         const code = submitError.code ?? '';
+        console.error('Claim submission failed:', { code, msg, details: submitError.details, hint: submitError.hint });
 
         if (code === 'P1001' || msg.includes('pending claim')) {
           navigate('/claim/status');
@@ -209,6 +241,16 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
           || msg.includes('already been claimed')
         ) {
           setError('Another claim for this listing is already in review. Please check the status page.');
+          return;
+        }
+
+        if (code === 'P1005') {
+          setError('We could not determine your account email for this claim. Update your profile/account email and try again.');
+          return;
+        }
+
+        if (code === 'P0001' || msg.toLowerCase().includes('not authenticated')) {
+          setError('Your session expired. Please sign in again and resubmit your claim.');
           return;
         }
 
@@ -329,6 +371,31 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
                   ))}
                 </div>
               ) : null}
+              <div className="mt-6 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+                <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">After approval</p>
+                <div className="mt-3 space-y-3 text-sm leading-6 text-zinc-600">
+                  {paidDirectoryPlans.map((tier) => (
+                    <p key={tier.id}>
+                      <span className="font-semibold text-zinc-900">{tier.name}:</span> {tier.price}
+                    </p>
+                  ))}
+                  <p>{VERIFIED_LAUNCH_NOTE}</p>
+                </div>
+                <Link
+                  to="/for-business"
+                  onClick={() => trackPaidPlanIntentClicked({
+                    plan_id: 'verified',
+                    plan_category: 'directory',
+                    source_page: '/claim',
+                    cta_label: 'Compare Directory Tiers',
+                    destination: '/for-business',
+                  })}
+                  className="mt-4 inline-flex items-center gap-2 font-medium text-zinc-900 underline underline-offset-4 transition-colors hover:text-orange-600"
+                >
+                  Compare directory tiers
+                  <ArrowRight className="h-4 w-4" strokeWidth={2.2} />
+                </Link>
+              </div>
               <div className="mt-6">
                 {error ? (
                   <div className="mb-5 flex items-start gap-3 border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
@@ -570,6 +637,30 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
                     <ArrowRight className="h-4 w-4" strokeWidth={2.2} />
                   </Link>
                 </section>
+                <section className="border border-zinc-200 bg-zinc-50 p-5">
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Directory tiers</p>
+                  <div className="mt-3 space-y-3 text-sm leading-6 text-zinc-600">
+                    {paidDirectoryPlans.map((tier) => (
+                      <p key={tier.id}>
+                        <span className="font-semibold text-zinc-900">{tier.name}:</span> {tier.price}
+                      </p>
+                    ))}
+                  </div>
+                  <Link
+                    to="/for-business"
+                    onClick={() => trackPaidPlanIntentClicked({
+                      plan_id: 'verified-pro',
+                      plan_category: 'directory',
+                      source_page: '/claim',
+                      cta_label: 'Review Pricing Tiers',
+                      destination: '/for-business',
+                    })}
+                    className="mt-4 inline-flex items-center gap-2 font-medium text-zinc-900 underline underline-offset-4 transition-colors hover:text-orange-600"
+                  >
+                    Review pricing tiers
+                    <ArrowRight className="h-4 w-4" strokeWidth={2.2} />
+                  </Link>
+                </section>
               </aside>
             </div>
           ) : (
@@ -705,6 +796,30 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
                   </p>
                   <Link to="/claim/status" className="mt-4 inline-flex items-center gap-2 font-medium text-zinc-900 underline underline-offset-4 transition-colors hover:text-orange-600">
                     Open status page
+                    <ArrowRight className="h-4 w-4" strokeWidth={2.2} />
+                  </Link>
+                </section>
+                <section className="border border-zinc-200 bg-zinc-50 p-5">
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Paid directory plans</p>
+                  <div className="mt-3 space-y-3 text-sm leading-6 text-zinc-600">
+                    {paidDirectoryPlans.map((tier) => (
+                      <p key={tier.id}>
+                        <span className="font-semibold text-zinc-900">{tier.name}:</span> {tier.price}
+                      </p>
+                    ))}
+                  </div>
+                  <Link
+                    to="/for-business"
+                    onClick={() => trackPaidPlanIntentClicked({
+                      plan_id: 'verified',
+                      plan_category: 'directory',
+                      source_page: '/claim',
+                      cta_label: 'See Paid Plan Details',
+                      destination: '/for-business',
+                    })}
+                    className="mt-4 inline-flex items-center gap-2 font-medium text-zinc-900 underline underline-offset-4 transition-colors hover:text-orange-600"
+                  >
+                    See paid plan details
                     <ArrowRight className="h-4 w-4" strokeWidth={2.2} />
                   </Link>
                 </section>

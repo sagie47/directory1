@@ -13,6 +13,8 @@ import { motion } from 'motion/react';
 import SectionEyebrow from '@/src/components/SectionEyebrow';
 import { getCallOffer, getCallOfferConfig } from '@/src/lib/callOffers';
 import {
+  trackPaidPlanIntentClicked,
+  trackPaidPlanIntentViewed,
   trackFormStarted,
   trackFormSubmitFailed,
   trackFormSubmitted,
@@ -20,6 +22,11 @@ import {
   trackStripeRedirectStarted,
 } from '@/src/lib/analytics';
 import { submitCallRequest } from '@/src/lib/submitCallRequest';
+import { SERVICE_OFFER_PRICING } from '@/src/lib/pricing';
+
+function normalizeCity(value: string): string {
+  return value.trim().toLowerCase();
+}
 
 export default function BookCallPage() {
   const formId = 'book_call';
@@ -55,6 +62,11 @@ export default function BookCallPage() {
       offer,
       page: '/book-call',
     });
+    trackPaidPlanIntentViewed({
+      plan_id: offer,
+      plan_category: 'service',
+      source_page: '/book-call',
+    });
   }, [offer]);
 
   useEffect(() => {
@@ -74,11 +86,13 @@ export default function BookCallPage() {
 
   function handleChange(event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     if (!hasTrackedFormStart) {
+      const normalizedCity = normalizeCity(event.target.name === 'city' ? event.target.value : formData.city);
       trackFormStarted({
         form_id: formId,
         offer,
         page: '/book-call',
         field_name: event.target.name,
+        city: normalizedCity || undefined,
       });
       setHasTrackedFormStart(true);
       if (typeof window !== 'undefined') {
@@ -94,10 +108,24 @@ export default function BookCallPage() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const normalizedCity = normalizeCity(formData.city);
+    const destination = content.stripePaymentUrl
+      ? content.stripePaymentUrl
+      : `/call-requested?offer=${offer}`;
+    trackPaidPlanIntentClicked({
+      plan_id: offer,
+      plan_category: 'service',
+      source_page: '/book-call',
+      cta_label: content.cta,
+      destination,
+      city: normalizedCity || undefined,
+    });
+
     trackFormSubmitted({
       form_id: formId,
       offer,
       page: '/book-call',
+      city: normalizedCity || undefined,
     });
     setLoading(true);
     setError(null);
@@ -125,6 +153,7 @@ export default function BookCallPage() {
         offer,
         page: '/book-call',
         error: result.error ?? 'Submission failed. Please try again.',
+        city: normalizedCity || undefined,
       });
       setError(result.error ?? 'Submission failed. Please try again.');
       return;
@@ -136,6 +165,7 @@ export default function BookCallPage() {
         offer,
         page: '/book-call',
         destination: content.stripePaymentUrl,
+        city: normalizedCity || undefined,
       });
       window.location.assign(content.stripePaymentUrl);
       return;
@@ -165,6 +195,9 @@ export default function BookCallPage() {
             <h1 className="text-5xl font-bold uppercase leading-[0.95] tracking-tighter text-zinc-900 md:text-6xl lg:text-7xl">
               {content.title}
             </h1>
+            <p className="mt-4 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-orange-600">
+              {SERVICE_OFFER_PRICING[offer].startingPrice}
+            </p>
             <p className="mt-6 text-xl font-medium leading-relaxed text-zinc-600">
               {content.intro}
             </p>

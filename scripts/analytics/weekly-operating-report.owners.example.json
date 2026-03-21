@@ -1,0 +1,13 @@
+{
+  "reportOwner": "Revenue Operations Lead",
+  "unknownCityOwner": "Data Quality Lead",
+  "cadenceDay": "Monday",
+  "cadenceTime": "09:00",
+  "cadenceTimezone": "America/Vancouver",
+  "stageOwners": {
+    "offer_view_to_cta": "Growth Marketing Lead",
+    "cta_to_form_start": "Product Engineering Lead",
+    "form_start_to_submit": "Forms Reliability Lead",
+    "submit_to_stripe": "Payments Engineering Lead"
+  }
+}

@@ -14,8 +14,9 @@ import {
 import SectionEyebrow from '@/src/components/SectionEyebrow';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useDirectoryData } from '@/src/directory-data';
-import { trackEvent } from '@/src/lib/analytics';
+import { trackEvent, trackPaidPlanIntentClicked, trackPaidPlanIntentViewed } from '@/src/lib/analytics';
 import { getBusinessListingPath, getClaimStatusCopy, getOwnerProfileFields } from '@/src/lib/ownerProfile';
+import { DIRECTORY_PLAN_TIERS, VERIFIED_LAUNCH_NOTE } from '@/src/lib/pricing';
 import { getOwnerRecommendation } from '@/src/lib/recommendations';
 import { isSupabaseConfigured, supabase } from '@/src/lib/supabase';
 
@@ -44,6 +45,27 @@ function getStatusIcon(status: BusinessClaim['status']) {
     case 'revoked':
       return <AlertCircle className="h-4 w-4" strokeWidth={2.2} />;
   }
+}
+
+const paidDirectoryPlans = DIRECTORY_PLAN_TIERS.filter(
+  (tier) => tier.id === 'verified' || tier.id === 'verified-pro',
+);
+
+function getPaidIntentFromHref(href?: string) {
+  if (!href) return null;
+  if (href === '/never-miss-a-lead') {
+    return { planId: 'never-miss-a-lead', planCategory: 'service' as const };
+  }
+  if (href === '/websites-for-trades') {
+    return { planId: 'website', planCategory: 'service' as const };
+  }
+  if (href === '/managed-growth') {
+    return { planId: 'managed-growth', planCategory: 'service' as const };
+  }
+  if (href === '/for-business') {
+    return { planId: 'verified', planCategory: 'directory' as const };
+  }
+  return null;
 }
 
 export default function ClaimStatusPage() {
@@ -77,6 +99,22 @@ export default function ClaimStatusPage() {
   useEffect(() => {
     trackEvent('claim_status_viewed');
   }, []);
+
+  useEffect(() => {
+    const hasApprovedClaim = claimsWithRecommendations.some((claim) => claim.status === 'approved');
+    if (!hasApprovedClaim) return;
+
+    trackPaidPlanIntentViewed({
+      plan_id: 'verified',
+      plan_category: 'directory',
+      source_page: '/claim/status',
+    });
+    trackPaidPlanIntentViewed({
+      plan_id: 'verified-pro',
+      plan_category: 'directory',
+      source_page: '/claim/status',
+    });
+  }, [claimsWithRecommendations]);
 
   useEffect(() => {
     for (const claim of claimsWithRecommendations) {
@@ -303,12 +341,27 @@ export default function ClaimStatusPage() {
                           {recommendation.href && recommendation.ctaLabel && (recommendation.type !== 'complete_profile' || claim.status === 'approved') ? (
                             <Link
                               to={recommendation.href}
-                              onClick={() => trackEvent('claim_status_recommendation_clicked', {
-                                claim_id: claim.id,
-                                business_id: claim.business_id,
-                                claim_status: claim.status,
-                                recommendation_type: recommendation.type,
-                              })}
+                              onClick={() => {
+                                trackEvent('claim_status_recommendation_clicked', {
+                                  claim_id: claim.id,
+                                  business_id: claim.business_id,
+                                  claim_status: claim.status,
+                                  recommendation_type: recommendation.type,
+                                  cta_target: recommendation.href,
+                                });
+
+                                const paidIntent = getPaidIntentFromHref(recommendation.href);
+                                if (paidIntent) {
+                                  trackPaidPlanIntentClicked({
+                                    plan_id: paidIntent.planId,
+                                    plan_category: paidIntent.planCategory,
+                                    source_page: '/claim/status',
+                                    cta_label: recommendation.ctaLabel,
+                                    destination: recommendation.href,
+                                    recommendation_type: recommendation.type,
+                                  });
+                                }
+                              }}
                               className="mt-4 inline-flex items-center gap-2 font-medium text-zinc-900 underline underline-offset-4 transition-colors hover:text-orange-600"
                             >
                               {recommendation.ctaLabel}
@@ -359,6 +412,36 @@ export default function ClaimStatusPage() {
                           >
                             View public listing
                           </Link>
+                        ) : null}
+
+                        {claim.status === 'approved' ? (
+                          <div className="border border-zinc-200 bg-white px-4 py-4">
+                            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Directory plans</p>
+                            <div className="mt-3 space-y-2 text-sm leading-6 text-zinc-600">
+                              {paidDirectoryPlans.map((tier) => (
+                                <p key={tier.id}>
+                                  <span className="font-semibold text-zinc-900">{tier.name}:</span> {tier.price}
+                                </p>
+                              ))}
+                              <p>{VERIFIED_LAUNCH_NOTE}</p>
+                            </div>
+                            <Link
+                              to="/for-business"
+                              onClick={() => trackPaidPlanIntentClicked({
+                                plan_id: 'verified',
+                                plan_category: 'directory',
+                                source_page: '/claim/status',
+                                cta_label: 'Compare Directory Plans',
+                                destination: '/for-business',
+                                claim_id: claim.id,
+                                business_id: claim.business_id,
+                              })}
+                              className="mt-4 inline-flex items-center gap-2 font-medium text-zinc-900 underline underline-offset-4 transition-colors hover:text-orange-600"
+                            >
+                              Compare directory plans
+                              <ArrowRight className="h-4 w-4" strokeWidth={2.2} />
+                            </Link>
+                          </div>
                         ) : null}
 
                         {claim.status === 'pending' ? (

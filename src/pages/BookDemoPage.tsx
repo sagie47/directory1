@@ -5,11 +5,18 @@ import { motion } from 'motion/react';
 import SectionEyebrow from '../components/SectionEyebrow';
 import { submitDemoRequest } from '../lib/submissions';
 import {
+  trackPaidPlanIntentClicked,
+  trackPaidPlanIntentViewed,
   trackFormStarted,
   trackFormSubmitFailed,
   trackFormSubmitted,
   trackFormViewed,
 } from '../lib/analytics';
+import { SERVICE_OFFER_PRICING } from '../lib/pricing';
+
+function normalizeCity(value: string): string {
+  return value.trim().toLowerCase();
+}
 
 const trades = [
   { value: '', label: 'Select your trade' },
@@ -75,14 +82,30 @@ export default function BookDemoPage() {
       offer,
       page: '/book-demo',
     });
+    trackPaidPlanIntentViewed({
+      plan_id: 'never-miss-a-lead',
+      plan_category: 'service',
+      source_page: '/book-demo',
+    });
   }, []);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    const normalizedCity = normalizeCity(formData.city);
+    trackPaidPlanIntentClicked({
+      plan_id: 'never-miss-a-lead',
+      plan_category: 'service',
+      source_page: '/book-demo',
+      cta_label: 'Request My Demo',
+      destination: '/demo-requested',
+      city: normalizedCity || undefined,
+    });
+
     trackFormSubmitted({
       form_id: formId,
       offer,
       page: '/book-demo',
+      city: normalizedCity || undefined,
     });
     setLoading(true);
     setError(null);
@@ -99,6 +122,7 @@ export default function BookDemoPage() {
         offer,
         page: '/book-demo',
         error: result.error ?? 'Submission failed. Please try again.',
+        city: normalizedCity || undefined,
       });
       setError(result.error ?? 'Submission failed. Please try again.');
     }
@@ -106,11 +130,13 @@ export default function BookDemoPage() {
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     if (!hasTrackedFormStart) {
+      const normalizedCity = normalizeCity(e.target.name === 'city' ? e.target.value : formData.city);
       trackFormStarted({
         form_id: formId,
         offer,
         page: '/book-demo',
         field_name: e.target.name,
+        city: normalizedCity || undefined,
       });
       setHasTrackedFormStart(true);
       if (typeof window !== 'undefined') {
@@ -148,6 +174,9 @@ export default function BookDemoPage() {
             <h1 className="mt-6 text-4xl font-bold uppercase tracking-tighter leading-[0.95] text-zinc-900 sm:mt-8 sm:text-5xl md:text-6xl lg:text-7xl">
               Book a Demo
             </h1>
+            <p className="mt-4 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-orange-600">
+              {SERVICE_OFFER_PRICING['never-miss-a-lead'].startingPrice}
+            </p>
             <p className="mt-5 text-lg font-medium leading-relaxed text-zinc-600 sm:mt-6 sm:text-xl">
               Tell us how your business handles inbound leads today. We will show you what a tighter missed-call and follow-up system could look like for your trade.
             </p>

@@ -87,9 +87,11 @@ Status legend:
 
 ## Phase 4: Ops Cadence
 
-1. `todo` Weekly KPI dashboard definition
+1. `done` Weekly KPI dashboard definition (SAN-9 + SAN-13)
 - Acceptance:
   - claim and funnel KPI queries documented and runnable.
+  - weekly operating report template/process runnable from SAN-9 outputs with owner, cadence, and threshold-driven actions.
+  - references: `docs/WEEKLY_OPERATING_REPORT_RUNBOOK.md`, `docs/WEEKLY_OPERATING_REPORT_TEMPLATE.md`, `scripts/analytics/generate-weekly-operating-report.ts`
 
 2. `todo` Scrape cadence policy by city tier
 - Acceptance:

@@ -21,6 +21,14 @@ interface FormAnalyticsProperties extends AnalyticsProperties {
   offer?: string;
 }
 
+interface PaidPlanIntentProperties extends AnalyticsProperties {
+  plan_id: string;
+  source_page: string;
+  plan_category: 'directory' | 'service';
+  cta_label?: string;
+  destination?: string;
+}
+
 export function trackOfferPageViewed(properties: OfferAnalyticsProperties) {
   trackEvent('offer_page_viewed', properties);
 }
@@ -47,4 +55,12 @@ export function trackFormSubmitFailed(properties: FormAnalyticsProperties) {
 
 export function trackStripeRedirectStarted(properties: FormAnalyticsProperties) {
   trackEvent('stripe_redirect_started', properties);
+}
+
+export function trackPaidPlanIntentViewed(properties: PaidPlanIntentProperties) {
+  trackEvent('paid_plan_intent_viewed', properties);
+}
+
+export function trackPaidPlanIntentClicked(properties: PaidPlanIntentProperties) {
+  trackEvent('paid_plan_intent_clicked', properties);
 }
