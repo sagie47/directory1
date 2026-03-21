@@ -13,8 +13,9 @@ import OwnerProfileChecklist from '@/src/components/OwnerProfileChecklist';
 import SectionEyebrow from '@/src/components/SectionEyebrow';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useDirectoryData } from '@/src/directory-data';
-import { trackEvent } from '@/src/lib/analytics';
+import { trackEvent, trackPaidPlanIntentClicked, trackPaidPlanIntentViewed } from '@/src/lib/analytics';
 import { getBusinessListingPath, getOwnerProfileProgress } from '@/src/lib/ownerProfile';
+import { DIRECTORY_PLAN_TIERS, VERIFIED_LAUNCH_NOTE } from '@/src/lib/pricing';
 import { getOwnerRecommendation } from '@/src/lib/recommendations';
 import { isSupabaseConfigured, supabase } from '@/src/lib/supabase';
 
@@ -49,6 +50,26 @@ const defaultHours: BusinessHours = {
   sunday: '',
 };
 const OWNER_SELECTED_CLAIM_STORAGE_KEY = 'owner-dashboard:selected-claim-id';
+const paidDirectoryPlans = DIRECTORY_PLAN_TIERS.filter(
+  (tier) => tier.id === 'verified' || tier.id === 'verified-pro',
+);
+
+function getPaidIntentFromHref(href?: string) {
+  if (!href) return null;
+  if (href === '/never-miss-a-lead') {
+    return { planId: 'never-miss-a-lead', planCategory: 'service' as const };
+  }
+  if (href === '/websites-for-trades') {
+    return { planId: 'website', planCategory: 'service' as const };
+  }
+  if (href === '/managed-growth') {
+    return { planId: 'managed-growth', planCategory: 'service' as const };
+  }
+  if (href === '/for-business') {
+    return { planId: 'verified', planCategory: 'directory' as const };
+  }
+  return null;
+}
 
 function normalizeHours(hours?: BusinessHours) {
   return {
@@ -207,6 +228,22 @@ export default function OwnerDashboardPage() {
       trackEvent('owner_dashboard_recommendation_viewed', { type: recommendation.type });
     }
   }, [business, recommendation.type]);
+
+  useEffect(() => {
+    if (!business) return;
+    trackPaidPlanIntentViewed({
+      plan_id: 'verified',
+      plan_category: 'directory',
+      source_page: '/owner/dashboard',
+      business_id: business.id,
+    });
+    trackPaidPlanIntentViewed({
+      plan_id: 'verified-pro',
+      plan_category: 'directory',
+      source_page: '/owner/dashboard',
+      business_id: business.id,
+    });
+  }, [business]);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -562,13 +599,56 @@ export default function OwnerDashboardPage() {
               {recommendation.href && recommendation.ctaLabel ? (
                 <Link
                   to={recommendation.href}
-                  onClick={() => trackEvent('owner_dashboard_recommendation_clicked', { type: recommendation.type })}
+                  onClick={() => {
+                    trackEvent('owner_dashboard_recommendation_clicked', {
+                      type: recommendation.type,
+                      cta_target: recommendation.href,
+                    });
+
+                    const paidIntent = getPaidIntentFromHref(recommendation.href);
+                    if (paidIntent) {
+                      trackPaidPlanIntentClicked({
+                        plan_id: paidIntent.planId,
+                        plan_category: paidIntent.planCategory,
+                        source_page: '/owner/dashboard',
+                        cta_label: recommendation.ctaLabel,
+                        destination: recommendation.href,
+                        recommendation_type: recommendation.type,
+                      });
+                    }
+                  }}
                   className="mt-5 inline-flex items-center gap-2 font-medium text-zinc-900 underline underline-offset-4 transition-colors hover:text-orange-600"
                 >
                   {recommendation.ctaLabel}
                   <ArrowRight className="h-4 w-4" strokeWidth={2.2} />
                 </Link>
               ) : null}
+            </section>
+
+            <section className="border border-zinc-200 bg-zinc-50 p-5">
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Directory pricing</p>
+              <div className="mt-3 space-y-3 text-sm leading-6 text-zinc-600">
+                {paidDirectoryPlans.map((tier) => (
+                  <p key={tier.id}>
+                    <span className="font-semibold text-zinc-900">{tier.name}:</span> {tier.price}
+                  </p>
+                ))}
+                <p>{VERIFIED_LAUNCH_NOTE}</p>
+              </div>
+              <Link
+                to="/for-business"
+                onClick={() => trackPaidPlanIntentClicked({
+                  plan_id: 'verified-pro',
+                  plan_category: 'directory',
+                  source_page: '/owner/dashboard',
+                  cta_label: 'Review Directory Pricing',
+                  destination: '/for-business',
+                })}
+                className="mt-4 inline-flex items-center gap-2 font-medium text-zinc-900 underline underline-offset-4 transition-colors hover:text-orange-600"
+              >
+                Review directory pricing
+                <ArrowRight className="h-4 w-4" strokeWidth={2.2} />
+              </Link>
             </section>
           </aside>
         </div>

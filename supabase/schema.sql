@@ -120,6 +120,15 @@ create table if not exists public.business_claims (
   reviewed_by uuid references public.profiles (id) on delete set null,
   reviewed_at timestamptz,
   rejection_reason text,
+  notification_status text not null default 'pending' constraint business_claims_notification_status_check check (notification_status in ('pending', 'sending', 'sent', 'failed', 'skipped')),
+  notification_retry_count integer not null default 0 constraint business_claims_notification_retry_count_check check (notification_retry_count >= 0),
+  notification_last_attempt_at timestamptz,
+  notification_last_success_at timestamptz,
+  notification_last_failure_at timestamptz,
+  notification_last_error_code text,
+  notification_last_error text,
+  notification_last_http_status integer,
+  notification_last_response_body text,
   notification_sent_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -138,9 +147,51 @@ create table if not exists public.business_overrides (
 );
 
 alter table public.business_overrides add column if not exists name text;
+alter table public.business_claims add column if not exists notification_status text not null default 'pending';
+alter table public.business_claims add column if not exists notification_retry_count integer not null default 0;
+alter table public.business_claims add column if not exists notification_last_attempt_at timestamptz;
+alter table public.business_claims add column if not exists notification_last_success_at timestamptz;
+alter table public.business_claims add column if not exists notification_last_failure_at timestamptz;
+alter table public.business_claims add column if not exists notification_last_error_code text;
+alter table public.business_claims add column if not exists notification_last_error text;
+alter table public.business_claims add column if not exists notification_last_http_status integer;
+alter table public.business_claims add column if not exists notification_last_response_body text;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'business_claims_notification_status_check'
+  ) then
+    alter table public.business_claims
+      add constraint business_claims_notification_status_check
+      check (notification_status in ('pending', 'sending', 'sent', 'failed', 'skipped'));
+  end if;
+
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'business_claims_notification_retry_count_check'
+  ) then
+    alter table public.business_claims
+      add constraint business_claims_notification_retry_count_check
+      check (notification_retry_count >= 0);
+  end if;
+end
+$$;
+
+update public.business_claims
+set notification_status = case
+  when notification_sent_at is not null then 'sent'
+  when notification_last_error is not null then 'failed'
+  else notification_status
+end
+where notification_status = 'pending';
 
 create index if not exists business_claims_user_id_idx on public.business_claims (user_id);
 create index if not exists business_claims_business_id_idx on public.business_claims (business_id);
+create index if not exists business_claims_notification_status_idx on public.business_claims (notification_status);
 
 create unique index if not exists business_claims_one_pending_per_user_business_idx
   on public.business_claims (user_id, business_id)
@@ -527,7 +578,17 @@ begin
       rejection_reason = case
         when p_status = 'rejected' then p_rejection_reason
         else null
-      end
+      end,
+      notification_status = 'pending',
+      notification_retry_count = 0,
+      notification_last_attempt_at = null,
+      notification_last_success_at = null,
+      notification_last_failure_at = null,
+      notification_last_error_code = null,
+      notification_last_error = null,
+      notification_last_http_status = null,
+      notification_last_response_body = null,
+      notification_sent_at = null
   where id = p_claim_id
     and status = 'pending';
 
@@ -545,6 +606,33 @@ from public.business_claims
 where status = 'approved';
 
 grant select on public.verified_businesses to anon, authenticated;
+
+create or replace view public.claim_notification_observability
+with (security_invoker = true)
+as
+select
+  bc.id as claim_id,
+  bc.business_id,
+  bc.status as claim_status,
+  bc.notification_status,
+  bc.notification_retry_count,
+  bc.notification_last_attempt_at,
+  bc.notification_last_success_at,
+  bc.notification_last_failure_at,
+  bc.notification_last_error_code,
+  bc.notification_last_error,
+  bc.notification_last_http_status,
+  bc.notification_last_response_body,
+  bc.notification_sent_at,
+  (bc.status in ('approved', 'rejected') and bc.notification_status = 'failed') as needs_attention,
+  (
+    bc.status in ('approved', 'rejected')
+    and bc.notification_sent_at is null
+    and bc.notification_status in ('pending', 'failed', 'skipped')
+  ) as can_retry
+from public.business_claims bc;
+
+grant select on public.claim_notification_observability to authenticated;
 
 create table if not exists public.gmaps_scrape_runs (
   id uuid primary key default gen_random_uuid(),

@@ -9,7 +9,8 @@ import SectionEyebrow from '../components/SectionEyebrow';
 import BusinessFAQ from '../components/BusinessFAQ';
 import growthHero from '../photos/businessown/pr-roofer-1200x700.jpg';
 import { createImageFallbackHandler, preferSupabaseImage } from '../supabase-images';
-import { trackOfferCtaClicked, trackOfferPageViewed } from '../lib/analytics';
+import { trackOfferCtaClicked, trackOfferPageViewed, trackPaidPlanIntentClicked, trackPaidPlanIntentViewed } from '../lib/analytics';
+import { SERVICE_OFFER_PRICING } from '../lib/pricing';
 
 const handledItems = [
   {
@@ -75,6 +76,11 @@ export default function ManagedGrowthPage() {
       offer: 'managed-growth',
       page: '/managed-growth',
     });
+    trackPaidPlanIntentViewed({
+      plan_id: 'managed-growth',
+      plan_category: 'service',
+      source_page: '/managed-growth',
+    });
   }, []);
 
   const handleOfferCtaClick = (event: MouseEvent<HTMLElement>) => {
@@ -94,6 +100,13 @@ export default function ManagedGrowthPage() {
       cta_label: anchor.textContent?.trim() ?? 'Schedule a Strategy Call',
       destination: `${destination.pathname}${destination.search}`,
       cta_location: 'offer_page',
+    });
+    trackPaidPlanIntentClicked({
+      plan_id: 'managed-growth',
+      plan_category: 'service',
+      source_page: '/managed-growth',
+      cta_label: anchor.textContent?.trim() ?? 'Schedule a Strategy Call',
+      destination: `${destination.pathname}${destination.search}`,
     });
   };
 
@@ -155,6 +168,9 @@ export default function ManagedGrowthPage() {
             >
               We help Okanagan contractors improve their online presence, respond faster to leads, and stay visible without adding more admin to the week.
             </motion.p>
+            <p className="mb-8 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-orange-300">
+              {SERVICE_OFFER_PRICING['managed-growth'].startingPrice}
+            </p>
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}

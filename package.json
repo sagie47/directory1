@@ -20,6 +20,7 @@
     "generate:descriptions": "tsx scripts/generate-business-descriptions.ts",
     "generate:seed-json": "tsx scripts/generate-seed-json.ts",
     "generate:sitemap": "tsx scripts/generate-sitemap.ts",
+    "report:weekly-ops": "tsx scripts/analytics/generate-weekly-operating-report.ts",
     "export:supabase-seed": "tsx scripts/export-supabase-seed.ts",
     "sync:supabase": "tsx scripts/sync-supabase.ts"
   },

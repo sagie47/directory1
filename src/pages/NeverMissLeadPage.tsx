@@ -9,7 +9,8 @@ import BusinessFAQ from '../components/BusinessFAQ';
 import BusinessCTA from '../components/BusinessCTA';
 import FeatureCard from '../components/FeatureCard';
 import { createImageFallbackHandler, preferSupabaseImage } from '../supabase-images';
-import { trackOfferCtaClicked, trackOfferPageViewed } from '../lib/analytics';
+import { trackOfferCtaClicked, trackOfferPageViewed, trackPaidPlanIntentClicked, trackPaidPlanIntentViewed } from '../lib/analytics';
+import { SERVICE_OFFER_PRICING } from '../lib/pricing';
 
 const howItWorks = [
   {
@@ -74,6 +75,11 @@ export default function NeverMissLeadPage() {
       offer: 'never-miss-a-lead',
       page: '/never-miss-a-lead',
     });
+    trackPaidPlanIntentViewed({
+      plan_id: 'never-miss-a-lead',
+      plan_category: 'service',
+      source_page: '/never-miss-a-lead',
+    });
   }, []);
 
   const handleOfferCtaClick = (event: MouseEvent<HTMLElement>) => {
@@ -92,6 +98,13 @@ export default function NeverMissLeadPage() {
       cta_label: anchor.textContent?.trim() ?? 'Book a Demo',
       destination: `${destination.pathname}${destination.search}`,
       cta_location: 'offer_page',
+    });
+    trackPaidPlanIntentClicked({
+      plan_id: 'never-miss-a-lead',
+      plan_category: 'service',
+      source_page: '/never-miss-a-lead',
+      cta_label: anchor.textContent?.trim() ?? 'Book a Demo',
+      destination: `${destination.pathname}${destination.search}`,
     });
   };
 
@@ -156,6 +169,9 @@ export default function NeverMissLeadPage() {
             >
               We help Okanagan trades businesses capture missed calls, respond instantly by text, and qualify leads even when nobody can answer the phone.
             </motion.p>
+            <p className="mb-8 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-orange-300">
+              {SERVICE_OFFER_PRICING['never-miss-a-lead'].startingPrice}
+            </p>
 
             <motion.div 
               initial={{ opacity: 0, y: 20 }}

@@ -1,5 +1,6 @@
 import type { Business } from '@/src/business';
 import { getOwnerProfileProgress, type OwnerProfileSnapshot } from '@/src/lib/ownerProfile';
+import { SERVICE_OFFER_PRICING } from '@/src/lib/pricing';
 
 export type RecommendationType =
   | 'review_pending'
@@ -73,7 +74,7 @@ export function getOwnerRecommendation({
       return {
         type: 'website_fix',
         title: 'Add A Website',
-        description: 'Your core listing details are in place. A website gives customers one more reason to trust you before they call.',
+        description: `Your core listing details are in place. A website gives customers one more reason to trust you before they call. ${SERVICE_OFFER_PRICING.website.startingPrice}.`,
         href: '/websites-for-trades',
         ctaLabel: 'Explore Websites',
       };
@@ -103,7 +104,7 @@ export function getOwnerRecommendation({
     return {
       type: 'website_fix',
       title: 'Add A Website',
-      description: 'Your core listing details are in place. A website gives customers one more reason to trust you before they call.',
+      description: `Your core listing details are in place. A website gives customers one more reason to trust you before they call. ${SERVICE_OFFER_PRICING.website.startingPrice}.`,
       href: '/websites-for-trades',
       ctaLabel: 'Explore Websites',
     };
@@ -113,7 +114,7 @@ export function getOwnerRecommendation({
     return {
       type: 'lead_capture',
       title: 'Capture More Leads',
-      description: 'Your listing basics are in good shape. If you still miss calls while on jobs, lead capture is the next gap to fix.',
+      description: `Your listing basics are in good shape. If you still miss calls while on jobs, lead capture is the next gap to fix. ${SERVICE_OFFER_PRICING['never-miss-a-lead'].startingPrice}.`,
       href: '/never-miss-a-lead',
       ctaLabel: 'View Lead Capture',
     };
@@ -122,7 +123,7 @@ export function getOwnerRecommendation({
   return {
     type: 'listing_upgrade',
     title: 'Keep Your Listing Working Harder',
-    description: 'Your profile basics are in place. The next step is improving how customers discover and contact your business.',
+    description: 'Your profile basics are in place. The next step is upgrading visibility with Verified ($29/mo launch, then $39/mo) or Verified Pro ($99/mo).',
     href: '/for-business',
     ctaLabel: 'See Business Options',
   };

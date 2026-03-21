@@ -9,7 +9,8 @@ import SectionEyebrow from '../components/SectionEyebrow';
 import BusinessFAQ from '../components/BusinessFAQ';
 import websiteHero from '../photos/businessown/AA_BCConstruction.jpg';
 import { createImageFallbackHandler, preferSupabaseImage } from '../supabase-images';
-import { trackOfferCtaClicked, trackOfferPageViewed } from '../lib/analytics';
+import { trackOfferCtaClicked, trackOfferPageViewed, trackPaidPlanIntentClicked, trackPaidPlanIntentViewed } from '../lib/analytics';
+import { SERVICE_OFFER_PRICING } from '../lib/pricing';
 
 const whatItDoes = [
   {
@@ -77,6 +78,11 @@ export default function WebsitesForTradesPage() {
       offer: 'website',
       page: '/websites-for-trades',
     });
+    trackPaidPlanIntentViewed({
+      plan_id: 'website',
+      plan_category: 'service',
+      source_page: '/websites-for-trades',
+    });
   }, []);
 
   const handleOfferCtaClick = (event: MouseEvent<HTMLElement>) => {
@@ -96,6 +102,13 @@ export default function WebsitesForTradesPage() {
       cta_label: anchor.textContent?.trim() ?? 'Schedule a Website Call',
       destination: `${destination.pathname}${destination.search}`,
       cta_location: 'offer_page',
+    });
+    trackPaidPlanIntentClicked({
+      plan_id: 'website',
+      plan_category: 'service',
+      source_page: '/websites-for-trades',
+      cta_label: anchor.textContent?.trim() ?? 'Schedule a Website Call',
+      destination: `${destination.pathname}${destination.search}`,
     });
   };
 
@@ -157,6 +170,9 @@ export default function WebsitesForTradesPage() {
             >
               Modern, fast, mobile-first websites for Okanagan contractors who need to look credible and make it easier for customers to reach out.
             </motion.p>
+            <p className="mb-8 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-orange-300">
+              {SERVICE_OFFER_PRICING.website.startingPrice}
+            </p>
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}

@@ -11,13 +11,15 @@ import BusinessCTA from '../components/BusinessCTA';
 import businessHero from '../photos/businessown/AA_BCConstruction.jpg';
 import businessStoryPhoto from '../photos/businessown/thumbnail_G74A6639.jpg';
 import businessOperationsPhoto from '../photos/businessown/plumbing_career_social jpg.jpg';
-import { trackEvent, trackOfferCtaClicked } from '../lib/analytics';
+import { trackEvent, trackOfferCtaClicked, trackPaidPlanIntentClicked, trackPaidPlanIntentViewed } from '../lib/analytics';
+import { DIRECTORY_PLAN_TIERS, SERVICE_OFFER_PRICING, VERIFIED_ANNUAL_DISCOUNT_NOTE, VERIFIED_LAUNCH_NOTE } from '../lib/pricing';
 
 const offerLanes = [
   {
     icon: Building2,
     eyebrow: 'Directory',
     title: 'Claim & Manage Profile',
+    pricing: 'Free claim, then Verified from $29/mo launch.',
     description: 'Take control of your listing, keep your details accurate, and make sure customers see the right service areas, hours, and contact information.',
     bullets: [
       'Claim your listing and owner access',
@@ -31,6 +33,7 @@ const offerLanes = [
     icon: Phone,
     eyebrow: 'Lead Capture',
     title: 'Never Miss a Lead',
+    pricing: SERVICE_OFFER_PRICING['never-miss-a-lead'].startingPrice,
     description: 'Fix the missed-call and slow-follow-up gap that costs busy crews real jobs.',
     bullets: [
       'Missed-call text back',
@@ -44,6 +47,7 @@ const offerLanes = [
     icon: Globe,
     eyebrow: 'Website',
     title: 'Websites for Trades',
+    pricing: SERVICE_OFFER_PRICING.website.startingPrice,
     description: 'Get a modern, credible site that makes it easier for customers to trust you and reach out.',
     bullets: [
       'Cleaner service pages and calls to action',
@@ -57,6 +61,7 @@ const offerLanes = [
     icon: TrendingUp,
     eyebrow: 'Managed Service',
     title: 'Managed Growth',
+    pricing: SERVICE_OFFER_PRICING['managed-growth'].startingPrice,
     description: 'Ongoing help with visibility, lead response, and online presence for trade businesses that want support without more admin.',
     bullets: [
       'Profile and presence upkeep',
@@ -98,7 +103,7 @@ const faqs = [
   },
   {
     question: 'Are there long-term contracts?',
-    answer: 'No. All our paid services and directory upgrades are flexible. We focus on providing ongoing value to earn your business every month.'
+    answer: 'No long-term lock-ins. Directory plans run month-to-month (Verified launch at $29/mo, then $39/mo, or $99/mo for Verified Pro), and service offers start at clearly defined monthly rates.'
   },
   {
     question: 'Is this only for Okanagan businesses?',
@@ -106,9 +111,12 @@ const faqs = [
   },
   {
     question: 'What if I need multiple services?',
-    answer: 'We recommend starting with the one that solves your biggest bottleneck. You can always add or upgrade services as your business needs evolve.'
+    answer: 'Start with the biggest bottleneck first. Most teams begin with Free Claim and then add one paid lane: Verified, lead capture (from $297/mo), website build (from $2,500 + $99/mo care), or managed growth (from $1,250/mo).'
   }
 ];
+
+const directoryTierCards = DIRECTORY_PLAN_TIERS.filter((tier) => tier.id !== 'performance-add-on');
+const performanceAddOnTier = DIRECTORY_PLAN_TIERS.find((tier) => tier.id === 'performance-add-on');
 
 export default function ForBusinessPage() {
   const getLaneOffer = (href: string) => {
@@ -121,6 +129,31 @@ export default function ForBusinessPage() {
 
   useEffect(() => {
     trackEvent('for_business_viewed');
+    trackPaidPlanIntentViewed({
+      plan_id: 'verified',
+      plan_category: 'directory',
+      source_page: '/for-business',
+    });
+    trackPaidPlanIntentViewed({
+      plan_id: 'verified-pro',
+      plan_category: 'directory',
+      source_page: '/for-business',
+    });
+    trackPaidPlanIntentViewed({
+      plan_id: 'never-miss-a-lead',
+      plan_category: 'service',
+      source_page: '/for-business',
+    });
+    trackPaidPlanIntentViewed({
+      plan_id: 'website',
+      plan_category: 'service',
+      source_page: '/for-business',
+    });
+    trackPaidPlanIntentViewed({
+      plan_id: 'managed-growth',
+      plan_category: 'service',
+      source_page: '/for-business',
+    });
   }, []);
 
   return (
@@ -309,6 +342,7 @@ export default function ForBusinessPage() {
                       <h3 className="mt-2 text-2xl font-bold uppercase tracking-tight text-zinc-900">{lane.title}</h3>
                     </div>
                   </div>
+                  <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-orange-600">{lane.pricing}</p>
                   <p className="max-w-xl text-base leading-relaxed text-zinc-600 sm:text-lg">{lane.description}</p>
                   <ul className="mt-6 space-y-3 text-sm text-zinc-700 sm:text-base">
                     {lane.bullets.map((bullet) => (
@@ -323,15 +357,26 @@ export default function ForBusinessPage() {
                 <div className="mt-8">
                   <Link
                     to={lane.href}
-                    onClick={() =>
+                    onClick={() => {
+                      const laneOffer = getLaneOffer(lane.href);
                       trackOfferCtaClicked({
-                        offer: getLaneOffer(lane.href),
+                        offer: laneOffer,
                         source_page: 'for-business',
                         cta_label: lane.cta,
                         destination: lane.href,
                         cta_location: 'business_lane_card',
-                      })
-                    }
+                      });
+
+                      if (laneOffer === 'never-miss-a-lead' || laneOffer === 'website' || laneOffer === 'managed-growth') {
+                        trackPaidPlanIntentClicked({
+                          plan_id: laneOffer,
+                          plan_category: 'service',
+                          source_page: '/for-business',
+                          cta_label: lane.cta,
+                          destination: lane.href,
+                        });
+                      }
+                    }}
                     className="inline-flex items-center gap-3 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-zinc-500 transition-colors group-hover:text-orange-500"
                   >
                     {lane.cta}
@@ -340,6 +385,71 @@ export default function ForBusinessPage() {
                 </div>
               </article>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="border-b border-zinc-200 bg-zinc-50 py-24 sm:py-32 lg:py-40">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-12 max-w-4xl">
+            <SectionEyebrow icon={Building2} className="mb-6">
+              Directory Pricing
+            </SectionEyebrow>
+            <h2 className="text-3xl font-bold uppercase tracking-tight text-zinc-900 sm:text-4xl md:text-5xl">
+              Concrete tiers for the claim-to-growth path.
+            </h2>
+            <p className="mt-5 max-w-3xl text-lg leading-8 text-zinc-600">
+              Start with the free claim, then choose the paid directory tier that matches your current demand and operating pace.
+            </p>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-3">
+            {directoryTierCards.map((tier) => {
+              const ctaHref = tier.id === 'free-claim' ? '/claim' : '/claim/status';
+              const ctaLabel = tier.id === 'free-claim' ? 'Start Free Claim' : 'Activate After Approval';
+
+              return (
+                <article key={tier.id} className="flex h-full flex-col justify-between rounded-[2rem] border border-zinc-200 bg-white p-7 shadow-sm sm:p-8">
+                  <div>
+                    <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">{tier.name}</p>
+                    <p className="mt-4 text-3xl font-bold tracking-tight text-zinc-950">{tier.price}</p>
+                    {tier.annualPrice ? (
+                      <p className="mt-2 text-sm font-medium text-zinc-500">{tier.annualPrice}</p>
+                    ) : null}
+                    <p className="mt-5 text-sm leading-7 text-zinc-600">{tier.summary}</p>
+                  </div>
+                  <Link
+                    to={ctaHref}
+                    onClick={() => {
+                      if (tier.id !== 'free-claim') {
+                        trackPaidPlanIntentClicked({
+                          plan_id: tier.id,
+                          plan_category: 'directory',
+                          source_page: '/for-business',
+                          cta_label: ctaLabel,
+                          destination: ctaHref,
+                        });
+                      }
+                    }}
+                    className="mt-8 inline-flex items-center gap-2 font-medium text-zinc-900 underline underline-offset-4 transition-colors hover:text-orange-600"
+                  >
+                    {ctaLabel}
+                    <ArrowRight className="h-4 w-4" strokeWidth={2.2} />
+                  </Link>
+                </article>
+              );
+            })}
+          </div>
+
+          <div className="mt-8 rounded-[1.5rem] border border-zinc-200 bg-white p-6 sm:p-7">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Launch notes</p>
+            <div className="mt-4 space-y-3 text-sm leading-7 text-zinc-600">
+              <p>{VERIFIED_LAUNCH_NOTE}</p>
+              <p>{VERIFIED_ANNUAL_DISCOUNT_NOTE}</p>
+              {performanceAddOnTier ? (
+                <p>{performanceAddOnTier.name}: {performanceAddOnTier.price}. {performanceAddOnTier.summary}</p>
+              ) : null}
+            </div>
           </div>
         </div>
       </section>
