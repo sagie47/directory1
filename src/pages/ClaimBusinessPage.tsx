@@ -26,7 +26,7 @@ const supportSteps = [
 
 export default function ClaimBusinessPage() {
   useEffect(() => {
-    trackEvent('claim_business_help_viewed');
+    trackEvent('claim_business_viewed');
   }, []);
 
   return (

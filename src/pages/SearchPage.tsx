@@ -61,7 +61,7 @@ function getQueryCityId(query: string, cityOptions: { id: string; name: string }
 }
 
 export default function SearchPage() {
-  const {businesses, categories, cities} = useDirectoryData();
+  const {businesses, categories, cities, verifiedLookupDegraded} = useDirectoryData();
   const [searchParams] = useSearchParams();
   const rawQuery = searchParams.get('q') ?? '';
   const rawCityId = searchParams.get('city') ?? '';
@@ -130,6 +130,12 @@ export default function SearchPage() {
       />
       <Breadcrumbs items={[{ label: 'Home', to: '/' }, { label: 'Search' }]} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {verifiedLookupDegraded ? (
+          <div className="mb-6 border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 rounded-sm">
+            Verified business status is temporarily unavailable. Search results are still loaded, but verified badges may be missing.
+          </div>
+        ) : null}
+
         <div className="mb-12 border-b border-zinc-200 pb-6">
           <div className="inline-flex items-center gap-2 border border-zinc-200 bg-white text-zinc-600 px-3 py-1.5 font-mono text-[10px] tracking-[0.15em] mb-6 rounded-sm uppercase">
             <Search className="h-3 w-3 text-zinc-400" strokeWidth={1.5} /> Search Results

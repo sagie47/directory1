@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   AlertCircle,
   ArrowRight,
   CheckCircle2,
+  Check,
+  Circle,
   Clock3,
   ShieldCheck,
   XCircle,
@@ -13,7 +15,8 @@ import SectionEyebrow from '@/src/components/SectionEyebrow';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useDirectoryData } from '@/src/directory-data';
 import { trackEvent } from '@/src/lib/analytics';
-import { getBusinessListingPath, getClaimStatusCopy } from '@/src/lib/ownerProfile';
+import { getBusinessListingPath, getClaimStatusCopy, getOwnerProfileFields } from '@/src/lib/ownerProfile';
+import { getOwnerRecommendation } from '@/src/lib/recommendations';
 import { isSupabaseConfigured, supabase } from '@/src/lib/supabase';
 
 interface BusinessClaim {
@@ -23,6 +26,11 @@ interface BusinessClaim {
   relationship_to_business: string;
   rejection_reason?: string;
   created_at: string;
+}
+
+interface ClaimWithRecommendation extends BusinessClaim {
+  recommendation: ReturnType<typeof getOwnerRecommendation>;
+  profileFields: ReturnType<typeof getOwnerProfileFields>;
 }
 
 function getStatusIcon(status: BusinessClaim['status']) {
@@ -46,13 +54,54 @@ export default function ClaimStatusPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const claimsAvailable = Boolean(supabase && isSupabaseConfigured());
+  const trackedRecommendationViews = useRef(new Set<string>());
   const showSubmittedBanner = searchParams.get('submitted') === '1';
 
   const businessesById = useMemo(() => new Map(businesses.map((business) => [business.id, business])), [businesses]);
 
+  const claimsWithRecommendations = useMemo<ClaimWithRecommendation[]>(() => {
+    return claims.map((claim) => {
+      const business = businessesById.get(claim.business_id) ?? null;
+      const recommendation = getOwnerRecommendation({ business, claimStatus: claim.status });
+      const profileFields = claim.status === 'pending' && business
+        ? getOwnerProfileFields(business).slice(0, 4)
+        : [];
+      return {
+        ...claim,
+        recommendation,
+        profileFields,
+      };
+    });
+  }, [claims, businessesById]);
+
   useEffect(() => {
     trackEvent('claim_status_viewed');
   }, []);
+
+  useEffect(() => {
+    for (const claim of claimsWithRecommendations) {
+      if (
+        (claim.status === 'pending' || claim.status === 'approved') &&
+        claim.recommendation.type !== 'none' &&
+        !trackedRecommendationViews.current.has(claim.id)
+      ) {
+        const hasPrimaryCta = Boolean(
+          claim.recommendation.href &&
+          claim.recommendation.ctaLabel &&
+          (claim.recommendation.type !== 'complete_profile' || claim.status === 'approved')
+        );
+        trackEvent('claim_status_recommendation_viewed', {
+          claim_id: claim.id,
+          business_id: claim.business_id,
+          claim_status: claim.status,
+          recommendation_type: claim.recommendation.type,
+          has_primary_cta: hasPrimaryCta,
+          cta_target: claim.recommendation.href,
+        });
+        trackedRecommendationViews.current.add(claim.id);
+      }
+    }
+  }, [claimsWithRecommendations]);
 
   useEffect(() => {
     async function fetchClaims() {
@@ -183,10 +232,11 @@ export default function ClaimStatusPage() {
               </div>
             </div>
           ) : (
-            claims.map((claim) => {
+            claimsWithRecommendations.map((claim) => {
               const business = businessesById.get(claim.business_id);
               const listingPath = getBusinessListingPath(business);
               const statusCopy = getClaimStatusCopy(claim.status);
+              const { recommendation, profileFields } = claim;
 
               return (
                 <section
@@ -218,6 +268,53 @@ export default function ClaimStatusPage() {
                         <div className="border border-rose-200 bg-rose-50 px-5 py-5 text-sm leading-7 text-rose-700">
                           <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em]">Review note</p>
                           <p className="mt-3">{claim.rejection_reason}</p>
+                        </div>
+                      ) : null}
+
+                      {claim.status === 'pending' && profileFields.length > 0 ? (
+                        <div className="border border-zinc-200 bg-zinc-50 px-5 py-5">
+                          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Profile completeness</p>
+                          <p className="mt-2 text-sm text-zinc-600">You&apos;ll be able to complete these after approval.</p>
+                          <div className="mt-4 space-y-3">
+                            {profileFields.map((field) => (
+                              <div key={field.id} className="flex items-start gap-3">
+                                <div className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${field.complete ? 'border-emerald-300 bg-emerald-500 text-white' : 'border-zinc-300 bg-white text-zinc-300'}`}>
+                                  {field.complete ? (
+                                    <Check className="h-3 w-3" strokeWidth={3} />
+                                  ) : (
+                                    <Circle className="h-3 w-3" strokeWidth={2.2} />
+                                  )}
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium text-zinc-900">{field.label}</p>
+                                  <p className="text-xs text-zinc-500">{field.description}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+
+                      {(claim.status === 'pending' || claim.status === 'approved') && recommendation.type !== 'none' ? (
+                        <div className="border border-zinc-200 bg-zinc-50 px-5 py-5">
+                          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Next opportunity</p>
+                          <h3 className="mt-3 text-xl font-bold tracking-tight text-zinc-950">{recommendation.title}</h3>
+                          <p className="mt-2 text-sm leading-6 text-zinc-600">{recommendation.description}</p>
+                          {recommendation.href && recommendation.ctaLabel && (recommendation.type !== 'complete_profile' || claim.status === 'approved') ? (
+                            <Link
+                              to={recommendation.href}
+                              onClick={() => trackEvent('claim_status_recommendation_clicked', {
+                                claim_id: claim.id,
+                                business_id: claim.business_id,
+                                claim_status: claim.status,
+                                recommendation_type: recommendation.type,
+                              })}
+                              className="mt-4 inline-flex items-center gap-2 font-medium text-zinc-900 underline underline-offset-4 transition-colors hover:text-orange-600"
+                            >
+                              {recommendation.ctaLabel}
+                              <ArrowRight className="h-4 w-4" strokeWidth={2.2} />
+                            </Link>
+                          ) : null}
                         </div>
                       ) : null}
                     </div>
