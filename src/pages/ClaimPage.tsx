@@ -78,6 +78,8 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
     relationshipToBusiness: 'owner',
     message: '',
   });
+  const [evidenceFiles, setEvidenceFiles] = useState<File[]>([]);
+  const [uploadingEvidence, setUploadingEvidence] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -209,6 +211,42 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
     setSubmitting(true);
 
     try {
+      let evidenceUrls: string[] = [];
+
+      // Upload evidence files if any
+      if (evidenceFiles.length > 0 && user) {
+        setUploadingEvidence(true);
+        const uploadPromises = evidenceFiles.map(async (file) => {
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
+          const filePath = `${user.id}/${fileName}`;
+
+          const { data, error: uploadError } = await supabase.storage
+            .from('claims')
+            .upload(filePath, file, {
+              cacheControl: '3600',
+              upsert: false,
+            });
+
+          if (uploadError) {
+            throw new Error(`Failed to upload ${file.name}: ${uploadError.message}`);
+          }
+
+          // Get public URL
+          const { data: urlData } = supabase.storage
+            .from('claims')
+            .getPublicUrl(filePath);
+
+          return urlData.publicUrl;
+        });
+
+        try {
+          evidenceUrls = await Promise.all(uploadPromises);
+        } finally {
+          setUploadingEvidence(false);
+        }
+      }
+
       const { data: claimId, error: submitError } = await supabase.rpc('submit_business_claim', {
         p_business_id: selectedBusiness.id,
         p_claimant_name: trimmedClaimantName,
@@ -216,6 +254,7 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
         p_claimant_phone: claimData.claimantPhone || null,
         p_relationship_to_business: claimData.relationshipToBusiness,
         p_message: claimData.message || null,
+        p_evidence_urls: evidenceUrls,
       });
 
       if (submitError) {
@@ -756,6 +795,31 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
                       placeholder="Add anything that helps us verify ownership faster."
                     />
                   </div>
+                  <div className="mt-8">
+                    <label className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Evidence files (optional)</label>
+                    <p className="mt-1 text-sm text-zinc-500">Upload images or PDFs to support your claim (max 10MB per file).</p>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/jpeg,image/png,image/webp,application/pdf"
+                      onChange={(event) => {
+                        const files = event.target.files ? Array.from(event.target.files) : [];
+                        setEvidenceFiles(files);
+                      }}
+                      className="mt-3 w-full text-sm text-zinc-500 file:mr-4 file:border file:border-zinc-200 file:bg-zinc-50 file:px-4 file:py-2 file:text-xs file:font-bold file:uppercase file:tracking-wider file:text-zinc-700 file:transition-colors file:hover:border-zinc-900 file:hover:bg-zinc-100"
+                    />
+                    {evidenceFiles.length > 0 && (
+                      <ul className="mt-3 space-y-1">
+                        {evidenceFiles.map((file, index) => (
+                          <li key={index} className="flex items-center gap-2 text-sm text-zinc-600">
+                            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                            {file.name}
+                            <span className="text-zinc-400">({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
                   <div className="mt-8 flex flex-col gap-4 border-t border-zinc-100 pt-6 sm:flex-row">
                     <button
                       type="button"
@@ -767,11 +831,11 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
                     </button>
                     <button
                       type="submit"
-                      disabled={submitting}
+                      disabled={submitting || uploadingEvidence}
                       className="inline-flex flex-1 items-center justify-center gap-3 border-2 border-zinc-900 bg-zinc-900 px-6 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white transition-all hover:border-orange-500 hover:bg-orange-500 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {submitting ? 'Submitting claim...' : 'Submit claim for review'}
-                      {!submitting ? <ArrowRight className="h-4 w-4" strokeWidth={2.6} /> : null}
+                      {submitting || uploadingEvidence ? 'Uploading evidence...' : 'Submit claim for review'}
+                      {!submitting && !uploadingEvidence ? <ArrowRight className="h-4 w-4" strokeWidth={2.6} /> : null}
                     </button>
                   </div>
                 </section>
