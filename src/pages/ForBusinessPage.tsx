@@ -198,7 +198,7 @@ export default function ForBusinessPage() {
               </Link>
               <a
                 href="#business-options"
-                className="flex min-h-12 items-center justify-center gap-3 rounded-sm border border-transparent px-6 py-4 font-sans text-sm font-bold uppercase tracking-wider text-zinc-300 transition-all duration-200 hover:text-white active:scale-[0.98] sm:px-10 sm:py-5 lg:px-12 lg:py-6"
+                className="flex min-h-12 items-center justify-center gap-3 rounded-sm border border-zinc-600/40 bg-zinc-900/20 px-6 py-4 font-sans text-sm font-bold uppercase tracking-wider text-zinc-300 transition-all duration-200 hover:border-zinc-500/60 hover:bg-zinc-800/30 hover:text-white active:scale-[0.98] sm:px-10 sm:py-5 lg:px-12 lg:py-6"
               >
                 See how we help after you claim
               </a>
