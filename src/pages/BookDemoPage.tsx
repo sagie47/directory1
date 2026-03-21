@@ -1,9 +1,15 @@
-import { type ChangeEvent, type FormEvent, useState } from 'react';
+import { type ChangeEvent, type FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Check, Building2, Clock, AlertCircle, BarChart3 } from 'lucide-react';
 import { motion } from 'motion/react';
 import SectionEyebrow from '../components/SectionEyebrow';
 import { submitDemoRequest } from '../lib/submissions';
+import {
+  trackFormStarted,
+  trackFormSubmitFailed,
+  trackFormSubmitted,
+  trackFormViewed,
+} from '../lib/analytics';
 
 const trades = [
   { value: '', label: 'Select your trade' },
@@ -41,9 +47,16 @@ const reassuranceItems = [
 ];
 
 export default function BookDemoPage() {
+  const formId = 'book_demo';
+  const offer = 'never-miss-a-lead';
+  const formStartedSessionKey = `form_started:${formId}`;
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasTrackedFormStart, setHasTrackedFormStart] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.sessionStorage.getItem(formStartedSessionKey) === '1';
+  });
   const [formData, setFormData] = useState({
     name: '',
     businessName: '',
@@ -56,8 +69,21 @@ export default function BookDemoPage() {
     biggestIssue: ''
   });
 
+  useEffect(() => {
+    trackFormViewed({
+      form_id: formId,
+      offer,
+      page: '/book-demo',
+    });
+  }, []);
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    trackFormSubmitted({
+      form_id: formId,
+      offer,
+      page: '/book-demo',
+    });
     setLoading(true);
     setError(null);
 
@@ -68,11 +94,30 @@ export default function BookDemoPage() {
     if (result.success) {
       navigate('/demo-requested');
     } else {
+      trackFormSubmitFailed({
+        form_id: formId,
+        offer,
+        page: '/book-demo',
+        error: result.error ?? 'Submission failed. Please try again.',
+      });
       setError(result.error ?? 'Submission failed. Please try again.');
     }
   };
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    if (!hasTrackedFormStart) {
+      trackFormStarted({
+        form_id: formId,
+        offer,
+        page: '/book-demo',
+        field_name: e.target.name,
+      });
+      setHasTrackedFormStart(true);
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.setItem(formStartedSessionKey, '1');
+      }
+    }
+
     setFormData((prev) => ({
       ...prev,
       [e.target.name]: e.target.value

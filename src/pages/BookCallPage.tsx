@@ -1,4 +1,4 @@
-import { type ChangeEvent, type FormEvent, useMemo, useState } from 'react';
+import { type ChangeEvent, type FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   AlertCircle,
@@ -12,15 +12,28 @@ import { motion } from 'motion/react';
 
 import SectionEyebrow from '@/src/components/SectionEyebrow';
 import { getCallOffer, getCallOfferConfig } from '@/src/lib/callOffers';
+import {
+  trackFormStarted,
+  trackFormSubmitFailed,
+  trackFormSubmitted,
+  trackFormViewed,
+  trackStripeRedirectStarted,
+} from '@/src/lib/analytics';
 import { submitCallRequest } from '@/src/lib/submitCallRequest';
 
 export default function BookCallPage() {
+  const formId = 'book_call';
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const offer = getCallOffer(searchParams.get('offer'));
   const content = getCallOfferConfig(offer);
+  const formStartedSessionKey = `form_started:${formId}:${offer}`;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasTrackedFormStart, setHasTrackedFormStart] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.sessionStorage.getItem(formStartedSessionKey) === '1';
+  });
   const [formData, setFormData] = useState({
     name: '',
     businessName: '',
@@ -36,6 +49,19 @@ export default function BookCallPage() {
   const hasStripePayment = Boolean(content.stripePaymentUrl);
   const hasSchedulingLink = Boolean(content.scheduleUrl);
 
+  useEffect(() => {
+    trackFormViewed({
+      form_id: formId,
+      offer,
+      page: '/book-call',
+    });
+  }, [offer]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    setHasTrackedFormStart(window.sessionStorage.getItem(formStartedSessionKey) === '1');
+  }, [formStartedSessionKey]);
+
   const reassurance = useMemo(
     () => [
       'Built around local trade businesses',
@@ -47,6 +73,19 @@ export default function BookCallPage() {
   );
 
   function handleChange(event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
+    if (!hasTrackedFormStart) {
+      trackFormStarted({
+        form_id: formId,
+        offer,
+        page: '/book-call',
+        field_name: event.target.name,
+      });
+      setHasTrackedFormStart(true);
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.setItem(formStartedSessionKey, '1');
+      }
+    }
+
     setFormData((current) => ({
       ...current,
       [event.target.name]: event.target.value,
@@ -55,6 +94,11 @@ export default function BookCallPage() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    trackFormSubmitted({
+      form_id: formId,
+      offer,
+      page: '/book-call',
+    });
     setLoading(true);
     setError(null);
 
@@ -76,11 +120,23 @@ export default function BookCallPage() {
     setLoading(false);
 
     if (!result.success) {
+      trackFormSubmitFailed({
+        form_id: formId,
+        offer,
+        page: '/book-call',
+        error: result.error ?? 'Submission failed. Please try again.',
+      });
       setError(result.error ?? 'Submission failed. Please try again.');
       return;
     }
 
     if (content.stripePaymentUrl) {
+      trackStripeRedirectStarted({
+        form_id: formId,
+        offer,
+        page: '/book-call',
+        destination: content.stripePaymentUrl,
+      });
       window.location.assign(content.stripePaymentUrl);
       return;
     }

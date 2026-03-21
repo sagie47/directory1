@@ -259,14 +259,6 @@ to authenticated
 using (auth.uid() = user_id);
 
 drop policy if exists "claims_delete_rejected_self" on public.business_claims;
-create policy "claims_delete_rejected_self"
-on public.business_claims
-for delete
-to authenticated
-using (
-  auth.uid() = user_id
-  and status in ('rejected', 'revoked')
-);
 
 drop policy if exists "claims_select_admin" on public.business_claims;
 create policy "claims_select_admin"
@@ -364,12 +356,28 @@ as $$
 declare
   v_user_id uuid := auth.uid();
   v_claim_id uuid;
+  v_claimant_email text;
   v_constraint_name text;
 begin
   if v_user_id is null then
     raise exception using
       sqlstate = 'P0001',
       message = 'Not authenticated';
+  end if;
+
+  select coalesce(
+    nullif(btrim(p.email), ''),
+    nullif(btrim(au.email), '')
+  )
+  into v_claimant_email
+  from auth.users au
+  left join public.profiles p on p.id = au.id
+  where au.id = v_user_id;
+
+  if v_claimant_email is null then
+    raise exception using
+      sqlstate = 'P1005',
+      message = 'Unable to determine claimant email from your account profile.';
   end if;
 
   if exists (
@@ -408,11 +416,6 @@ begin
       message = 'This business has already been claimed by another user.';
   end if;
 
-  delete from public.business_claims
-  where user_id = v_user_id
-    and business_id = p_business_id
-    and status in ('rejected', 'revoked');
-
   begin
     insert into public.business_claims (
       user_id,
@@ -427,7 +430,7 @@ begin
       v_user_id,
       p_business_id,
       p_claimant_name,
-      p_claimant_email,
+      v_claimant_email,
       p_claimant_phone,
       p_relationship_to_business,
       p_message
