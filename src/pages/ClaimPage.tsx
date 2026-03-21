@@ -192,14 +192,27 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
       return;
     }
 
+    const accountEmail = user.email ?? (user.user_metadata as { email?: string } | null | undefined)?.email ?? null;
+    const trimmedClaimantName = claimData.claimantName.trim();
+
+    if (!trimmedClaimantName) {
+      setError('Please enter your full name before submitting.');
+      return;
+    }
+
+    if (!accountEmail) {
+      setError('Your account is missing an email address. Add an email in Account settings, then try again.');
+      return;
+    }
+
     setError(null);
     setSubmitting(true);
 
     try {
       const { data: claimId, error: submitError } = await supabase.rpc('submit_business_claim', {
         p_business_id: selectedBusiness.id,
-        p_claimant_name: claimData.claimantName,
-        p_claimant_email: user.email ?? '',
+        p_claimant_name: trimmedClaimantName,
+        p_claimant_email: accountEmail,
         p_claimant_phone: claimData.claimantPhone || null,
         p_relationship_to_business: claimData.relationshipToBusiness,
         p_message: claimData.message || null,
@@ -208,6 +221,7 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
       if (submitError) {
         const msg = submitError.message ?? '';
         const code = submitError.code ?? '';
+        console.error('Claim submission failed:', { code, msg, details: submitError.details, hint: submitError.hint });
 
         if (code === 'P1001' || msg.includes('pending claim')) {
           navigate('/claim/status');
@@ -227,6 +241,16 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
           || msg.includes('already been claimed')
         ) {
           setError('Another claim for this listing is already in review. Please check the status page.');
+          return;
+        }
+
+        if (code === 'P1005') {
+          setError('We could not determine your account email for this claim. Update your profile/account email and try again.');
+          return;
+        }
+
+        if (code === 'P0001' || msg.toLowerCase().includes('not authenticated')) {
+          setError('Your session expired. Please sign in again and resubmit your claim.');
           return;
         }
 
