@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { type MouseEvent, useEffect } from 'react';
 import { ArrowRight, Phone, MessageSquare, Check, Sparkles, LayoutGrid, HelpCircle, Zap, ShieldAlert, Clock, Smartphone } from 'lucide-react';
 import { motion } from 'motion/react';
 import Seo from '../components/Seo';
@@ -8,6 +9,7 @@ import BusinessFAQ from '../components/BusinessFAQ';
 import BusinessCTA from '../components/BusinessCTA';
 import FeatureCard from '../components/FeatureCard';
 import { createImageFallbackHandler, preferSupabaseImage } from '../supabase-images';
+import { trackOfferCtaClicked, trackOfferPageViewed } from '../lib/analytics';
 
 const howItWorks = [
   {
@@ -67,6 +69,32 @@ const faqs = [
 export default function NeverMissLeadPage() {
   const leadHeroSrc = preferSupabaseImage('plumbing_career_social jpg.jpg', leadHero);
 
+  useEffect(() => {
+    trackOfferPageViewed({
+      offer: 'never-miss-a-lead',
+      page: '/never-miss-a-lead',
+    });
+  }, []);
+
+  const handleOfferCtaClick = (event: MouseEvent<HTMLElement>) => {
+    if (typeof window === 'undefined') return;
+
+    const target = event.target as HTMLElement | null;
+    const anchor = target?.closest('a[href]') as HTMLAnchorElement | null;
+    if (!anchor) return;
+
+    const destination = new URL(anchor.href, window.location.origin);
+    if (destination.pathname !== '/book-demo') return;
+
+    trackOfferCtaClicked({
+      offer: 'never-miss-a-lead',
+      source_page: 'never-miss-a-lead',
+      cta_label: anchor.textContent?.trim() ?? 'Book a Demo',
+      destination: `${destination.pathname}${destination.search}`,
+      cta_location: 'offer_page',
+    });
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -74,6 +102,7 @@ export default function NeverMissLeadPage() {
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
       className="min-h-screen bg-[#FAFAFA] font-sans text-zinc-900 selection:bg-indigo-200 selection:text-indigo-900"
+      onClickCapture={handleOfferCtaClick}
     >
       <Seo
         title="Never Miss a Lead | Okanagan Trades"

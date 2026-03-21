@@ -6,7 +6,6 @@ import {
   ArrowRight,
   Building2,
   ExternalLink,
-  Mail,
   MapPin,
   Phone,
   Search,
@@ -70,7 +69,6 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
   const [selectedBusiness, setSelectedBusiness] = useState<Business | null>(null);
   const [claimData, setClaimData] = useState({
     claimantName: '',
-    claimantEmail: user?.email || '',
     claimantPhone: '',
     relationshipToBusiness: 'owner',
     message: '',
@@ -91,16 +89,6 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
     trackedClaimStarts.current.add(businessId);
     trackEvent('claim_started', { business_id: businessId });
   }
-
-  useEffect(() => {
-    if (user?.email) {
-      setClaimData((current) => ({
-        ...current,
-        claimantEmail: current.claimantEmail || user.email || '',
-      }));
-    }
-  }, [user?.email]);
-
   const cityNames = useMemo(() => new Map(cities.map((city) => [city.id, city.name])), [cities]);
   const categoryNames = useMemo(() => new Map(categories.map((category) => [category.id, category.name])), [categories]);
   const targetedBusiness = selectedBusiness ?? (
@@ -193,7 +181,7 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
       const { data: claimId, error: submitError } = await supabase.rpc('submit_business_claim', {
         p_business_id: selectedBusiness.id,
         p_claimant_name: claimData.claimantName,
-        p_claimant_email: claimData.claimantEmail,
+        p_claimant_email: user.email ?? '',
         p_claimant_phone: claimData.claimantPhone || null,
         p_relationship_to_business: claimData.relationshipToBusiness,
         p_message: claimData.message || null,
@@ -634,20 +622,6 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
                     </div>
                     <div>
                       <label className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
-                        <Mail className="h-3.5 w-3.5" />
-                        Email address
-                      </label>
-                      <input
-                        type="email"
-                        value={claimData.claimantEmail}
-                        onChange={(event) => setClaimData({ ...claimData, claimantEmail: event.target.value })}
-                        required
-                        className="mt-3 w-full border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-900 focus:bg-white"
-                        placeholder="name@business.com"
-                      />
-                    </div>
-                    <div>
-                      <label className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
                         <Phone className="h-3.5 w-3.5" />
                         Phone number
                       </label>
@@ -676,6 +650,11 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
                       </select>
                     </div>
                   </div>
+                  <p className="mt-6 text-sm leading-6 text-zinc-600">
+                    Claim notifications are sent to your signed-in account email:
+                    {' '}
+                    <span className="font-medium text-zinc-900">{user.email ?? 'No account email available'}</span>
+                  </p>
                   <div className="mt-8">
                     <label className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Verification notes</label>
                     <textarea
