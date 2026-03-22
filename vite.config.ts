@@ -158,10 +158,59 @@ export default defineConfig(({mode}) => {
       chunkSizeWarningLimit: BUDGETS.maxChunkSizeKB,
       rollupOptions: {
         output: {
-          manualChunks: {
-            vendor: ['react', 'react-dom', 'react-router-dom'],
-            motion: ['motion/react'],
-            ui: ['lucide-react', 'clsx', 'tailwind-merge'],
+          manualChunks(id) {
+            const normalizedId = id.replace(/\\/g, '/');
+
+            if (normalizedId.includes('node_modules')) {
+              if (normalizedId.includes('@supabase/supabase-js')) {
+                return 'supabase';
+              }
+
+              if (normalizedId.includes('motion/')) {
+                return 'motion';
+              }
+
+              if (
+                normalizedId.includes('/react-router-dom/')
+                || normalizedId.includes('/react-dom/')
+                || normalizedId.includes('/react/')
+              ) {
+                return 'vendor';
+              }
+
+              if (
+                normalizedId.includes('/lucide-react/')
+                || normalizedId.includes('/clsx/')
+                || normalizedId.includes('/tailwind-merge/')
+              ) {
+                return 'ui';
+              }
+            }
+
+            if (
+              normalizedId.endsWith('/src/contexts/AuthContext.tsx')
+              || normalizedId.endsWith('/src/lib/auth.ts')
+              || normalizedId.endsWith('/src/lib/supabase.ts')
+            ) {
+              return 'auth';
+            }
+
+            if (
+              normalizedId.endsWith('/src/directory-data.tsx')
+              || normalizedId.endsWith('/src/lib/seedData.ts')
+              || normalizedId.endsWith('/src/business.ts')
+            ) {
+              return 'directory-data';
+            }
+
+            if (
+              normalizedId.endsWith('/src/components/Layout.tsx')
+              || normalizedId.endsWith('/src/components/UserMenu.tsx')
+              || normalizedId.endsWith('/src/components/AuthGuard.tsx')
+              || normalizedId.endsWith('/src/components/AdminGuard.tsx')
+            ) {
+              return 'app-shell';
+            }
           },
         },
       },
