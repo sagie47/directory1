@@ -1,18 +1,22 @@
 import { BriefcaseBusiness, Globe, LineChart, type LucideIcon } from 'lucide-react';
 
 export type CallOffer = 'website' | 'managed-growth';
+export type CallOfferFlow =
+  | 'request-only'
+  | 'request-and-schedule'
+  | 'payment-only'
+  | 'payment-and-schedule';
 
 type ServiceNeed = {
   value: string;
   label: string;
 };
 
-export interface CallOfferConfig {
+interface CallOfferDefinition {
   eyebrow: string;
   icon: LucideIcon;
   title: string;
   intro: string;
-  cta: string;
   successEyebrow: string;
   successTitle: string;
   successBody: string;
@@ -24,16 +28,76 @@ export interface CallOfferConfig {
   scheduleUrl?: string;
 }
 
-const callOffers: Record<CallOffer, CallOfferConfig> = {
+export interface CallOfferConfig extends CallOfferDefinition {
+  flow: CallOfferFlow;
+  hasStripePayment: boolean;
+  hasSchedulingLink: boolean;
+  isFullyConfigured: boolean;
+  submitCta: string;
+  configurationTitle: string;
+  configurationBody: string;
+}
+
+function normalizeOptionalUrl(value: string | undefined) {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
+}
+
+function resolveFlow(stripePaymentUrl?: string, scheduleUrl?: string): CallOfferFlow {
+  if (stripePaymentUrl && scheduleUrl) {
+    return 'payment-and-schedule';
+  }
+
+  if (stripePaymentUrl) {
+    return 'payment-only';
+  }
+
+  if (scheduleUrl) {
+    return 'request-and-schedule';
+  }
+
+  return 'request-only';
+}
+
+function getFlowCopy(flow: CallOfferFlow) {
+  switch (flow) {
+    case 'payment-and-schedule':
+      return {
+        submitCta: 'Continue to Payment',
+        configurationTitle: 'Payment and scheduling are live.',
+        configurationBody: 'Submit your intake, complete Stripe checkout, then use the scheduling link to book a time immediately.',
+      };
+    case 'payment-only':
+      return {
+        submitCta: 'Continue to Payment',
+        configurationTitle: 'Payment is live. Scheduling is still manual.',
+        configurationBody: 'Submit your intake and complete Stripe checkout. We will follow up manually to confirm the meeting time.',
+      };
+    case 'request-and-schedule':
+      return {
+        submitCta: 'Submit and Continue',
+        configurationTitle: 'Scheduling is live after submission.',
+        configurationBody: 'This flow saves the intake first, then sends the buyer to the scheduling link from the confirmation page.',
+      };
+    case 'request-only':
+    default:
+      return {
+        submitCta: 'Submit Request',
+        configurationTitle: 'This flow is request-only right now.',
+        configurationBody: 'Payment and scheduling are not configured yet. We will receive the intake and follow up manually.',
+      };
+  }
+}
+
+const callOffers: Record<CallOffer, CallOfferDefinition> = {
   website: {
     eyebrow: 'Website Intake',
     icon: Globe,
     title: 'Schedule a Website Call',
     intro: 'Tell us a bit about your business and current site situation. We will use this to shape a practical website conversation, not a generic agency pitch.',
-    cta: 'Continue to Payment',
     successEyebrow: 'Website Call Requested',
     successTitle: 'Thanks. Your Website Request Is In.',
-    successBody: 'We have your details. If payment is complete, use the scheduling link below when it is available. Otherwise we will review the request and reach out with next steps.',
+    successBody: 'We have your details. The next step depends on the live configuration for this offer: payment, scheduling, or manual follow-up.',
     backTo: '/websites-for-trades',
     backLabel: 'Back to Websites for Trades',
     primaryNeedIcon: BriefcaseBusiness,
@@ -52,10 +116,9 @@ const callOffers: Record<CallOffer, CallOfferConfig> = {
     icon: LineChart,
     title: 'Schedule a Strategy Call',
     intro: 'Tell us where the current bottlenecks are. We will use this to understand whether managed growth support makes sense for your business.',
-    cta: 'Continue to Payment',
     successEyebrow: 'Strategy Call Requested',
     successTitle: 'Thanks. Your Strategy Request Is In.',
-    successBody: 'We have your details. If payment is complete, use the scheduling link below when it is available. Otherwise we will review the request and reach out with next steps.',
+    successBody: 'We have your details. The next step depends on the live configuration for this offer: payment, scheduling, or manual follow-up.',
     backTo: '/managed-growth',
     backLabel: 'Back to Managed Growth',
     primaryNeedIcon: BriefcaseBusiness,
@@ -75,6 +138,23 @@ export function getCallOffer(value: string | null | undefined): CallOffer {
   return value === 'managed-growth' ? 'managed-growth' : 'website';
 }
 
-export function getCallOfferConfig(value: string | null | undefined) {
-  return callOffers[getCallOffer(value)];
+export function getCallOfferConfig(value: string | null | undefined): CallOfferConfig {
+  const base = callOffers[getCallOffer(value)];
+  const stripePaymentUrl = normalizeOptionalUrl(base.stripePaymentUrl);
+  const scheduleUrl = normalizeOptionalUrl(base.scheduleUrl);
+  const flow = resolveFlow(stripePaymentUrl, scheduleUrl);
+  const flowCopy = getFlowCopy(flow);
+
+  return {
+    ...base,
+    stripePaymentUrl,
+    scheduleUrl,
+    flow,
+    hasStripePayment: Boolean(stripePaymentUrl),
+    hasSchedulingLink: Boolean(scheduleUrl),
+    isFullyConfigured: flow === 'payment-and-schedule',
+    submitCta: flowCopy.submitCta,
+    configurationTitle: flowCopy.configurationTitle,
+    configurationBody: flowCopy.configurationBody,
+  };
 }

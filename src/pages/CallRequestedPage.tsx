@@ -1,5 +1,5 @@
 import { Link, useSearchParams } from 'react-router-dom';
-import { ArrowRight, Check, CreditCard, Mail, Phone } from 'lucide-react';
+import { ArrowRight, CalendarClock, Check, CreditCard, Mail, Phone } from 'lucide-react';
 import { motion } from 'motion/react';
 
 import { getCallOffer, getCallOfferConfig } from '@/src/lib/callOffers';
@@ -10,6 +10,29 @@ export default function CallRequestedPage() {
   const content = getCallOfferConfig(offer);
   const paymentStatus = searchParams.get('payment');
   const paymentReceived = paymentStatus === 'paid';
+  const canShowSchedulingLink = content.hasSchedulingLink && (!content.hasStripePayment || paymentReceived);
+
+  let headline = content.successTitle;
+  let body = content.successBody;
+  let primaryStatus = 'We will follow up on scheduling';
+  let secondaryStatus = 'Watch for an email';
+
+  if (paymentReceived) {
+    headline = 'Payment received.';
+    body = canShowSchedulingLink
+      ? 'Your payment is in. Use the scheduling link below to book a time now.'
+      : 'Your payment is in. Scheduling is still being handled manually, so we will follow up with the next step.';
+    primaryStatus = 'Stripe payment confirmed';
+    secondaryStatus = canShowSchedulingLink ? 'Scheduling is ready below' : 'Manual scheduling follow-up required';
+  } else if (canShowSchedulingLink) {
+    body = 'Your request is saved. Use the scheduling link below to choose a time now.';
+    primaryStatus = 'Request saved successfully';
+    secondaryStatus = 'Scheduling link is ready below';
+  } else if (content.hasStripePayment) {
+    body = 'Your request is saved, but payment has not been confirmed yet. Complete checkout before expecting the scheduling step.';
+    primaryStatus = 'Request saved successfully';
+    secondaryStatus = 'Payment is still required';
+  }
 
   return (
     <motion.div
@@ -34,12 +57,10 @@ export default function CallRequestedPage() {
             {content.successEyebrow}
           </div>
           <h1 className="mt-4 text-4xl font-bold uppercase tracking-tighter leading-tight text-zinc-900 md:text-5xl">
-            {paymentReceived ? 'Payment received.' : content.successTitle}
+            {headline}
           </h1>
           <p className="mt-6 max-w-2xl text-lg font-medium leading-relaxed text-zinc-600">
-            {paymentReceived
-              ? 'Your payment is in. Use the scheduling link below if it is available, or watch for our follow-up if scheduling is still being handled manually.'
-              : content.successBody}
+            {body}
           </p>
 
           <div className="mt-10 grid gap-4 border-t-2 border-zinc-100 pt-8 sm:grid-cols-2">
@@ -50,29 +71,38 @@ export default function CallRequestedPage() {
                 ) : (
                   <Phone className="h-5 w-5 text-orange-500" strokeWidth={2} />
                 )}
-                <span className="font-sans font-bold">
-                  {paymentReceived ? 'Stripe payment confirmed' : 'We will follow up on scheduling'}
-                </span>
+                <span className="font-sans font-bold">{primaryStatus}</span>
               </div>
             </div>
             <div className="rounded-sm border border-zinc-200 bg-zinc-50 p-6 transition-all duration-300 hover:border-zinc-300 hover:shadow-xl">
               <div className="flex items-center gap-3 text-zinc-900">
-                <Mail className="h-5 w-5 text-orange-500" strokeWidth={2} />
-                <span className="font-sans font-bold">Watch for an email</span>
+                {canShowSchedulingLink ? (
+                  <CalendarClock className="h-5 w-5 text-orange-500" strokeWidth={2} />
+                ) : (
+                  <Mail className="h-5 w-5 text-orange-500" strokeWidth={2} />
+                )}
+                <span className="font-sans font-bold">{secondaryStatus}</span>
               </div>
             </div>
           </div>
 
+          {!content.isFullyConfigured ? (
+            <div className="mt-8 border border-amber-200 bg-amber-50 px-4 py-4 text-sm leading-6 text-amber-900">
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-amber-700">Configuration note</p>
+              <p className="mt-2">{content.configurationBody}</p>
+            </div>
+          ) : null}
+
           <div className="mt-10 border-t-2 border-zinc-100 pt-8">
             <div className="flex flex-col gap-4 sm:flex-row">
-              {content.scheduleUrl ? (
+              {canShowSchedulingLink ? (
                 <a
-                  href={content.scheduleUrl}
+                  href={content.scheduleUrl!}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center justify-center gap-3 rounded-xl border border-zinc-900 bg-zinc-900 px-8 py-5 font-sans text-sm font-bold uppercase tracking-wider text-white shadow-sm transition-all hover:bg-zinc-800 hover:-translate-y-1 active:scale-95"
                 >
-                  Schedule Call
+                  {paymentReceived ? 'Schedule Call' : 'Continue to Scheduling'}
                   <ArrowRight className="h-5 w-5" strokeWidth={2.5} />
                 </a>
               ) : (
