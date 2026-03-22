@@ -7,6 +7,7 @@ export type RecommendationType =
   | 'complete_profile'
   | 'website_fix'
   | 'lead_capture'
+  | 'managed_growth'
   | 'listing_upgrade'
   | 'retry_claim'
   | 'none';
@@ -59,27 +60,6 @@ export function getOwnerRecommendation({
   }
 
   if (claimStatus === 'pending') {
-    const progress = getOwnerProfileProgress(business);
-    const hasRequiredGaps = progress.requiredCompleted < progress.requiredTotal;
-
-    if (hasRequiredGaps) {
-      return {
-        type: 'complete_profile',
-        title: 'Complete Your Profile',
-        description: 'Your listing is still missing core details that help customers trust and contact your business.',
-      };
-    }
-
-    if (!business.contact?.website) {
-      return {
-        type: 'website_fix',
-        title: 'Add A Website',
-        description: `Your core listing details are in place. A website gives customers one more reason to trust you before they call. ${SERVICE_OFFER_PRICING.website.startingPrice}.`,
-        href: '/websites-for-trades',
-        ctaLabel: 'Explore Websites',
-      };
-    }
-
     return {
       type: 'review_pending',
       title: 'Review In Progress',
@@ -89,6 +69,7 @@ export function getOwnerRecommendation({
 
   const progress = getOwnerProfileProgress(business);
   const hasRequiredGaps = progress.requiredCompleted < progress.requiredTotal;
+  const hasWebsite = Boolean(business.contact?.website?.trim());
 
   if (hasRequiredGaps) {
     return {
@@ -100,13 +81,23 @@ export function getOwnerRecommendation({
     };
   }
 
-  if (!business.contact?.website) {
+  if (!hasWebsite) {
     return {
       type: 'website_fix',
-      title: 'Add A Website',
-      description: `Your core listing details are in place. A website gives customers one more reason to trust you before they call. ${SERVICE_OFFER_PRICING.website.startingPrice}.`,
+      title: 'Add A Real Website Layer',
+      description: `Your listing basics are in place. If the business still has no site, the highest-leverage paid move is a trade website that makes trust and contact easier. ${SERVICE_OFFER_PRICING.website.startingPrice}.`,
       href: '/websites-for-trades',
-      ctaLabel: 'Explore Websites',
+      ctaLabel: 'See Website Offer',
+    };
+  }
+
+  if (progress.percent >= 100) {
+    return {
+      type: 'managed_growth',
+      title: 'Move From Cleanup To Growth',
+      description: `The listing basics and website layer are already in place. The next paid lane is tighter lead response, visibility support, and ongoing execution help. ${SERVICE_OFFER_PRICING['managed-growth'].startingPrice}.`,
+      href: '/managed-growth',
+      ctaLabel: 'See Managed Growth',
     };
   }
 
@@ -114,7 +105,7 @@ export function getOwnerRecommendation({
     return {
       type: 'lead_capture',
       title: 'Capture More Leads',
-      description: `Your listing basics are in good shape. If you still miss calls while on jobs, lead capture is the next gap to fix. ${SERVICE_OFFER_PRICING['never-miss-a-lead'].startingPrice}.`,
+      description: `Your listing is in decent shape. If missed calls or slow follow-up still cost work, lead capture is the next paid gap to fix. ${SERVICE_OFFER_PRICING['never-miss-a-lead'].startingPrice}.`,
       href: '/never-miss-a-lead',
       ctaLabel: 'View Lead Capture',
     };
@@ -123,7 +114,7 @@ export function getOwnerRecommendation({
   return {
     type: 'listing_upgrade',
     title: 'Keep Your Listing Working Harder',
-    description: 'Your profile basics are in place. The next step is upgrading visibility with Verified ($29/mo launch, then $39/mo) or Verified Pro ($99/mo).',
+    description: 'Your profile basics are in place. The next step is improving how customers discover and contact your business.',
     href: '/for-business',
     ctaLabel: 'See Business Options',
   };
