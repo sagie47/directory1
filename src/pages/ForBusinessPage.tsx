@@ -99,7 +99,7 @@ const operatingPrinciples = [
 const faqs = [
   {
     question: 'How do I get started?',
-    answer: 'The best first step is to claim your free business profile. Once your ownership request is approved, you can access the dashboard and the next recommended step.'
+    answer: 'Start with the lane that matches the actual bottleneck. Use claim if you need owner control over the listing. Use websites, lead capture, or managed growth if the bigger problem is trust, missed leads, or weak follow-up.'
   },
   {
     question: 'Are there long-term contracts?',
@@ -213,7 +213,7 @@ export default function ForBusinessPage() {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="mb-10 max-w-2xl text-lg leading-relaxed text-balance text-zinc-300 drop-shadow-md sm:mb-12 sm:text-xl md:text-2xl lg:mb-16"
             >
-              Claim your profile first. After approval, we can point you to the next practical improvement instead of sending you into a generic services menu.
+              Choose the lane that matches the bottleneck. Claim is for owner control. The paid lanes handle trust, lead capture, websites, and ongoing growth support directly.
             </motion.p>
 
             <motion.div 
@@ -233,7 +233,7 @@ export default function ForBusinessPage() {
                 href="#business-options"
                 className="flex min-h-12 items-center justify-center gap-3 rounded-sm border border-zinc-600/40 bg-zinc-900/20 px-6 py-4 font-sans text-sm font-bold uppercase tracking-wider text-zinc-300 transition-all duration-200 hover:border-zinc-500/60 hover:bg-zinc-800/30 hover:text-white active:scale-[0.98] sm:px-10 sm:py-5 lg:px-12 lg:py-6"
               >
-                See how we help after you claim
+                See the service lanes
               </a>
             </motion.div>
           </div>
@@ -250,27 +250,27 @@ export default function ForBusinessPage() {
                 icon={Workflow}
                 className="mb-8 bg-zinc-50 border border-zinc-200 text-zinc-600 shadow-sm"
               >
-                What Happens After Claim
+                Choose The Right Lane
               </SectionEyebrow>
 
               <h2 className="mb-6 text-4xl font-bold uppercase tracking-tighter text-zinc-900 sm:text-5xl md:text-6xl leading-[1.02]">
-                Approval first. <br /> <span className="font-serif italic font-light text-zinc-400 normal-case">Then one clear next step.</span>
+                One clear lane. <br /> <span className="font-serif italic font-light text-zinc-400 normal-case">Based on the actual bottleneck.</span>
               </h2>
 
               <div className="space-y-6 text-zinc-500 mb-12">
                 <p className="text-lg font-medium leading-relaxed text-zinc-600">
-                  Start by claiming the listing. If the public details are wrong, every other marketing fix sits on a weak foundation.
+                  Claim is the self-serve path when the public details are wrong and you need owner access.
                 </p>
                 <p className="text-lg leading-relaxed">
-                  Once ownership is confirmed, we help you fix the next thing that actually moves the needle, whether that is sharper profile details, faster lead response, or a site that does not quietly lose trust.
+                  Paid services do not need to wait on that. If the real issue is missed leads, weak mobile trust, or inconsistent growth execution, use the paid lane directly.
                 </p>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-3">
                 {[
-                  { step: '1', title: 'Submit claim' },
-                  { step: '2', title: 'Get verified' },
-                  { step: '3', title: 'See next step' }
+                  { step: '1', title: 'Identify the gap' },
+                  { step: '2', title: 'Choose the lane' },
+                  { step: '3', title: 'Move faster' }
                 ].map((item) => (
                   <div key={item.step} className="group/step relative overflow-hidden rounded-[1.5rem] border border-zinc-200 bg-zinc-50 p-5 transition-all duration-300 hover:border-orange-200 hover:bg-white hover:shadow-md">
                     <div className="absolute left-0 top-0 h-full w-1 bg-zinc-100 transition-colors duration-300 group-hover/step:bg-orange-500"></div>
@@ -322,7 +322,7 @@ export default function ForBusinessPage() {
               Business Lanes
             </SectionEyebrow>
             <h2 className="text-3xl font-bold uppercase tracking-tight text-zinc-900 sm:text-4xl md:text-6xl">
-              Four ways we help after the listing is under control.
+              Four ways we help trade businesses.
             </h2>
           </div>
 
@@ -522,21 +522,21 @@ export default function ForBusinessPage() {
             <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:gap-14">
               <div>
                 <h2 className="mb-6 text-3xl font-bold uppercase tracking-tight leading-[1.05] text-zinc-900 sm:text-4xl md:text-5xl">
-                  Claim First. <br /> <span className="font-serif italic font-light text-zinc-400 normal-case">Then improve what matters.</span>
+                  Start With The Lane <br /> <span className="font-serif italic font-light text-zinc-400 normal-case">that matches the bottleneck.</span>
                 </h2>
                 <p className="max-w-2xl text-lg font-medium leading-relaxed text-zinc-500 sm:text-xl">
-                  The directory claim is the first step. Once your ownership request is approved, we can point you to the next practical improvement based on what your business is missing.
+                  Claim is the self-serve lane for owner control. Paid services are separate lanes for businesses that need more calls, a stronger website, or ongoing growth support now.
                 </p>
               </div>
 
               <div className="rounded-[1.75rem] border border-zinc-100 bg-zinc-50 p-6 sm:p-8">
                 <h3 className="mb-4 text-lg font-bold uppercase tracking-wide text-zinc-900">
-                  What you get after approval
+                  How to choose quickly
                 </h3>
                 <ul className="space-y-3 text-sm text-zinc-700 sm:text-base">
-                  <li>Control over description, phone, website, service areas, and hours</li>
-                  <li>A cleaner post-claim next step instead of a generic business services menu</li>
-                  <li>One recommended improvement based on the listing basics already in place</li>
+                  <li>Claim if you need to update the listing yourself</li>
+                  <li>Choose websites if credibility and conversion are weak</li>
+                  <li>Choose lead capture or managed growth if follow-up and visibility are the bigger gap</li>
                 </ul>
               </div>
             </div>
@@ -547,11 +547,11 @@ export default function ForBusinessPage() {
       <BusinessFAQ faqs={faqs} />
 
       <BusinessCTA 
-        eyebrow="Claim First"
-        title={<>Ready to take control <br /> <span className="text-zinc-400 italic font-serif font-light text-balance">of your listing?</span></>}
-        description="Start with the claim. We’ll verify ownership first, then point you to the next practical step after approval."
-        ctaText="Claim Your Profile"
-        ctaHref="/claim"
+        eyebrow="Choose Your Lane"
+        title={<>Ready to fix the bottleneck <br /> <span className="text-zinc-400 italic font-serif font-light text-balance">that is actually costing you?</span></>}
+        description="Use claim for owner access. Use the paid lanes when the real problem is trust, missed leads, or inconsistent growth execution."
+        ctaText="See Website Offer"
+        ctaHref="/websites-for-trades"
       />
     </motion.div>
   );

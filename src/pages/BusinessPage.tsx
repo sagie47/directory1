@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, Navigate, useLocation } from 'react-router-dom';
-import { MapPin, Star, Phone, Globe, Mail, Clock, Check, ArrowRight, AlertCircle, Image as ImageIcon, Navigation, CheckCircle } from 'lucide-react';
+import { MapPin, Star, Phone, Globe, Mail, Clock, Check, ArrowRight, AlertCircle, Image as ImageIcon, Navigation, CheckCircle, TrendingUp } from 'lucide-react';
 import { motion } from 'motion/react';
 import {
   type Business,
@@ -539,6 +539,29 @@ export default function BusinessPage() {
   const claimEntryPath = user
     ? claimPath
     : `/login?redirect=${encodeURIComponent(claimPath)}`;
+  const paidLane = !websiteHref
+    ? {
+        title: 'Website Offer',
+        description: 'No website is linked here yet. The fastest paid upgrade is a credible trade website that makes trust and contact easier.',
+        href: '/websites-for-trades',
+        cta: 'See Website Offer',
+        icon: Globe,
+      }
+    : isOwner
+      ? {
+          title: 'Lead Capture',
+          description: 'The listing is live. If missed calls or slow follow-up still cost work, this paid lane is the next practical fix.',
+          href: '/never-miss-a-lead',
+          cta: 'View Lead Capture',
+          icon: Phone,
+        }
+      : {
+          title: 'Managed Growth',
+          description: 'If the digital side still needs help beyond the listing itself, this lane covers visibility, follow-up, and ongoing support.',
+          href: '/managed-growth',
+          cta: 'See Managed Growth',
+          icon: TrendingUp,
+        };
 
   const showMoreMobileReviews = () => {
     setVisibleMobileReviewCount((previous) => Math.min(previous + MOBILE_REVIEW_BATCH_SIZE, reviews.length));
@@ -938,15 +961,39 @@ export default function BusinessPage() {
               </section>
             )}
 
+            <section className="border border-zinc-200 rounded-sm bg-white p-6 shadow-sm">
+              <div className="flex items-start gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-zinc-200 bg-zinc-50 text-zinc-700">
+                  <paidLane.icon className="h-4 w-4" strokeWidth={2} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-zinc-500">Business upgrade</p>
+                  <h4 className="mt-2 text-sm font-black uppercase tracking-widest text-zinc-900">{paidLane.title}</h4>
+                  <p className="mt-3 text-sm leading-relaxed text-zinc-600">{paidLane.description}</p>
+                  <Link
+                    to={paidLane.href}
+                    className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-zinc-900 underline underline-offset-4 transition-colors hover:text-orange-600"
+                  >
+                    {paidLane.cta}
+                    <ArrowRight className="h-4 w-4" strokeWidth={2.2} />
+                  </Link>
+                </div>
+              </div>
+            </section>
+
             {verificationState === 'unverified' && (
               <div className="mt-8 p-8 border border-zinc-200 rounded-sm bg-zinc-50 shadow-sm">
                 <div className="bg-white p-6 rounded-xl border border-zinc-200 shadow-sm">
                   <AlertCircle className="w-5 h-5 text-zinc-500 mb-4" />
                   <h4 className="font-black text-sm text-zinc-900 uppercase tracking-widest mb-2">Is this your business?</h4>
-                  <p className="text-sm text-zinc-600 mb-6 font-medium leading-relaxed">Claim this listing to update your services, hours, and contact info.</p>
+                  <p className="text-sm text-zinc-600 mb-6 font-medium leading-relaxed">Claim this listing if you need owner control over the public details. Paid help is available separately if the real issue is trust, missed leads, or weak follow-up.</p>
                   <div className="space-y-3">
                     <Link to={claimEntryPath} className="inline-flex items-center justify-between w-full bg-zinc-900 text-white rounded-lg shadow-sm px-4 py-3 font-sans text-xs font-semibold tracking-wide hover:bg-orange-500 hover:-translate-y-0.5 hover:shadow-md transition-all">
                       <span>Claim Business</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </Link>
+                    <Link to={paidLane.href} className="inline-flex items-center justify-between w-full border border-zinc-200 bg-white text-zinc-900 rounded-lg shadow-sm px-4 py-3 font-sans text-xs font-semibold tracking-wide hover:border-zinc-300 hover:bg-zinc-50 hover:-translate-y-0.5 hover:shadow-md transition-all">
+                      <span>{paidLane.cta}</span>
                       <ArrowRight className="w-3 h-3" />
                     </Link>
                     {ownerCheckError ? (
@@ -977,6 +1024,10 @@ export default function BusinessPage() {
                         <ArrowRight className="w-3 h-3" />
                       </Link>
                     )}
+                    <Link to={paidLane.href} className="inline-flex items-center justify-between w-full border border-zinc-200 bg-white text-zinc-900 rounded-lg shadow-sm px-4 py-3 font-sans text-xs font-semibold tracking-wide hover:border-zinc-300 hover:bg-zinc-50 hover:-translate-y-0.5 hover:shadow-md transition-all">
+                      <span>{paidLane.cta}</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </Link>
                     {ownerCheckError ? (
                       <p className="rounded-lg border border-zinc-200 bg-white px-4 py-3 text-xs text-zinc-600">{ownerCheckError}</p>
                     ) : null}
@@ -992,21 +1043,33 @@ export default function BusinessPage() {
                   <h4 className="font-black text-sm text-zinc-900 uppercase tracking-widest mb-2">Verified Business</h4>
                   {isOwner ? (
                     <>
-                      <p className="text-sm text-zinc-600 mb-6 font-medium leading-relaxed">You are the verified owner of this business. Manage your listing from the owner dashboard.</p>
-                      <Link to="/owner/dashboard" className="inline-flex items-center justify-between w-full bg-orange-500 text-white rounded-lg shadow-sm px-4 py-3 font-sans text-xs font-semibold tracking-wide hover:bg-orange-600 hover:-translate-y-0.5 hover:shadow-md transition-all">
-                        <span>Owner Dashboard</span>
-                        <ArrowRight className="w-3 h-3" />
-                      </Link>
+                      <p className="text-sm text-zinc-600 mb-6 font-medium leading-relaxed">You are the verified owner of this business. Use the dashboard to manage the listing, or go straight into a paid lane if the bigger issue is leads, trust, or growth execution.</p>
+                      <div className="space-y-3">
+                        <Link to="/owner/dashboard" className="inline-flex items-center justify-between w-full bg-orange-500 text-white rounded-lg shadow-sm px-4 py-3 font-sans text-xs font-semibold tracking-wide hover:bg-orange-600 hover:-translate-y-0.5 hover:shadow-md transition-all">
+                          <span>Owner Dashboard</span>
+                          <ArrowRight className="w-3 h-3" />
+                        </Link>
+                        <Link to={paidLane.href} className="inline-flex items-center justify-between w-full border border-zinc-200 bg-white text-zinc-900 rounded-lg shadow-sm px-4 py-3 font-sans text-xs font-semibold tracking-wide hover:border-zinc-300 hover:bg-zinc-50 hover:-translate-y-0.5 hover:shadow-md transition-all">
+                          <span>{paidLane.cta}</span>
+                          <ArrowRight className="w-3 h-3" />
+                        </Link>
+                      </div>
                     </>
                   ) : (
                     <>
                       <p className="text-sm text-zinc-600 mb-6 font-medium leading-relaxed">
-                        This business has been verified as legitimately operated. To request ownership or manage this listing, contact our support team.
+                        This business has been verified as legitimately operated. If you need ownership help, contact support. If you are looking for direct website or growth help, you can go straight into a paid lane.
                       </p>
-                      <Link to="/contact" className="inline-flex items-center justify-between w-full bg-zinc-900 text-white rounded-lg shadow-sm px-4 py-3 font-sans text-xs font-semibold tracking-wide hover:bg-orange-500 hover:-translate-y-0.5 hover:shadow-md transition-all">
-                        <span>Contact Support</span>
-                        <ArrowRight className="w-3 h-3" />
-                      </Link>
+                      <div className="space-y-3">
+                        <Link to={paidLane.href} className="inline-flex items-center justify-between w-full bg-zinc-900 text-white rounded-lg shadow-sm px-4 py-3 font-sans text-xs font-semibold tracking-wide hover:bg-orange-500 hover:-translate-y-0.5 hover:shadow-md transition-all">
+                          <span>{paidLane.cta}</span>
+                          <ArrowRight className="w-3 h-3" />
+                        </Link>
+                        <Link to="/contact" className="inline-flex items-center justify-between w-full border border-zinc-200 bg-white text-zinc-900 rounded-lg shadow-sm px-4 py-3 font-sans text-xs font-semibold tracking-wide hover:border-zinc-300 hover:bg-zinc-50 hover:-translate-y-0.5 hover:shadow-md transition-all">
+                          <span>Contact Support</span>
+                          <ArrowRight className="w-3 h-3" />
+                        </Link>
+                      </div>
                     </>
                   )}
                 </div>
