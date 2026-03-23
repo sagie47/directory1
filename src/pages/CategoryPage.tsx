@@ -9,6 +9,7 @@ import { Business, businessServesCity } from '../business';
 import { getCategoryHeroFallbackImage, getCategoryHeroImage } from '../category-hero-images';
 import { useDirectoryData } from '../directory-data';
 import { getLucideIcon } from '../lib/lucideIconMap';
+import { buildBreadcrumbJsonLd, buildItemListJsonLd, toAbsoluteUrl } from '../lib/seo';
 import { createImageFallbackHandler } from '../supabase-images';
 
 const containerVariants = {
@@ -95,17 +96,24 @@ export default function CategoryPage() {
             '@type': 'CollectionPage',
             name: `${category.name} in ${city.name}`,
             description: `Browse verified ${category.name.toLowerCase()} professionals in ${city.name}.`,
+            url: toAbsoluteUrl(`/${city.id}/${category.id}`),
           },
-          {
-            '@context': 'https://schema.org',
-            '@type': 'ItemList',
-            itemListElement: categoryBusinesses.slice(0, 10).map((business, index) => ({
-              '@type': 'ListItem',
-              position: index + 1,
-              url: `/${city.id}/${category.id}/${business.id}`,
+          buildBreadcrumbJsonLd([
+            { name: 'Home', path: '/' },
+            { name: city.name, path: `/${city.id}` },
+            { name: category.name, path: `/${city.id}/${category.id}` },
+          ]),
+          buildItemListJsonLd(
+            categoryBusinesses.slice(0, 12).map((business) => ({
               name: business.name,
+              path: `/${city.id}/${category.id}/${business.id}`,
             })),
-          },
+          ),
+        ]}
+        keywords={[
+          `${category.name} ${city.name}`,
+          `${city.name} ${category.name.toLowerCase()}`,
+          `verified ${category.name.toLowerCase()} ${city.name}`,
         ]}
       />
 

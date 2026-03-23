@@ -22,6 +22,7 @@ import Seo from '../components/Seo';
 import { useAuth } from '../contexts/AuthContext';
 import { allowSeedFallbackOnError } from '../directory-data';
 import { loadSeedDataFromJson } from '../lib/seedData';
+import { buildBreadcrumbJsonLd, toAbsoluteUrl } from '../lib/seo';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import type { Category, City } from '../directory-data';
 
@@ -581,33 +582,66 @@ export default function BusinessPage() {
         title={`${business.name} | ${category.name} in ${city.name} | Okanagan Trades`}
         description={description}
         path={`/${city.id}/${category.id}/${business.id}`}
-        type="article"
-        jsonLd={{
-          '@context': 'https://schema.org',
-          '@type': 'LocalBusiness',
-          name: business.name,
-          description,
-          telephone: business.contact.phone,
-          email: business.contact.email,
-          url: websiteHref,
-          image: photos[0],
-          address: business.contact.address ? {
-            '@type': 'PostalAddress',
-            streetAddress: business.contact.address,
-            addressLocality: city.name,
-            addressRegion: 'BC',
-            addressCountry: 'CA',
-          } : undefined,
-          areaServed: serviceAreas.map((area) => ({
-            '@type': 'Place',
-            name: area,
-          })),
-          aggregateRating: reviewCount > 0 ? {
-            '@type': 'AggregateRating',
-            ratingValue: rating.toFixed(1),
-            reviewCount,
-          } : undefined,
-        }}
+        type="website"
+        image={heroImageSrc}
+        jsonLd={[
+          buildBreadcrumbJsonLd([
+            { name: 'Home', path: '/' },
+            { name: city.name, path: `/${city.id}` },
+            { name: category.name, path: `/${city.id}/${category.id}` },
+            { name: business.name, path: `/${city.id}/${category.id}/${business.id}` },
+          ]),
+          {
+            '@context': 'https://schema.org',
+            '@type': 'LocalBusiness',
+            name: business.name,
+            description,
+            url: toAbsoluteUrl(`/${city.id}/${category.id}/${business.id}`),
+            mainEntityOfPage: toAbsoluteUrl(`/${city.id}/${category.id}/${business.id}`),
+            telephone: business.contact.phone,
+            email: business.contact.email,
+            image: photos.slice(0, 5),
+            address: business.contact.address ? {
+              '@type': 'PostalAddress',
+              streetAddress: business.contact.address,
+              addressLocality: city.name,
+              addressRegion: 'BC',
+              addressCountry: 'CA',
+            } : undefined,
+            geo: business.coordinates ? {
+              '@type': 'GeoCoordinates',
+              latitude: business.coordinates.lat,
+              longitude: business.coordinates.lng,
+            } : undefined,
+            areaServed: serviceAreas.map((area) => ({
+              '@type': 'Place',
+              name: area,
+            })),
+            sameAs: [websiteHref, mapsHref].filter(Boolean),
+            aggregateRating: reviewCount > 0 ? {
+              '@type': 'AggregateRating',
+              ratingValue: rating.toFixed(1),
+              reviewCount,
+            } : undefined,
+            review: reviews.slice(0, 3).map((review) => ({
+              '@type': 'Review',
+              author: {
+                '@type': 'Person',
+                name: review.author,
+              },
+              reviewBody: review.text,
+              reviewRating: {
+                '@type': 'Rating',
+                ratingValue: review.rating,
+              },
+            })),
+          },
+        ]}
+        keywords={[
+          business.name,
+          `${category.name} ${city.name}`,
+          `${business.name} ${city.name}`,
+        ]}
       />
 
       <div className="lg:hidden">

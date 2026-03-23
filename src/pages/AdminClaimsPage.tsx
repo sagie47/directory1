@@ -252,7 +252,7 @@ export default function AdminClaimsPage() {
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] py-24 font-sans text-zinc-900 selection:bg-indigo-200 selection:text-indigo-900">
-      <Seo title="Admin Claims | Okanagan Trades" description="Centralized claim operations for reviewing and tracking business ownership claims." path="/admin/claims" />
+      <Seo title="Admin Claims | Okanagan Trades" description="Centralized claim operations for reviewing and tracking business ownership claims." path="/admin/claims" robots="noindex,nofollow" />
       <div className="mx-auto max-w-[96rem] px-4 sm:px-6 lg:px-10">
         <div className="flex flex-col gap-6 border-b border-zinc-200 pb-10 lg:flex-row lg:items-end lg:justify-between">
           <div>

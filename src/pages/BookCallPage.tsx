@@ -11,6 +11,7 @@ import {
 import { motion } from 'motion/react';
 
 import SectionEyebrow from '@/src/components/SectionEyebrow';
+import Seo from '@/src/components/Seo';
 import { getCallOffer, getCallOfferConfig } from '@/src/lib/callOffers';
 import {
   trackPaidPlanIntentClicked,
@@ -182,6 +183,13 @@ export default function BookCallPage() {
       transition={{ duration: 0.5 }}
       className="min-h-screen bg-[#FAFAFA] py-24 font-sans text-zinc-900 selection:bg-indigo-200 selection:text-indigo-900"
     >
+      <Seo
+        title={`${content.title} | Okanagan Trades`}
+        description={content.intro}
+        path="/book-call"
+        robots="noindex,nofollow"
+      />
+
       <div className="mx-auto max-w-[96rem] px-4 sm:px-6 lg:px-10">
         <div className="grid gap-12 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-start">
           <div className="max-w-xl">

@@ -5,6 +5,7 @@ import { motion } from 'motion/react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import SectionEyebrow from '../components/SectionEyebrow';
+import Seo from '../components/Seo';
 
 export default function AccountPage() {
   const { user, profile, loading: authLoading, refreshProfile, hasApprovedClaim } = useAuth();
@@ -21,6 +22,14 @@ export default function AccountPage() {
   const [passwordVerified, setPasswordVerified] = useState(false);
   const [searchParams] = useSearchParams();
   const wasDenied = searchParams.get('denied') === '1';
+  const pageSeo = (
+    <Seo
+      title="Your Account | Okanagan Trades"
+      description="Manage your Okanagan Trades account settings and profile details."
+      path="/account"
+      robots="noindex,nofollow"
+    />
+  );
 
   useEffect(() => {
     setFullName(profile?.full_name || '');
@@ -143,6 +152,7 @@ export default function AccountPage() {
         transition={{ duration: 0.5 }}
         className="bg-[#FAFAFA] min-h-screen py-24 text-zinc-900 font-sans relative selection:bg-indigo-200 selection:text-indigo-900"
       >
+        {pageSeo}
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-[0.03] mix-blend-overlay pointer-events-none"></div>
 
         <div className="max-w-md mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -174,6 +184,7 @@ export default function AccountPage() {
       transition={{ duration: 0.5 }}
       className="bg-[#FAFAFA] min-h-screen py-24 text-zinc-900 font-sans relative selection:bg-indigo-200 selection:text-indigo-900"
     >
+      {pageSeo}
       <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-[0.03] mix-blend-overlay pointer-events-none"></div>
 
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
