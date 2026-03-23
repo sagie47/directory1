@@ -4,12 +4,18 @@ import { Search, MapPin, ArrowRight, ChevronRight, Menu, SlidersHorizontal, X, Z
 import BusinessCard from '../components/BusinessCard';
 import FeatureCard from '../components/FeatureCard';
 import { useLayoutChrome } from '../components/Layout';
+import Seo from '../components/Seo';
 import SectionEyebrow from '../components/SectionEyebrow';
 import { AnimatePresence, motion } from 'motion/react';
 import heroImage from '../photos/2024_active_transportation_construction_hintringer_63.jpg';
 import businessBg from '../photos/job-construction-scaled.jpg';
 import { useDirectoryData } from '../directory-data';
 import { getLucideIcon } from '../lib/lucideIconMap';
+import {
+  buildItemListJsonLd,
+  buildOrganizationJsonLd,
+  buildWebSiteJsonLd,
+} from '../lib/seo';
 import { createImageFallbackHandler, preferSupabaseImage } from '../supabase-images';
 
 const containerVariants = {
@@ -102,6 +108,46 @@ export default function Home() {
   const hasSelectedCity = Boolean(cityId);
   const heroImageSrc = preferSupabaseImage('2024_active_transportation_construction_hintringer_63.jpg', heroImage);
   const businessBgSrc = preferSupabaseImage('job-construction-scaled.jpg', businessBg);
+  const homeSchema = useMemo(
+    () => [
+      buildOrganizationJsonLd(),
+      buildWebSiteJsonLd(),
+      {
+        '@context': 'https://schema.org',
+        '@type': 'CollectionPage',
+        name: 'Okanagan Trades Directory',
+        description: 'Find verified contractors, trades, and service professionals across the Okanagan Valley by region, trade, and business.',
+      },
+      {
+        ...buildItemListJsonLd(
+          cities.slice(0, 6).map((city) => ({
+            name: city.name,
+            path: `/${city.id}`,
+          })),
+        ),
+        name: 'Featured Okanagan regions',
+      },
+      {
+        ...buildItemListJsonLd(
+          popularCategories.slice(0, 6).map((category) => ({
+            name: category.name,
+            path: `/trades#${category.id}`,
+          })),
+        ),
+        name: 'Popular trades',
+      },
+      {
+        ...buildItemListJsonLd(
+          featuredBusinesses.map((business) => ({
+            name: business.name,
+            path: `/${business.cityId}/${business.categoryId}/${business.id}`,
+          })),
+        ),
+        name: 'Featured businesses',
+      },
+    ],
+    [cities, featuredBusinesses, popularCategories],
+  );
 
   return (
     <motion.div 
@@ -111,6 +157,19 @@ export default function Home() {
       transition={{ duration: 0.5 }}
       className="bg-[#FAFAFA] min-h-screen text-zinc-900 font-sans selection:bg-indigo-200 selection:text-indigo-900"
     >
+      <Seo
+        title="Okanagan Trades | Verified Contractors Across the Okanagan"
+        description="Find verified contractors, trades, and service professionals across the Okanagan Valley by region, trade, and business."
+        path="/"
+        jsonLd={homeSchema}
+        keywords={[
+          'okanagan contractors',
+          'verified contractors okanagan',
+          'kelowna trades directory',
+          'penticton contractors',
+          'vernon trades',
+        ]}
+      />
       <AnimatePresence>
         {(showCompactSearch || isMobileSearchOpen) && !isMobileMenuOpen ? (
           <motion.div

@@ -2,6 +2,7 @@ import { FormEvent, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Mail, Phone, ArrowRight, MessageSquare } from 'lucide-react';
 import { motion } from 'motion/react';
+import Seo from '../components/Seo';
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
@@ -19,6 +20,18 @@ export default function ContactPage() {
       transition={{ duration: 0.5 }}
       className="bg-[#FAFAFA] min-h-screen py-24 text-zinc-900 font-sans relative"
     >
+      <Seo
+        title="Contact Okanagan Trades | Listings, Support, and Partnerships"
+        description="Contact Okanagan Trades for directory support, listing questions, and business inquiries across the Okanagan."
+        path="/contact"
+        keywords={[
+          'contact okanagan trades',
+          'okanagan trades support',
+          'business listing support',
+          'okanagan contractor directory contact',
+        ]}
+      />
+
       <div className="absolute inset-0 z-0 opacity-30 pointer-events-none" style={{ backgroundImage: 'linear-gradient(to right, #f4f4f5 1px, transparent 1px), linear-gradient(to bottom, #f4f4f5 1px, transparent 1px)', backgroundSize: '4rem 4rem' }}></div>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
@@ -62,9 +75,9 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <p className="font-mono text-[10px] tracking-[0.1em] text-zinc-500 uppercase mb-1">Email</p>
-                    <p className="text-zinc-700 text-sm leading-relaxed font-medium">
+                    <a href="mailto:info@okanagantradesdirectory.com" className="text-zinc-700 text-sm leading-relaxed font-medium underline decoration-zinc-200 underline-offset-4 transition-colors hover:text-zinc-900">
                       info@okanagantradesdirectory.com
-                    </p>
+                    </a>
                   </div>
                 </div>
 
@@ -75,7 +88,7 @@ export default function ContactPage() {
                   <div>
                     <p className="font-mono text-[10px] tracking-[0.1em] text-zinc-500 uppercase mb-1">Phone</p>
                     <p className="text-zinc-700 text-sm leading-relaxed font-medium">
-                      (250) 555-0000
+                      Add your callback number in the form if you want a reply by phone.
                     </p>
                   </div>
                 </div>
@@ -86,9 +99,9 @@ export default function ContactPage() {
               <h2 className="text-xl font-medium tracking-tight text-zinc-900 mb-4">Quick Links</h2>
               <ul className="space-y-4">
                 <li>
-                  <Link to="/signup" className="text-zinc-600 hover:text-zinc-900 text-sm transition-colors flex items-center gap-2 group">
+                  <Link to="/claim" className="text-zinc-600 hover:text-zinc-900 text-sm transition-colors flex items-center gap-2 group">
                     <ArrowRight className="h-3 w-3 text-zinc-400 group-hover:text-zinc-900 group-hover:translate-x-0.5 transition-all" strokeWidth={1.5} />
-                    List Your Business
+                    Claim Your Business
                   </Link>
                 </li>
                 <li>
@@ -180,7 +193,7 @@ export default function ContactPage() {
                         <input 
                           type="tel" 
                           className="w-full border border-zinc-200 bg-[#FAFAFA] px-4 py-3 text-sm text-zinc-900 outline-none focus:border-zinc-400 focus:bg-white transition-colors rounded-sm"
-                          placeholder="(250) 555-0000"
+                          placeholder="Your phone number"
                         />
                       </div>
                     </div>
@@ -190,9 +203,10 @@ export default function ContactPage() {
                     <label className="block font-sans text-sm font-medium text-zinc-700 mb-2">Subject</label>
                     <select 
                       required
+                      defaultValue=""
                       className="w-full border border-zinc-200 bg-[#FAFAFA] px-4 py-3 text-sm text-zinc-900 outline-none focus:border-zinc-400 focus:bg-white transition-colors appearance-none rounded-sm cursor-pointer"
                     >
-                      <option value="" disabled selected>Select a subject classification</option>
+                      <option value="" disabled>Select a subject classification</option>
                       <option value="general">General Inquiry</option>
                       <option value="listing">Business Listing</option>
                       <option value="support">Technical Support</option>

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 
 import SectionEyebrow from '@/src/components/SectionEyebrow';
+import Seo from '@/src/components/Seo';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useDirectoryData } from '@/src/directory-data';
 import { trackEvent, trackPaidPlanIntentClicked, trackPaidPlanIntentViewed } from '@/src/lib/analytics';
@@ -78,6 +79,14 @@ export default function ClaimStatusPage() {
   const claimsAvailable = Boolean(supabase && isSupabaseConfigured());
   const trackedRecommendationViews = useRef(new Set<string>());
   const showSubmittedBanner = searchParams.get('submitted') === '1';
+  const pageSeo = (
+    <Seo
+      title="Claim Status | Okanagan Trades"
+      description="Track the status of your Okanagan Trades business ownership claim."
+      path="/claim/status"
+      robots="noindex,nofollow"
+    />
+  );
 
   const businessesById = useMemo(() => new Map(businesses.map((business) => [business.id, business])), [businesses]);
 
@@ -182,6 +191,7 @@ export default function ClaimStatusPage() {
   if (error) {
     return (
       <div className="min-h-screen bg-[#FAFAFA] px-4 py-24">
+        {pageSeo}
         <div className="mx-auto max-w-2xl border-2 border-rose-300 bg-white p-8 sm:p-10">
           <h1 className="text-3xl font-bold tracking-tight text-rose-700">Claim status is unavailable.</h1>
           <p className="mt-3 text-base leading-7 text-zinc-600">{error}</p>
@@ -193,6 +203,7 @@ export default function ClaimStatusPage() {
   if (!claimsAvailable) {
     return (
       <div className="min-h-screen bg-[#FAFAFA] px-4 py-24">
+        {pageSeo}
         <div className="mx-auto max-w-2xl border-2 border-zinc-900 bg-white p-8 shadow-[8px_8px_0px_0px_rgba(24,24,27,1)] sm:p-10">
           <SectionEyebrow
             icon={ShieldCheck}
@@ -210,6 +221,7 @@ export default function ClaimStatusPage() {
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-zinc-900 font-sans selection:bg-indigo-200 selection:text-indigo-900">
+      {pageSeo}
       <section className="border-b-2 border-zinc-900 bg-white px-4 py-12 sm:px-6 sm:py-14 lg:px-10 lg:py-16">
         <div className="mx-auto max-w-[96rem]">
           <SectionEyebrow

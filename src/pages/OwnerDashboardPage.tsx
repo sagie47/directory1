@@ -11,6 +11,7 @@ import {
 import type { Business, BusinessHours } from '@/src/business';
 import OwnerProfileChecklist from '@/src/components/OwnerProfileChecklist';
 import SectionEyebrow from '@/src/components/SectionEyebrow';
+import Seo from '@/src/components/Seo';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useDirectoryData } from '@/src/directory-data';
 import { trackEvent, trackPaidPlanIntentClicked, trackPaidPlanIntentViewed } from '@/src/lib/analytics';
@@ -222,6 +223,14 @@ export default function OwnerDashboardPage() {
   const progress = useMemo(() => getOwnerProfileProgress(formSnapshot), [formSnapshot]);
   const photoUrls = useMemo(() => parseListValues(formData.photos), [formData.photos]);
   const recommendation = getOwnerRecommendation({ business: formSnapshot, claimStatus: 'approved' });
+  const pageSeo = (
+    <Seo
+      title="Owner Dashboard | Okanagan Trades"
+      description="Manage your approved Okanagan Trades listing and update the public details customers rely on."
+      path="/owner/dashboard"
+      robots="noindex,nofollow"
+    />
+  );
 
   useEffect(() => {
     if (business) {
@@ -300,6 +309,7 @@ export default function OwnerDashboardPage() {
   if (!ownerToolsAvailable) {
     return (
       <div className="min-h-screen bg-[#FAFAFA] px-4 py-24">
+        {pageSeo}
         <div className="mx-auto max-w-2xl border-2 border-zinc-900 bg-white p-8 shadow-[8px_8px_0px_0px_rgba(24,24,27,1)] sm:p-10">
           <h1 className="text-4xl font-bold uppercase tracking-tight text-zinc-950">Owner dashboard is offline.</h1>
           <p className="mt-4 text-lg leading-8 text-zinc-600">This environment does not have the owner backend configured yet.</p>
@@ -311,6 +321,7 @@ export default function OwnerDashboardPage() {
   if (!approvedClaim || !business) {
     return (
       <div className="min-h-screen bg-[#FAFAFA] px-4 py-24">
+        {pageSeo}
         <div className="mx-auto max-w-3xl border-2 border-zinc-900 bg-white p-8 shadow-[8px_8px_0px_0px_rgba(24,24,27,1)] sm:p-10">
           <SectionEyebrow
             icon={ShieldCheck}
@@ -343,6 +354,7 @@ export default function OwnerDashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-zinc-900 font-sans selection:bg-indigo-200 selection:text-indigo-900">
+      {pageSeo}
       <section className="border-b-2 border-zinc-900 bg-white px-4 py-12 sm:px-6 sm:py-14 lg:px-10 lg:py-16">
         <div className="mx-auto max-w-[96rem]">
           <SectionEyebrow

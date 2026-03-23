@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowRight, UserPlus, Check } from 'lucide-react';
 import { motion } from 'motion/react';
 
+import Seo from '../components/Seo';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function RegisterPage() {
@@ -66,6 +67,13 @@ export default function RegisterPage() {
   if (success) {
     return (
       <div className="bg-[#FAFAFA] min-h-screen py-24 text-zinc-900 font-sans relative overflow-hidden flex flex-col justify-center selection:bg-indigo-200 selection:text-indigo-900">
+        <Seo
+          title="Create Account | Okanagan Trades"
+          description="Create an account to claim and manage your Okanagan Trades business profile."
+          path="/register"
+          robots="noindex,nofollow"
+        />
+
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-[0.03] mix-blend-overlay pointer-events-none"></div>
 
         <div className="relative max-w-xl w-full mx-auto px-4 sm:px-6 z-10 text-center">
@@ -95,6 +103,13 @@ export default function RegisterPage() {
       transition={{ duration: 0.5 }}
       className="bg-[#FAFAFA] min-h-screen py-24 text-zinc-900 font-sans relative overflow-hidden flex flex-col justify-center selection:bg-indigo-200 selection:text-indigo-900"
     >
+      <Seo
+        title="Create Account | Okanagan Trades"
+        description="Create an account to claim and manage your Okanagan Trades business profile."
+        path="/register"
+        robots="noindex,nofollow"
+      />
+
       <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-[0.03] mix-blend-overlay pointer-events-none"></div>
 
       <div className="relative max-w-xl w-full mx-auto px-4 sm:px-6 z-10 text-center">

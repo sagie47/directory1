@@ -2,6 +2,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowRight, Check, CreditCard, Mail, Phone } from 'lucide-react';
 import { motion } from 'motion/react';
 
+import Seo from '@/src/components/Seo';
 import { getCallOffer, getCallOfferConfig } from '@/src/lib/callOffers';
 
 export default function CallRequestedPage() {
@@ -19,6 +20,13 @@ export default function CallRequestedPage() {
       transition={{ duration: 0.5 }}
       className="relative flex min-h-screen flex-col justify-center overflow-hidden bg-[#FAFAFA] py-24 font-sans text-zinc-900 selection:bg-indigo-200 selection:text-indigo-900"
     >
+      <Seo
+        title={`${content.successEyebrow} | Okanagan Trades`}
+        description={content.successBody}
+        path="/call-requested"
+        robots="noindex,nofollow"
+      />
+
       <div className="relative z-10 mx-auto w-full max-w-3xl px-4 sm:px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}

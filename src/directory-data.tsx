@@ -1,6 +1,7 @@
 import { createContext, startTransition, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import { Business } from './business';
+import { ACTIVE_CITY_IDS } from './lib/directoryFilters';
 import { loadSeedDataFromJson } from './lib/seedData';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
 
@@ -73,21 +74,6 @@ type BusinessOverrideRow = {
 
 const PAGE_SIZE = 1000;
 const MAX_CONCURRENT_PREFETCH = 5;
-const ACTIVE_CITY_IDS = new Set([
-  'kelowna',
-  'vernon',
-  'penticton',
-  'west-kelowna',
-  'lake-country',
-  'summerland',
-  'kamloops',
-  'salmon-arm',
-  'oliver',
-  'peachland',
-  'osoyoos',
-  'armstrong',
-]);
-
 function isMissingTableError(error: { code?: string; message?: string } | null | undefined) {
   if (!error) {
     return false;

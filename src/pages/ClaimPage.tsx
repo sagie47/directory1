@@ -15,6 +15,7 @@ import {
 
 import GoogleIcon from '@/src/components/GoogleIcon';
 import SectionEyebrow from '@/src/components/SectionEyebrow';
+import Seo from '@/src/components/Seo';
 import type { Business } from '@/src/business';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useDirectoryData } from '@/src/directory-data';
@@ -488,6 +489,18 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-zinc-900 font-sans selection:bg-indigo-200 selection:text-indigo-900">
+      <Seo
+        title="Claim Your Business Listing | Okanagan Trades"
+        description="Claim your Okanagan Trades listing to verify ownership, unlock updates, and manage your business profile."
+        path="/claim"
+        keywords={[
+          'claim business listing',
+          'claim okanagan trades profile',
+          'verify business ownership',
+          'contractor directory claim',
+        ]}
+      />
+
       <section className="border-b-2 border-zinc-900 bg-white px-4 py-10 sm:px-6 sm:py-12 lg:px-10 lg:py-14">
         <div className="mx-auto max-w-[96rem]">
           <SectionEyebrow

@@ -42,6 +42,7 @@ export default function ResetPasswordPage() {
         title="Reset Password | Okanagan Trades"
         description="Request a password reset link to regain access to your account."
         path="/reset-password"
+        robots="noindex,nofollow"
       />
 
       <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-[0.03] mix-blend-overlay z-0"></div>

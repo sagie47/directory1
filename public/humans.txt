@@ -1,0 +1,9 @@
+/* TEAM */
+Project: Okanagan Trades
+Site: https://okanagantradesdirectory.com
+Contact: info@okanagantradesdirectory.com
+Region: Okanagan Valley, British Columbia, Canada
+
+/* SITE */
+Framework: React + Vite
+Focus: Verified contractor discovery and trade business growth
