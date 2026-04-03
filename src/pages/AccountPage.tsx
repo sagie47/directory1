@@ -15,6 +15,10 @@ export default function AccountPage() {
   const canAccessOwnerDashboard = hasApprovedClaim || profile?.role === 'admin';
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [verifyPassword, setVerifyPassword] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordVerified, setPasswordVerified] = useState(false);
   const [searchParams] = useSearchParams();
   const wasDenied = searchParams.get('denied') === '1';
 
@@ -49,6 +53,12 @@ export default function AccountPage() {
   const handleDeleteAccount = async () => {
     if (!user || !supabase) return;
     
+    // Require password verification before deletion
+    if (!passwordVerified) {
+      setVerifyPassword(true);
+      return;
+    }
+    
     setDeleting(true);
     setError(null);
     
@@ -65,13 +75,52 @@ export default function AccountPage() {
         throw signOutError;
       }
       setShowDeleteConfirm(false);
+      setPasswordVerified(false);
+      setVerifyPassword(false);
+      setPasswordInput('');
     } catch (err) {
       console.error('Failed to delete account:', err);
       setError(err instanceof Error ? err.message : 'Unable to delete account right now.');
       setShowDeleteConfirm(false);
+      setVerifyPassword(false);
+      setPasswordVerified(false);
+      setPasswordInput('');
     } finally {
       setDeleting(false);
     }
+  };
+
+  const handlePasswordVerification = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!user || !supabase) return;
+    
+    setPasswordError(null);
+    
+    try {
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email || '',
+        password: passwordInput,
+      });
+      
+      if (signInError) {
+        throw signInError;
+      }
+      
+      setPasswordVerified(true);
+      setVerifyPassword(false);
+      setPasswordInput('');
+    } catch (err) {
+      console.error('Password verification failed:', err);
+      setPasswordError(err instanceof Error ? err.message : 'Invalid password');
+    }
+  };
+
+  const cancelDeleteFlow = () => {
+    setShowDeleteConfirm(false);
+    setVerifyPassword(false);
+    setPasswordVerified(false);
+    setPasswordInput('');
+    setPasswordError(null);
   };
 
   if (authLoading) {
@@ -249,12 +298,46 @@ export default function AccountPage() {
                 <p className="text-red-700 text-sm font-medium">Permanently remove your account and all associated data.</p>
               </div>
               
-              {showDeleteConfirm ? (
+              {verifyPassword ? (
+                <form onSubmit={handlePasswordVerification} className="flex flex-col gap-3 w-full sm:w-auto">
+                  <p className="text-xs font-bold text-red-900 uppercase tracking-wider">Enter your password to confirm</p>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      type="password"
+                      value={passwordInput}
+                      onChange={(e) => setPasswordInput(e.target.value)}
+                      placeholder="Password"
+                      autoFocus
+                      className="px-3 py-2 border-2 border-red-300 bg-white text-red-900 text-sm font-medium rounded-md outline-none focus:border-red-500 w-full sm:w-48"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={cancelDeleteFlow}
+                        disabled={deleting}
+                        className="px-4 py-2 bg-white border-2 border-red-200 text-red-700 font-bold text-xs uppercase tracking-wider rounded-md hover:bg-red-50 transition-colors disabled:opacity-50"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={deleting || !passwordInput}
+                        className="px-4 py-2 bg-red-700 text-white font-bold text-xs uppercase tracking-wider rounded-md hover:bg-red-800 transition-colors shadow-sm disabled:opacity-50"
+                      >
+                        Verify
+                      </button>
+                    </div>
+                  </div>
+                  {passwordError && (
+                    <p className="text-xs text-red-700 font-medium">{passwordError}</p>
+                  )}
+                </form>
+              ) : showDeleteConfirm ? (
                 <div className="flex flex-col gap-3">
                   <p className="text-xs font-bold text-red-900 uppercase tracking-wider">Are you absolutely sure?</p>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => setShowDeleteConfirm(false)}
+                      onClick={cancelDeleteFlow}
                       disabled={deleting}
                       className="px-4 py-2 bg-white border-2 border-red-200 text-red-700 font-bold text-xs uppercase tracking-wider rounded-md hover:bg-red-50 transition-colors disabled:opacity-50"
                     >
@@ -271,7 +354,10 @@ export default function AccountPage() {
                 </div>
               ) : (
                 <button
-                  onClick={() => setShowDeleteConfirm(true)}
+                  onClick={() => {
+                    setShowDeleteConfirm(true);
+                    setVerifyPassword(true);
+                  }}
                   className="px-6 py-3 bg-white border-2 border-red-200 text-red-700 font-bold text-sm uppercase tracking-wider rounded-sm hover:bg-red-100 hover:border-red-300 transition-all shadow-sm active:scale-[0.98] whitespace-nowrap"
                 >
                   Delete Account
