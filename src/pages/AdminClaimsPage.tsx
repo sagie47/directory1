@@ -6,6 +6,7 @@ import SectionEyebrow from '@/src/components/SectionEyebrow';
 import Seo from '@/src/components/Seo';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useDirectoryData } from '@/src/directory-data';
+import { createEvidenceSignedUrlMap } from '@/src/lib/claimEvidence';
 import { supabase } from '@/src/lib/supabase';
 
 type ClaimStatus = 'pending' | 'approved' | 'rejected' | 'revoked';
@@ -21,6 +22,7 @@ interface Claim {
   claimant_phone: string | null;
   relationship_to_business: string;
   message: string | null;
+  evidence_urls: string[] | null;
   rejection_reason: string | null;
   notification_status: NotificationStatus;
   notification_retry_count: number;
@@ -81,7 +83,7 @@ function canRetryNotification(claim: Claim) {
   if (claim.notification_retry_count >= MAX_NOTIFY_RETRIES) {
     return false;
   }
-  return claim.notification_status === 'pending' || claim.notification_status === 'failed' || claim.notification_status === 'skipped';
+  return claim.notification_status === 'pending' || claim.notification_status === 'failed' || claim.notification_status === 'skipped' || claim.notification_status === 'sending';
 }
 
 function notificationLabel(status: NotificationStatus) {
@@ -106,6 +108,7 @@ export default function AdminClaimsPage() {
   const [retryingId, setRetryingId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<ClaimFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [evidenceSignedUrls, setEvidenceSignedUrls] = useState<Record<string, string[]>>({});
 
   const businessDirectoryMap = useMemo(() => new Map(businesses.map((business) => [business.id, business])), [businesses]);
 
@@ -148,6 +151,10 @@ export default function AdminClaimsPage() {
         map[business.id] = business.name;
       });
       setBusinessNames(map);
+
+      // Generate signed URLs for evidence files
+      const evidenceUrlsMap = await createEvidenceSignedUrlMap(supabase, nextClaims);
+      setEvidenceSignedUrls(evidenceUrlsMap);
       setError(null);
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : 'An unexpected error occurred.');
@@ -325,6 +332,24 @@ export default function AdminClaimsPage() {
                       <p className="text-sm text-zinc-700">Business ID: <span className="font-semibold">{claim.business_id}</span></p>
                     </div>
                     {claim.message ? <p className="mt-3 border border-zinc-200 bg-zinc-50 px-3 py-3 text-sm text-zinc-700">{claim.message}</p> : null}
+                    {claim.evidence_urls && claim.evidence_urls.length > 0 ? (
+                      <div className="mt-3 border border-zinc-200 bg-zinc-50 px-3 py-3 text-sm text-zinc-700">
+                        <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Evidence</p>
+                        <div className="mt-3 flex flex-wrap gap-3">
+                          {claim.evidence_urls.map((url, index) => (
+                            <a
+                              key={`${claim.id}-evidence-${index}`}
+                              href={evidenceSignedUrls[claim.id]?.[index] ?? '#'}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-2 border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-wide text-zinc-700 transition-colors hover:border-zinc-900 hover:text-zinc-950"
+                            >
+                              Evidence {index + 1}
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
 
                     <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto_auto]">
                       <textarea
@@ -386,6 +411,24 @@ export default function AdminClaimsPage() {
                     </div>
 
                     {claim.status === 'rejected' && claim.rejection_reason ? <p className="mt-3 border border-rose-200 bg-rose-50 px-3 py-3 text-sm text-rose-700">{claim.rejection_reason}</p> : null}
+                    {claim.evidence_urls && claim.evidence_urls.length > 0 ? (
+                      <div className="mt-3 border border-zinc-200 bg-zinc-50 px-3 py-3 text-sm text-zinc-700">
+                        <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Evidence</p>
+                        <div className="mt-3 flex flex-wrap gap-3">
+                          {claim.evidence_urls.map((url, index) => (
+                            <a
+                              key={`${claim.id}-reviewed-evidence-${index}`}
+                              href={evidenceSignedUrls[claim.id]?.[index] ?? '#'}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-2 border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-wide text-zinc-700 transition-colors hover:border-zinc-900 hover:text-zinc-950"
+                            >
+                              Evidence {index + 1}
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
                     <div className={`mt-3 border px-3 py-3 text-sm ${noteStyle}`}>
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <p className="font-semibold">Notification: {notificationLabel(claim.notification_status)}</p>
