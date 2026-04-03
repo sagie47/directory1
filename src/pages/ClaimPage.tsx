@@ -61,7 +61,7 @@ const paidDirectoryPlans = DIRECTORY_PLAN_TIERS.filter(
   (tier) => tier.id === 'verified' || tier.id === 'verified-pro',
 );
 
-const CLAIM_EVIDENCE_BUCKET = 'bucket';
+const CLAIM_EVIDENCE_BUCKET = 'claims';
 const MAX_CLAIM_EVIDENCE_FILES = 3;
 const MAX_CLAIM_EVIDENCE_BYTES = 10 * 1024 * 1024;
 const ALLOWED_CLAIM_EVIDENCE_TYPES = new Set([
@@ -286,7 +286,7 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
 
         for (const file of evidenceFiles) {
           const extension = file.name.includes('.') ? file.name.slice(file.name.lastIndexOf('.')).toLowerCase() : '';
-          const filePath = `claims/${user.id}/${crypto.randomUUID()}${extension}`;
+          const filePath = `${user.id}/${crypto.randomUUID()}${extension}`;
           const { error: uploadError } = await supabase.storage.from(CLAIM_EVIDENCE_BUCKET).upload(filePath, file, {
             cacheControl: '3600',
             upsert: false,

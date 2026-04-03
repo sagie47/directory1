@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-const CLAIM_EVIDENCE_BUCKET = 'bucket';
+const CLAIM_EVIDENCE_BUCKET = 'claims';
 
 interface ClaimEvidenceRecord {
   id: string;
