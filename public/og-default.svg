@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" fill="none">
+  <rect width="1200" height="630" fill="#18181B"/>
+  <rect x="48" y="48" width="1104" height="534" rx="32" fill="#F5F5F4" />
+  <rect x="92" y="96" width="90" height="90" rx="16" fill="#18181B"/>
+  <path d="M115 121H159V165H115V121Z" fill="#F5F5F4"/>
+  <path d="M136 111V175" stroke="#F97316" stroke-width="8"/>
+  <path d="M105 143H169" stroke="#F97316" stroke-width="8"/>
+  <text x="92" y="266" fill="#18181B" font-family="Arial, Helvetica, sans-serif" font-size="78" font-weight="700">Okanagan Trades</text>
+  <text x="92" y="334" fill="#52525B" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="600">Verified Contractors Across the Okanagan</text>
+  <text x="92" y="420" fill="#18181B" font-family="Arial, Helvetica, sans-serif" font-size="28">Search by region, trade, and business.</text>
+  <text x="92" y="466" fill="#18181B" font-family="Arial, Helvetica, sans-serif" font-size="28">Built for homeowners, developers, and trade business owners.</text>
+  <rect x="92" y="510" width="330" height="48" rx="24" fill="#18181B"/>
+  <text x="126" y="542" fill="#F5F5F4" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700">okanagantradesdirectory.com</text>
+</svg>

@@ -6,6 +6,7 @@ import {motion} from 'motion/react';
 import Breadcrumbs from '../components/Breadcrumbs';
 import MobileDirectorySearch from '../components/MobileDirectorySearch';
 import BusinessCard from '../components/BusinessCard';
+import Seo from '../components/Seo';
 import {Business, businessServesCity} from '../business';
 import {useDirectoryData} from '../directory-data';
 
@@ -121,6 +122,14 @@ export default function SearchPage() {
       transition={{duration: 0.4, ease: 'easeOut'}}
       className="bg-[#FAFAFA] min-h-screen pt-0 pb-16"
     >
+      <Seo
+        title={rawQuery ? `Search results for ${rawQuery} | Okanagan Trades` : 'Search Contractors | Okanagan Trades'}
+        description={rawQuery
+          ? `Search Okanagan Trades for ${rawQuery}${city ? ` in ${city.name}` : ''}.`
+          : 'Search Okanagan Trades by trade, city, or business name.'}
+        path="/search"
+        robots="noindex,follow"
+      />
       <MobileDirectorySearch
         cities={cities}
         initialQuery={rawQuery}

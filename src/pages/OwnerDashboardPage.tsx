@@ -5,12 +5,16 @@ import {
   ArrowRight,
   CheckCircle2,
   ExternalLink,
+  Globe,
+  Phone,
   Save,
   ShieldCheck,
+  TrendingUp,
 } from 'lucide-react';
 import type { Business, BusinessHours } from '@/src/business';
 import OwnerProfileChecklist from '@/src/components/OwnerProfileChecklist';
 import SectionEyebrow from '@/src/components/SectionEyebrow';
+import Seo from '@/src/components/Seo';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useDirectoryData } from '@/src/directory-data';
 import { trackEvent, trackPaidPlanIntentClicked, trackPaidPlanIntentViewed } from '@/src/lib/analytics';
@@ -222,6 +226,39 @@ export default function OwnerDashboardPage() {
   const progress = useMemo(() => getOwnerProfileProgress(formSnapshot), [formSnapshot]);
   const photoUrls = useMemo(() => parseListValues(formData.photos), [formData.photos]);
   const recommendation = getOwnerRecommendation({ business: formSnapshot, claimStatus: 'approved' });
+  const serviceLanes = useMemo(() => ([
+    {
+      title: 'Website Offer',
+      description: formData.website.trim()
+        ? 'Use this when the site needs stronger mobile trust, clearer calls to action, or a sharper first impression.'
+        : 'No website is live yet. This is the fastest paid lane for turning a basic listing into a stronger trust layer.',
+      href: '/websites-for-trades',
+      cta: 'See Website Offer',
+      icon: Globe,
+    },
+    {
+      title: 'Lead Capture',
+      description: 'Use this when missed calls, slow follow-up, or weak intake are costing real jobs.',
+      href: '/never-miss-a-lead',
+      cta: 'View Lead Capture',
+      icon: Phone,
+    },
+    {
+      title: 'Managed Growth',
+      description: 'Use this when the basics are covered and you want ongoing help with visibility, follow-up, and execution.',
+      href: '/managed-growth',
+      cta: 'See Managed Growth',
+      icon: TrendingUp,
+    },
+  ]), [formData.website]);
+  const pageSeo = (
+    <Seo
+      title="Owner Dashboard | Okanagan Trades"
+      description="Manage your approved Okanagan Trades listing and update the public details customers rely on."
+      path="/owner/dashboard"
+      robots="noindex,nofollow"
+    />
+  );
 
   useEffect(() => {
     if (business) {
@@ -300,6 +337,7 @@ export default function OwnerDashboardPage() {
   if (!ownerToolsAvailable) {
     return (
       <div className="min-h-screen bg-[#FAFAFA] px-4 py-24">
+        {pageSeo}
         <div className="mx-auto max-w-2xl border-2 border-zinc-900 bg-white p-8 shadow-[8px_8px_0px_0px_rgba(24,24,27,1)] sm:p-10">
           <h1 className="text-4xl font-bold uppercase tracking-tight text-zinc-950">Owner dashboard is offline.</h1>
           <p className="mt-4 text-lg leading-8 text-zinc-600">This environment does not have the owner backend configured yet.</p>
@@ -311,6 +349,7 @@ export default function OwnerDashboardPage() {
   if (!approvedClaim || !business) {
     return (
       <div className="min-h-screen bg-[#FAFAFA] px-4 py-24">
+        {pageSeo}
         <div className="mx-auto max-w-3xl border-2 border-zinc-900 bg-white p-8 shadow-[8px_8px_0px_0px_rgba(24,24,27,1)] sm:p-10">
           <SectionEyebrow
             icon={ShieldCheck}
@@ -343,6 +382,7 @@ export default function OwnerDashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-zinc-900 font-sans selection:bg-indigo-200 selection:text-indigo-900">
+      {pageSeo}
       <section className="border-b-2 border-zinc-900 bg-white px-4 py-12 sm:px-6 sm:py-14 lg:px-10 lg:py-16">
         <div className="mx-auto max-w-[96rem]">
           <SectionEyebrow
@@ -596,6 +636,9 @@ export default function OwnerDashboardPage() {
               <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Next opportunity</p>
               <h2 className="mt-3 text-2xl font-bold tracking-tight text-zinc-950">{recommendation.title}</h2>
               <p className="mt-3 text-sm leading-6 text-zinc-600">{recommendation.description}</p>
+              <p className="mt-3 text-xs leading-5 text-zinc-500">
+                Claim approval already gave you owner access. You can use any paid lane below whenever the bottleneck is bigger than basic listing cleanup.
+              </p>
               {recommendation.href && recommendation.ctaLabel ? (
                 <Link
                   to={recommendation.href}
@@ -623,6 +666,52 @@ export default function OwnerDashboardPage() {
                   <ArrowRight className="h-4 w-4" strokeWidth={2.2} />
                 </Link>
               ) : null}
+            </section>
+
+            <section className="border border-zinc-200 bg-white p-5">
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Direct service lanes</p>
+              <div className="mt-4 space-y-4">
+                {serviceLanes.map((lane) => {
+                  const isRecommended = recommendation.href === lane.href;
+
+                  return (
+                    <div
+                      key={lane.title}
+                      className={`border p-4 transition-colors ${
+                        isRecommended
+                          ? 'border-orange-200 bg-orange-50'
+                          : 'border-zinc-200 bg-zinc-50'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`mt-0.5 flex h-9 w-9 items-center justify-center border ${
+                          isRecommended
+                            ? 'border-orange-200 bg-white text-orange-600'
+                            : 'border-zinc-200 bg-white text-zinc-600'
+                        }`}>
+                          <lane.icon className="h-4 w-4" strokeWidth={2} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-sm font-semibold uppercase tracking-wide text-zinc-950">{lane.title}</h3>
+                            {isRecommended ? (
+                              <span className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-orange-600">Recommended</span>
+                            ) : null}
+                          </div>
+                          <p className="mt-2 text-sm leading-6 text-zinc-600">{lane.description}</p>
+                          <Link
+                            to={lane.href}
+                            className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-zinc-900 underline underline-offset-4 transition-colors hover:text-orange-600"
+                          >
+                            {lane.cta}
+                            <ArrowRight className="h-4 w-4" strokeWidth={2.2} />
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </section>
 
             <section className="border border-zinc-200 bg-zinc-50 p-5">

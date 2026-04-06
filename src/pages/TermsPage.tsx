@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { LayoutGrid } from 'lucide-react';
+import Seo from '../components/Seo';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -24,6 +25,13 @@ export default function TermsPage() {
       transition={{ duration: 0.5 }}
       className="bg-[#FAFAFA] min-h-screen py-24 text-zinc-900 font-sans relative"
     >
+      <Seo
+        title="Terms of Service | Okanagan Trades"
+        description="Terms of service for using Okanagan Trades and its contractor directory platform."
+        path="/terms"
+        robots="noindex,follow"
+      />
+
       <div className="absolute inset-0 z-0 opacity-30 pointer-events-none" style={{ backgroundImage: 'linear-gradient(to right, #f4f4f5 1px, transparent 1px), linear-gradient(to bottom, #f4f4f5 1px, transparent 1px)', backgroundSize: '4rem 4rem' }}></div>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">

@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 
 import {
+  DEFAULT_OG_IMAGE,
+  DEFAULT_SEO_KEYWORDS,
   DEFAULT_SEO_DESCRIPTION,
   DEFAULT_SEO_TITLE,
   SITE_NAME,
@@ -14,6 +16,7 @@ interface SeoProps {
   image?: string;
   type?: 'website' | 'article';
   robots?: string;
+  keywords?: string[];
   jsonLd?: Record<string, unknown> | Array<Record<string, unknown>>;
 }
 
@@ -48,11 +51,12 @@ export default function Seo({
   image,
   type = 'website',
   robots = 'index,follow',
+  keywords = DEFAULT_SEO_KEYWORDS,
   jsonLd,
 }: SeoProps) {
   useEffect(() => {
     const absoluteUrl = toAbsoluteUrl(path);
-    const socialImage = image ? toAbsoluteUrl(image) : undefined;
+    const socialImage = toAbsoluteUrl(image ?? DEFAULT_OG_IMAGE);
     const jsonLdScriptId = 'route-jsonld';
 
     document.title = title;
@@ -67,9 +71,29 @@ export default function Seo({
       content: robots,
     });
 
+    upsertMeta('meta[name="keywords"]', {
+      name: 'keywords',
+      content: keywords.join(', '),
+    });
+
+    upsertMeta('meta[name="author"]', {
+      name: 'author',
+      content: SITE_NAME,
+    });
+
+    upsertMeta('meta[name="theme-color"]', {
+      name: 'theme-color',
+      content: '#18181b',
+    });
+
     upsertMeta('meta[property="og:site_name"]', {
       property: 'og:site_name',
       content: SITE_NAME,
+    });
+
+    upsertMeta('meta[property="og:locale"]', {
+      property: 'og:locale',
+      content: 'en_CA',
     });
 
     upsertMeta('meta[property="og:title"]', {
@@ -94,7 +118,7 @@ export default function Seo({
 
     upsertMeta('meta[name="twitter:card"]', {
       name: 'twitter:card',
-      content: socialImage ? 'summary_large_image' : 'summary',
+      content: 'summary_large_image',
     });
 
     upsertMeta('meta[name="twitter:title"]', {
@@ -107,19 +131,30 @@ export default function Seo({
       content: description,
     });
 
-    if (socialImage) {
-      upsertMeta('meta[property="og:image"]', {
-        property: 'og:image',
-        content: socialImage,
-      });
-      upsertMeta('meta[name="twitter:image"]', {
-        name: 'twitter:image',
-        content: socialImage,
-      });
-    } else {
-      document.head.querySelector('meta[property="og:image"]')?.remove();
-      document.head.querySelector('meta[name="twitter:image"]')?.remove();
-    }
+    upsertMeta('meta[property="og:image"]', {
+      property: 'og:image',
+      content: socialImage,
+    });
+
+    upsertMeta('meta[property="og:image:width"]', {
+      property: 'og:image:width',
+      content: '1200',
+    });
+
+    upsertMeta('meta[property="og:image:height"]', {
+      property: 'og:image:height',
+      content: '630',
+    });
+
+    upsertMeta('meta[property="og:image:alt"]', {
+      property: 'og:image:alt',
+      content: title,
+    });
+
+    upsertMeta('meta[name="twitter:image"]', {
+      name: 'twitter:image',
+      content: socialImage,
+    });
 
     upsertLink('link[rel="canonical"]', {
       rel: 'canonical',
@@ -145,7 +180,7 @@ export default function Seo({
         script.remove();
       }
     };
-  }, [description, image, jsonLd, path, robots, title, type]);
+  }, [description, image, jsonLd, keywords, path, robots, title, type]);
 
   return null;
 }

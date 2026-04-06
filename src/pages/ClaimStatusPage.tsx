@@ -12,9 +12,11 @@ import {
 } from 'lucide-react';
 
 import SectionEyebrow from '@/src/components/SectionEyebrow';
+import Seo from '@/src/components/Seo';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useDirectoryData } from '@/src/directory-data';
 import { trackEvent, trackPaidPlanIntentClicked, trackPaidPlanIntentViewed } from '@/src/lib/analytics';
+import { createEvidenceSignedUrlMap } from '@/src/lib/claimEvidence';
 import { getBusinessListingPath, getClaimStatusCopy, getOwnerProfileFields } from '@/src/lib/ownerProfile';
 import { DIRECTORY_PLAN_TIERS, VERIFIED_LAUNCH_NOTE } from '@/src/lib/pricing';
 import { getOwnerRecommendation } from '@/src/lib/recommendations';
@@ -25,6 +27,7 @@ interface BusinessClaim {
   business_id: string;
   status: 'pending' | 'approved' | 'rejected' | 'revoked';
   relationship_to_business: string;
+  evidence_urls?: string[] | null;
   rejection_reason?: string;
   created_at: string;
 }
@@ -75,9 +78,18 @@ export default function ClaimStatusPage() {
   const [claims, setClaims] = useState<BusinessClaim[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [evidenceSignedUrls, setEvidenceSignedUrls] = useState<Record<string, string[]>>({});
   const claimsAvailable = Boolean(supabase && isSupabaseConfigured());
   const trackedRecommendationViews = useRef(new Set<string>());
   const showSubmittedBanner = searchParams.get('submitted') === '1';
+  const pageSeo = (
+    <Seo
+      title="Claim Status | Okanagan Trades"
+      description="Track the status of your Okanagan Trades business ownership claim."
+      path="/claim/status"
+      robots="noindex,nofollow"
+    />
+  );
 
   const businessesById = useMemo(() => new Map(businesses.map((business) => [business.id, business])), [businesses]);
 
@@ -159,7 +171,10 @@ export default function ClaimStatusPage() {
         if (fetchError) {
           setError(fetchError.message);
         } else {
-          setClaims((data ?? []) as BusinessClaim[]);
+          const nextClaims = (data ?? []) as BusinessClaim[];
+          setClaims(nextClaims);
+          const evidenceUrlsMap = await createEvidenceSignedUrlMap(supabase, nextClaims);
+          setEvidenceSignedUrls(evidenceUrlsMap);
         }
       } catch (caughtError) {
         setError(caughtError instanceof Error ? caughtError.message : 'Failed to load claims.');
@@ -182,6 +197,7 @@ export default function ClaimStatusPage() {
   if (error) {
     return (
       <div className="min-h-screen bg-[#FAFAFA] px-4 py-24">
+        {pageSeo}
         <div className="mx-auto max-w-2xl border-2 border-rose-300 bg-white p-8 sm:p-10">
           <h1 className="text-3xl font-bold tracking-tight text-rose-700">Claim status is unavailable.</h1>
           <p className="mt-3 text-base leading-7 text-zinc-600">{error}</p>
@@ -193,6 +209,7 @@ export default function ClaimStatusPage() {
   if (!claimsAvailable) {
     return (
       <div className="min-h-screen bg-[#FAFAFA] px-4 py-24">
+        {pageSeo}
         <div className="mx-auto max-w-2xl border-2 border-zinc-900 bg-white p-8 shadow-[8px_8px_0px_0px_rgba(24,24,27,1)] sm:p-10">
           <SectionEyebrow
             icon={ShieldCheck}
@@ -210,6 +227,7 @@ export default function ClaimStatusPage() {
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-zinc-900 font-sans selection:bg-indigo-200 selection:text-indigo-900">
+      {pageSeo}
       <section className="border-b-2 border-zinc-900 bg-white px-4 py-12 sm:px-6 sm:py-14 lg:px-10 lg:py-16">
         <div className="mx-auto max-w-[96rem]">
           <SectionEyebrow
@@ -306,6 +324,26 @@ export default function ClaimStatusPage() {
                         <div className="border border-rose-200 bg-rose-50 px-5 py-5 text-sm leading-7 text-rose-700">
                           <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em]">Review note</p>
                           <p className="mt-3">{claim.rejection_reason}</p>
+                        </div>
+                      ) : null}
+
+                      {claim.evidence_urls && claim.evidence_urls.length > 0 ? (
+                        <div className="border border-zinc-200 bg-zinc-50 px-5 py-5">
+                          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Evidence submitted</p>
+                          <p className="mt-2 text-sm text-zinc-600">These files were attached to your ownership request for review.</p>
+                          <div className="mt-4 flex flex-wrap gap-3">
+                            {claim.evidence_urls.map((url, index) => (
+                              <a
+                                key={`${claim.id}-evidence-${index}`}
+                                href={evidenceSignedUrls[claim.id]?.[index] ?? '#'}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 border border-zinc-200 bg-white px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-700 transition-colors hover:border-zinc-900 hover:text-zinc-950"
+                              >
+                                Evidence {index + 1}
+                              </a>
+                            ))}
+                          </div>
                         </div>
                       ) : null}
 

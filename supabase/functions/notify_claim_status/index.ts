@@ -278,12 +278,15 @@ serve(async (req) => {
       return new Response(JSON.stringify({ message: 'Ignored: Claim is not in a terminal status in DB' }), { status: 200 });
     }
 
-    if (dbClaim.notification_sent_at || dbClaim.notification_status === 'sent') {
+    if (dbClaim.notification_status === 'sent') {
       return new Response(JSON.stringify({ message: 'Ignored: Notification already sent' }), { status: 200 });
     }
 
     const claimedAt = new Date().toISOString();
     const nextRetryCount = dbClaim.notification_retry_count + 1;
+    const claimableStatuses: NotificationStatus[] = payloadDecision.explicitRetry
+      ? ['pending', 'failed', 'skipped', 'sending']
+      : ['pending'];
 
     const { data: claimResult, error: claimError } = await supabase
       .from('business_claims')
@@ -295,11 +298,10 @@ serve(async (req) => {
         notification_last_error: null,
         notification_last_http_status: null,
         notification_last_response_body: null,
-        notification_sent_at: claimedAt,
       })
       .eq('id', claimId)
       .in('status', ['approved', 'rejected'])
-      .is('notification_sent_at', null)
+      .in('notification_status', claimableStatuses)
       .eq('notification_retry_count', dbClaim.notification_retry_count)
       .select('id, status, claimant_email, rejection_reason, notification_retry_count')
       .maybeSingle();
@@ -325,13 +327,12 @@ serve(async (req) => {
         .from('business_claims')
         .update({
           notification_status: 'skipped',
-          notification_sent_at: null,
           notification_last_failure_at: claimedAt,
           notification_last_error_code: 'DRY_RUN',
           notification_last_error: 'RESEND_API_KEY is not configured. Notification delivery skipped.',
         })
         .eq('id', claimId)
-        .eq('notification_sent_at', claimedAt);
+        .eq('notification_status', 'sending');
 
       if (skipError) {
         console.error('Failed to persist dry-run notification metadata:', skipError);
@@ -356,6 +357,7 @@ serve(async (req) => {
         .from('business_claims')
         .update({
           notification_status: 'sent',
+          notification_sent_at: new Date().toISOString(),
           notification_last_success_at: new Date().toISOString(),
           notification_last_error_code: null,
           notification_last_error: null,
@@ -364,7 +366,7 @@ serve(async (req) => {
           notification_last_failure_at: null,
         })
         .eq('id', claimId)
-        .eq('notification_sent_at', claimedAt);
+        .eq('notification_status', 'sending');
 
       if (markSentError) {
         console.error('Failed to persist notification success metadata:', markSentError);
@@ -392,7 +394,6 @@ serve(async (req) => {
         .from('business_claims')
         .update({
           notification_status: 'failed',
-          notification_sent_at: null,
           notification_last_failure_at: new Date().toISOString(),
           notification_last_error_code: sendFailure.code,
           notification_last_error: sendFailure.message,
@@ -400,7 +401,7 @@ serve(async (req) => {
           notification_last_response_body: sendFailure.responseBody,
         })
         .eq('id', claimId)
-        .eq('notification_sent_at', claimedAt);
+        .eq('notification_status', 'sending');
 
       if (rollback.error) {
         console.error('Failed to persist notification failure metadata:', rollback.error);

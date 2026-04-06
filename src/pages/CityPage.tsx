@@ -8,6 +8,7 @@ import { useDirectoryData } from '../directory-data';
 import { getCityHeroFallbackImage, getCityHeroImage } from '../city-hero-images';
 import { businessServesCity } from '../business';
 import { getLucideIcon } from '../lib/lucideIconMap';
+import { buildBreadcrumbJsonLd, buildItemListJsonLd, toAbsoluteUrl } from '../lib/seo';
 import { createImageFallbackHandler } from '../supabase-images';
 
 const containerVariants = {
@@ -48,6 +49,7 @@ export default function CityPage() {
 
   const cityBusinesses = businesses.filter((business) => businessServesCity(business, city.id, city.name));
   const featuredBusinesses = cityBusinesses.slice(0, 3);
+  const cityDescription = city.description ?? `Browse verified contractors and trade businesses serving ${city.name}.`;
   
   const popularCategoryIds = ['electricians', 'plumbers', 'hvac-contractors', 'roofing'];
   const popularCategories = categories.filter(c => popularCategoryIds.includes(c.id));
@@ -74,25 +76,32 @@ export default function CityPage() {
     >
       <Seo
         title={`${city.name} Contractors & Trades | Okanagan Trades`}
-        description={city.description ?? `Browse verified contractors and trade businesses serving ${city.name}.`}
+        description={cityDescription}
         path={`/${city.id}`}
         jsonLd={[
           {
             '@context': 'https://schema.org',
             '@type': 'CollectionPage',
             name: `${city.name} Contractors & Trades`,
-            description: city.description ?? `Browse verified contractors and trade businesses serving ${city.name}.`,
+            description: cityDescription,
+            url: toAbsoluteUrl(`/${city.id}`),
           },
-          {
-            '@context': 'https://schema.org',
-            '@type': 'ItemList',
-            itemListElement: cityBusinesses.slice(0, 10).map((business, index) => ({
-              '@type': 'ListItem',
-              position: index + 1,
-              url: `/${city.id}/${business.categoryId}/${business.id}`,
+          buildBreadcrumbJsonLd([
+            { name: 'Home', path: '/' },
+            { name: city.name, path: `/${city.id}` },
+          ]),
+          buildItemListJsonLd(
+            cityBusinesses.slice(0, 12).map((business) => ({
               name: business.name,
+              path: `/${city.id}/${business.categoryId}/${business.id}`,
             })),
-          },
+          ),
+        ]}
+        keywords={[
+          `${city.name} contractors`,
+          `${city.name} trades`,
+          `${city.name} electricians`,
+          `${city.name} plumbers`,
         ]}
       />
 
