@@ -393,6 +393,61 @@ using (
   )
 );
 
+create or replace function public.normalize_claim_evidence_path(p_value text)
+returns text
+language plpgsql
+immutable
+as $$
+declare
+  v_value text := nullif(btrim(p_value), '');
+  v_match text[];
+begin
+  if v_value is null then
+    return null;
+  end if;
+
+  if v_value ~ '^https?://' then
+    v_match := regexp_match(
+      v_value,
+      '/storage/v1/object/(?:public|authenticated|sign)/claims/(.+?)(?:\?|$)'
+    );
+
+    if v_match is null or array_length(v_match, 1) = 0 then
+      return null;
+    end if;
+
+    v_value := regexp_replace(v_match[1], '^/+','');
+  else
+    v_value := regexp_replace(v_value, '^/+','');
+    v_value := regexp_replace(v_value, '^claims/+','');
+  end if;
+
+  return nullif(v_value, '');
+end;
+$$;
+
+create or replace function public.normalize_claim_evidence_paths(p_values text[])
+returns text[]
+language sql
+immutable
+as $$
+  select coalesce(
+    array_agg(normalized_path order by ordinality),
+    '{}'::text[]
+  )
+  from (
+    select
+      ordinality,
+      public.normalize_claim_evidence_path(value) as normalized_path
+    from unnest(coalesce(p_values, '{}'::text[])) with ordinality as entries(value, ordinality)
+  ) normalized
+  where normalized_path is not null
+$$;
+
+update public.business_claims
+set evidence_urls = public.normalize_claim_evidence_paths(evidence_urls)
+where evidence_urls is distinct from public.normalize_claim_evidence_paths(evidence_urls);
+
 create or replace function public.submit_business_claim(
   p_business_id text,
   p_claimant_name text,
@@ -502,7 +557,7 @@ begin
       p_claimant_phone,
       p_relationship_to_business,
       p_message,
-      coalesce(p_evidence_urls, '{}'::text[])
+      public.normalize_claim_evidence_paths(p_evidence_urls)
     )
     returning id into v_claim_id;
   exception

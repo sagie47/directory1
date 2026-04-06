@@ -78,7 +78,7 @@ export default function ClaimStatusPage() {
   const [claims, setClaims] = useState<BusinessClaim[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [evidenceSignedUrls, setEvidenceSignedUrls] = useState<Record<string, string[]>>({});
+  const [evidenceSignedUrls, setEvidenceSignedUrls] = useState<Record<string, Array<string | null>>>({});
   const claimsAvailable = Boolean(supabase && isSupabaseConfigured());
   const trackedRecommendationViews = useRef(new Set<string>());
   const showSubmittedBanner = searchParams.get('submitted') === '1';
@@ -332,17 +332,32 @@ export default function ClaimStatusPage() {
                           <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Evidence submitted</p>
                           <p className="mt-2 text-sm text-zinc-600">These files were attached to your ownership request for review.</p>
                           <div className="mt-4 flex flex-wrap gap-3">
-                            {claim.evidence_urls.map((url, index) => (
-                              <a
-                                key={`${claim.id}-evidence-${index}`}
-                                href={evidenceSignedUrls[claim.id]?.[index] ?? '#'}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 border border-zinc-200 bg-white px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-700 transition-colors hover:border-zinc-900 hover:text-zinc-950"
-                              >
-                                Evidence {index + 1}
-                              </a>
-                            ))}
+                            {claim.evidence_urls.map((url, index) => {
+                              const signedUrl = evidenceSignedUrls[claim.id]?.[index] ?? null;
+
+                              if (!signedUrl) {
+                                return (
+                                  <span
+                                    key={`${claim.id}-evidence-${index}`}
+                                    className="inline-flex items-center gap-2 border border-dashed border-zinc-300 bg-white px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-500"
+                                  >
+                                    Evidence {index + 1} unavailable
+                                  </span>
+                                );
+                              }
+
+                              return (
+                                <a
+                                  key={`${claim.id}-evidence-${index}`}
+                                  href={signedUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-2 border border-zinc-200 bg-white px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-700 transition-colors hover:border-zinc-900 hover:text-zinc-950"
+                                >
+                                  Evidence {index + 1}
+                                </a>
+                              );
+                            })}
                           </div>
                         </div>
                       ) : null}
