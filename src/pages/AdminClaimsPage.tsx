@@ -108,7 +108,7 @@ export default function AdminClaimsPage() {
   const [retryingId, setRetryingId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<ClaimFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [evidenceSignedUrls, setEvidenceSignedUrls] = useState<Record<string, string[]>>({});
+  const [evidenceSignedUrls, setEvidenceSignedUrls] = useState<Record<string, Array<string | null>>>({});
 
   const businessDirectoryMap = useMemo(() => new Map(businesses.map((business) => [business.id, business])), [businesses]);
 
@@ -336,17 +336,32 @@ export default function AdminClaimsPage() {
                       <div className="mt-3 border border-zinc-200 bg-zinc-50 px-3 py-3 text-sm text-zinc-700">
                         <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Evidence</p>
                         <div className="mt-3 flex flex-wrap gap-3">
-                          {claim.evidence_urls.map((url, index) => (
-                            <a
-                              key={`${claim.id}-evidence-${index}`}
-                              href={evidenceSignedUrls[claim.id]?.[index] ?? '#'}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-2 border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-wide text-zinc-700 transition-colors hover:border-zinc-900 hover:text-zinc-950"
-                            >
-                              Evidence {index + 1}
-                            </a>
-                          ))}
+                          {claim.evidence_urls.map((url, index) => {
+                            const signedUrl = evidenceSignedUrls[claim.id]?.[index] ?? null;
+
+                            if (!signedUrl) {
+                              return (
+                                <span
+                                  key={`${claim.id}-evidence-${index}`}
+                                  className="inline-flex items-center gap-2 border border-dashed border-zinc-300 bg-zinc-100 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-zinc-500"
+                                >
+                                  Evidence {index + 1} unavailable
+                                </span>
+                              );
+                            }
+
+                            return (
+                              <a
+                                key={`${claim.id}-evidence-${index}`}
+                                href={signedUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-wide text-zinc-700 transition-colors hover:border-zinc-900 hover:text-zinc-950"
+                              >
+                                Evidence {index + 1}
+                              </a>
+                            );
+                          })}
                         </div>
                       </div>
                     ) : null}
@@ -415,17 +430,32 @@ export default function AdminClaimsPage() {
                       <div className="mt-3 border border-zinc-200 bg-zinc-50 px-3 py-3 text-sm text-zinc-700">
                         <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Evidence</p>
                         <div className="mt-3 flex flex-wrap gap-3">
-                          {claim.evidence_urls.map((url, index) => (
-                            <a
-                              key={`${claim.id}-reviewed-evidence-${index}`}
-                              href={evidenceSignedUrls[claim.id]?.[index] ?? '#'}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-2 border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-wide text-zinc-700 transition-colors hover:border-zinc-900 hover:text-zinc-950"
-                            >
-                              Evidence {index + 1}
-                            </a>
-                          ))}
+                          {claim.evidence_urls.map((url, index) => {
+                            const signedUrl = evidenceSignedUrls[claim.id]?.[index] ?? null;
+
+                            if (!signedUrl) {
+                              return (
+                                <span
+                                  key={`${claim.id}-reviewed-evidence-${index}`}
+                                  className="inline-flex items-center gap-2 border border-dashed border-zinc-300 bg-zinc-100 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-zinc-500"
+                                >
+                                  Evidence {index + 1} unavailable
+                                </span>
+                              );
+                            }
+
+                            return (
+                              <a
+                                key={`${claim.id}-reviewed-evidence-${index}`}
+                                href={signedUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-wide text-zinc-700 transition-colors hover:border-zinc-900 hover:text-zinc-950"
+                              >
+                                Evidence {index + 1}
+                              </a>
+                            );
+                          })}
                         </div>
                       </div>
                     ) : null}
