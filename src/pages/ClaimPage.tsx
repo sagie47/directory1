@@ -262,24 +262,32 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
     setError(null);
     setSubmitting(true);
 
+    const uploadedFilePaths: string[] = [];
+
+    const cleanupUploadedFiles = async () => {
+      if (uploadedFilePaths.length === 0) {
+        return true;
+      }
+
+      const filePathsToRemove = [...uploadedFilePaths];
+      uploadedFilePaths.length = 0;
+
+      try {
+        const { error: cleanupError } = await supabase.storage.from(CLAIM_EVIDENCE_BUCKET).remove(filePathsToRemove);
+        if (cleanupError) {
+          console.error('Failed to cleanup orphaned evidence files:', filePathsToRemove, cleanupError);
+          return false;
+        }
+      } catch (cleanupError) {
+        console.error('Failed to cleanup orphaned evidence files:', filePathsToRemove, cleanupError);
+        return false;
+      }
+
+      return true;
+    };
+
     try {
       let evidenceUrls: string[] = [];
-      const uploadedFilePaths: string[] = [];
-
-      const cleanupUploadedFiles = async () => {
-        for (const filePath of uploadedFilePaths) {
-          try {
-            const { error: cleanupError } = await supabase.storage.from(CLAIM_EVIDENCE_BUCKET).remove([filePath]);
-            if (cleanupError) {
-              console.error('Failed to cleanup orphaned evidence file:', filePath, cleanupError);
-            }
-          } catch (cleanupError) {
-            console.error('Failed to cleanup orphaned evidence file:', filePath, cleanupError);
-          }
-        }
-
-        uploadedFilePaths.length = 0;
-      };
 
       if (evidenceFiles.length > 0) {
         evidenceUrls = [];
@@ -295,7 +303,11 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
           if (uploadError) {
             console.error('Claim evidence upload failed:', uploadError);
             if (uploadedFilePaths.length > 0) {
-              await cleanupUploadedFiles();
+              const cleanupSucceeded = await cleanupUploadedFiles();
+              if (!cleanupSucceeded) {
+                setError('Your evidence files could not be uploaded, and we could not remove files from this attempt. Please contact support before retrying.');
+                return;
+              }
             }
             setError('Your evidence files could not be uploaded. Please try again.');
             return;
@@ -324,7 +336,11 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
         console.error('Claim submission failed:', { code, msg, details: submitError.details, hint: submitError.hint });
 
         if (uploadedFilePaths.length > 0) {
-          await cleanupUploadedFiles();
+          const cleanupSucceeded = await cleanupUploadedFiles();
+          if (!cleanupSucceeded) {
+            setError('Your claim could not be submitted, and we could not remove the uploaded evidence from this attempt. Please contact support before retrying.');
+            return;
+          }
         }
 
         if (code === 'P1001' || msg.includes('pending claim')) {
@@ -364,7 +380,11 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
 
       if (!claimId) {
         if (uploadedFilePaths.length > 0) {
-          await cleanupUploadedFiles();
+          const cleanupSucceeded = await cleanupUploadedFiles();
+          if (!cleanupSucceeded) {
+            setError('Your claim submission did not complete, and we could not remove the uploaded evidence from this attempt. Please contact support before retrying.');
+            return;
+          }
         }
         setError('Your claim was submitted, but the confirmation id was not returned.');
         return;
@@ -376,6 +396,17 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
       navigate(`/claim/status?submitted=1&businessId=${selectedBusiness.id}`);
     } catch (caughtError) {
       console.error('Unexpected claim submit failure:', caughtError);
+      if (uploadedFilePaths.length > 0) {
+        const cleanupSucceeded = await cleanupUploadedFiles();
+        if (!cleanupSucceeded) {
+          setError('Your claim could not be submitted, and we could not remove the uploaded evidence from this attempt. Please contact support before retrying.');
+          return;
+        }
+
+        setError('Your claim could not be submitted. Any uploaded evidence from this attempt was removed. Please try again.');
+        return;
+      }
+
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setSubmitting(false);
