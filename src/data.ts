@@ -120788,12 +120788,14 @@ export const businesses: Business[] = [
     },
     rating: 0,
     reviewCount: 0,
-    description: "Turtle Tanks Okanagan provides wastewater and septic solutions including tank sales, inspections, drain field replacements, and system upgrades. They serve Kelowna, Lake Country, West Kelowna, and Peachland",
+    description: "Turtle Tanks Okanagan provides wastewater and septic solutions including designs, installations, inspections, drain field replacements, and system upgrades. They serve Kelowna, Lake Country, West Kelowna, Peachland, Okanagan, and Summerland",
     serviceAreas: [
       "Kelowna",
       "Lake Country",
       "West Kelowna",
-      "Peachland"
+      "Peachland",
+      "Okanagan",
+      "Summerland"
     ],
     categoryTags: [
       "septic system service",
@@ -125445,7 +125447,7 @@ export const businesses: Business[] = [
   },
   {
     id: "kelowna-tile-installers-8274021185998171686",
-    name: "Queen of Floors - Kelowna Flooring & Countertops",
+    name: "The Queen of Floors & More Inc.",
     cityId: "kelowna",
     cityName: "Kelowna",
     categoryId: "tile-installers",
@@ -125453,8 +125455,8 @@ export const businesses: Business[] = [
     searchQuery: "tile installers in Kelowna BC",
     contact: {
       phone: "+1 236-795-5160",
-      website: "https://www.thekqoffloors.ca/?utm_source=iNFOTEL+Multedia&utm_medium=website+&utm_id=10076243",
-      address: "2495 Enterprise Way Suite 104, Kelowna, BC V1X 6X2, Canada"
+      website: "https://www.thekqoffloors.ca/",
+      address: "104-2495 Enterprise Way, Kelowna, BC V1X 7K2, Canada"
     },
     coordinates: {
       lat: 49.8862142,
@@ -125470,7 +125472,7 @@ export const businesses: Business[] = [
     },
     rating: 4.8,
     reviewCount: 63,
-    description: "Queen of Floors - Kelowna Flooring & Countertops supplies and installs flooring, tile, countertops, and cabinets in Kelowna, Lake Country, and Summerland",
+    description: "The Queen of Floors & More Inc. specializes in quartz countertops with in-house fabrication from their family-owned shop, and also supplies and installs cabinets, vinyl plank flooring, tile, and countertops across Kelowna, Lake Country, Summerland, and West Kelowna",
     serviceAreas: [
       "Kelowna",
       "Lake Country",
@@ -125492,6 +125494,14 @@ export const businesses: Business[] = [
       "wood and laminate flooring supplier",
       "wood floor installation service",
       "tile installers"
+    ],
+    specialties: [
+      "Quartz countertop fabrication and installation",
+      "Family-owned fabrication shop",
+      "Cabinets",
+      "Vinyl plank flooring",
+      "Tile installation",
+      "Countertops"
     ],
     specialties: [
       "Delivery",
@@ -125981,16 +125991,16 @@ export const businesses: Business[] = [
   },
   {
     id: "kelowna-tile-installers-6401728779979239797",
-    name: "Vancoast Tile And Stone",
+    name: "Vancoast Tile & Stone",
     cityId: "kelowna",
     cityName: "Kelowna",
     categoryId: "tile-installers",
     categoryName: "Tile Installers",
     searchQuery: "tile installers in Kelowna BC",
     contact: {
-      website: "https://www.vancoasttilestone.ca/",
+      website: "https://vancoasttilestone.ca",
       address: "328 Phipps Crescent, Kelowna, BC V1X 7N8, Canada",
-      phone: ""
+      phone: "778-552-5348"
     },
     coordinates: {
       lat: 49.9016685,
@@ -126006,10 +126016,12 @@ export const businesses: Business[] = [
     },
     rating: 5,
     reviewCount: 2,
-    description: "Vancoast Tile And Stone provides high-quality tile installation services for homes and businesses in Kelowna and Lake Country",
+    description: "Vancoast Tile & Stone specializes in high-quality tile installation with a focus on durability, proper preparation, and clean finishes. We serve Kelowna and surrounding areas, offering professional solutions for bathrooms, kitchens, and custom tile projects.",
     serviceAreas: [
       "Kelowna",
-      "Lake Country"
+      "Lake Country",
+      "West Kelowna",
+      "Peachland"
     ],
     validation: {
       queryCityId: "kelowna",
@@ -126017,7 +126029,16 @@ export const businesses: Business[] = [
     },
     categoryTags: [
       "flooring contractor",
+      "tile contractor",
       "tile installers"
+    ],
+    specialties: [
+      "Tile installation (residential & commercial)",
+      "Bathroom renovations & waterproofing",
+      "Walk-in showers & custom tile work",
+      "Kitchen backsplashes",
+      "Tile flooring & heated floors",
+      "Grout repair & re-caulking"
     ],
     photos: [
       "https://lh3.googleusercontent.com/gps-cs-s/AHVAweooNLyhhAA5MR5TkLgrIHVUhPfhZvcr7HNyFNUnWCUhpVZJ6NpTP3FeJM4eUsvysCcjeuyAjCdCZxIJvul2wG2VTNCj-gYX_J2rPAg6WzTbTxl2CR4VCmq0uFULgXkMcLj1k52jWV9PclDK=w224-h298-k-no",
@@ -242776,10 +242797,18 @@ export const businesses: Business[] = [
     },
     rating: 5,
     reviewCount: 1,
-    description: "Green Earth Hydrovac Ltd provides excavation and site preparation services in West Kelowna and Peachland",
+    description: "Green Earth Hydrovac Ltd provides excavation and site preparation services throughout the Okanagan region",
     serviceAreas: [
       "West Kelowna",
-      "Peachland"
+      "Kelowna",
+      "Lake Country",
+      "Peachland",
+      "Summerland",
+      "Penticton",
+      "Vernon",
+      "Oliver",
+      "Osoyoos",
+      "Armstrong"
     ],
     categoryTags: [
       "excavating contractor",
@@ -264947,7 +264976,6 @@ export const businesses: Business[] = [
     }
   }
 ];
-
 
 
 
