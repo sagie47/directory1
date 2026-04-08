@@ -125501,9 +125501,7 @@ export const businesses: Business[] = [
       "Cabinets",
       "Vinyl plank flooring",
       "Tile installation",
-      "Countertops"
-    ],
-    specialties: [
+      "Countertops",
       "Delivery",
       "In-store pickup",
       "In-store shopping",
@@ -264976,7 +264974,6 @@ export const businesses: Business[] = [
     }
   }
 ];
-
 
 
 
