@@ -22,6 +22,7 @@ import Seo from '@/src/components/Seo';
 import type { Business } from '@/src/business';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useDirectoryData } from '@/src/directory-data';
+import { getClaimStateCopy, getClaimStateForBusiness, type ClaimState, type UserBusinessClaim } from '@/src/lib/claimState';
 import { getBusinessListingPath } from '@/src/lib/ownerProfile';
 import { isSupabaseConfigured, supabase } from '@/src/lib/supabase';
 import { trackEvent, trackPaidPlanIntentClicked, trackPaidPlanIntentViewed } from '@/src/lib/analytics';
@@ -71,6 +72,21 @@ const ALLOWED_CLAIM_EVIDENCE_TYPES = new Set([
   'image/webp',
 ]);
 
+function getClaimStateBadgeClasses(state: ClaimState) {
+  switch (state) {
+    case 'claimable':
+      return 'border-emerald-200 bg-emerald-50 text-emerald-700';
+    case 'pending_by_me':
+      return 'border-amber-200 bg-amber-50 text-amber-700';
+    case 'approved_by_me':
+      return 'border-orange-200 bg-orange-50 text-orange-700';
+    case 'claimed_by_other':
+      return 'border-rose-200 bg-rose-50 text-rose-700';
+    case 'verification_unknown':
+      return 'border-zinc-200 bg-zinc-100 text-zinc-700';
+  }
+}
+
 export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
   const navigate = useNavigate();
   const { user, loading: authLoading, signInWithGoogle } = useAuth();
@@ -78,6 +94,8 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
     businesses,
     categories,
     cities,
+    verifiedBusinessIds,
+    verifiedLookupDegraded,
     isLoading: directoryLoading,
     error: directoryError,
   } = useDirectoryData();
@@ -95,6 +113,9 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
   const [evidenceFiles, setEvidenceFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
+  const [claimsLoading, setClaimsLoading] = useState(false);
+  const [claimsDegraded, setClaimsDegraded] = useState(false);
+  const [userClaims, setUserClaims] = useState<UserBusinessClaim[]>([]);
   const [error, setError] = useState<string | null>(null);
   const trackedClaimStarts = useRef(new Set<string>());
   const claimsAvailable = Boolean(supabase && isSupabaseConfigured());
@@ -119,6 +140,50 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
   );
   const targetedBusinessCityName = targetedBusiness ? cityNames.get(targetedBusiness.cityId) : undefined;
   const targetedBusinessCategoryName = targetedBusiness ? categoryNames.get(targetedBusiness.categoryId) : undefined;
+  const claimStateLookupDegraded = verifiedLookupDegraded || claimsDegraded;
+  const targetedClaimState = targetedBusiness
+    ? getClaimStateForBusiness({
+        businessId: targetedBusiness.id,
+        userClaims,
+        verifiedBusinessIds,
+        verifiedLookupDegraded: claimStateLookupDegraded,
+      })
+    : 'claimable';
+  const targetedClaimStateCopy = getClaimStateCopy(targetedClaimState);
+
+  useEffect(() => {
+    async function fetchUserClaims() {
+      if (!user || !supabase || !claimsAvailable) {
+        setUserClaims([]);
+        setClaimsLoading(false);
+        setClaimsDegraded(false);
+        return;
+      }
+
+      setClaimsLoading(true);
+      setClaimsDegraded(false);
+
+      try {
+        const { data, error: fetchError } = await supabase
+          .from('business_claims')
+          .select('business_id, status')
+          .eq('user_id', user.id);
+
+        if (fetchError) {
+          throw fetchError;
+        }
+
+        setUserClaims((data ?? []) as UserBusinessClaim[]);
+      } catch (claimError) {
+        console.error('Failed to load user claim states:', claimError);
+        setClaimsDegraded(true);
+      } finally {
+        setClaimsLoading(false);
+      }
+    }
+
+    void fetchUserClaims();
+  }, [claimsAvailable, user]);
 
   useEffect(() => {
     if (!user || directoryLoading || !selectedBusinessId) {
@@ -168,6 +233,17 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
       })
       .slice(0, 10);
   }, [businesses, categoryNames, cityNames, searchQuery]);
+  const filteredBusinessResults = useMemo(() => (
+    filteredBusinesses.map((business) => ({
+      business,
+      claimState: getClaimStateForBusiness({
+        businessId: business.id,
+        userClaims,
+        verifiedBusinessIds,
+        verifiedLookupDegraded: claimStateLookupDegraded,
+      }),
+    }))
+  ), [filteredBusinesses, userClaims, verifiedBusinessIds, claimStateLookupDegraded]);
 
   const listingPath = getBusinessListingPath(selectedBusiness);
   const selectedCityName = selectedBusiness ? cityNames.get(selectedBusiness.cityId) : undefined;
@@ -244,6 +320,26 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     if (!user || !selectedBusiness || !supabase || !claimsAvailable) {
+      return;
+    }
+
+    if (targetedClaimState === 'pending_by_me') {
+      navigate('/claim/status');
+      return;
+    }
+
+    if (targetedClaimState === 'approved_by_me') {
+      navigate('/owner/dashboard');
+      return;
+    }
+
+    if (targetedClaimState === 'claimed_by_other') {
+      setError('This listing has already been claimed by another owner. Contact support if you believe that is incorrect.');
+      return;
+    }
+
+    if (targetedClaimState === 'verification_unknown') {
+      setError('We cannot confirm ownership status for this listing right now. Please try again later or contact support.');
       return;
     }
 
@@ -360,7 +456,7 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
           || msg.includes('same time')
           || msg.includes('already been claimed')
         ) {
-          setError('Another claim for this listing is already in review. Please check the status page.');
+          setError('This listing has already been claimed by another owner. Contact support if you believe that is incorrect.');
           return;
         }
 
@@ -413,7 +509,12 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
     }
   }
 
-  if (authLoading || (user && directoryLoading) || (!user && Boolean(selectedBusinessId) && directoryLoading)) {
+  if (
+    authLoading
+    || (user && directoryLoading)
+    || (!user && Boolean(selectedBusinessId) && directoryLoading)
+    || (user && claimsLoading)
+  ) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-50">
         <div className="h-12 w-12 animate-spin rounded-full border-2 border-zinc-200 border-t-zinc-900" />
@@ -671,6 +772,12 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
             </div>
           ) : null}
 
+          {claimsDegraded ? (
+            <div className="mb-8 border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-800">
+              We could not confirm your current claim states right now. Claim actions are temporarily blocked until that lookup succeeds.
+            </div>
+          ) : null}
+
           {step === 1 ? (
             <div className="grid gap-8 lg:grid-cols-[minmax(0,1.35fr)_22rem]">
               <section className="border-2 border-zinc-900 bg-white">
@@ -704,14 +811,14 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
                   </div>
                   <p className="mt-3 text-sm text-zinc-500">
                     {searchQuery.trim()
-                      ? `${filteredBusinesses.length} matching ${filteredBusinesses.length === 1 ? 'listing' : 'listings'}`
+                      ? `${filteredBusinessResults.length} matching ${filteredBusinessResults.length === 1 ? 'listing' : 'listings'}`
                       : 'Start typing to see matching listings.'}
                   </p>
                 </div>
                 <div className="px-6 py-6 sm:px-8">
-                  {filteredBusinesses.length > 0 ? (
+                  {filteredBusinessResults.length > 0 ? (
                     <div className="space-y-3">
-                      {filteredBusinesses.map((business) => (
+                      {filteredBusinessResults.map(({ business, claimState }) => (
                         <button
                           key={business.id}
                           type="button"
@@ -727,6 +834,11 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
                               </span>
                               <span className="h-1 w-1 rounded-full bg-zinc-300" />
                               <span>{categoryNames.get(business.categoryId) ?? business.categoryId}</span>
+                            </div>
+                            <div className="mt-3">
+                              <span className={`inline-flex items-center border px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.16em] ${getClaimStateBadgeClasses(claimState)}`}>
+                                {getClaimStateCopy(claimState).badge}
+                              </span>
                             </div>
                             {business.contact.address ? (
                               <p className="mt-2 text-sm text-zinc-500">{business.contact.address}</p>
@@ -817,7 +929,7 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
             </div>
           ) : (
             <div className="grid gap-8 lg:grid-cols-[minmax(0,1.2fr)_24rem]">
-              <form onSubmit={handleSubmit} className="space-y-8">
+              <div className="space-y-8">
                 <section className="border-2 border-zinc-900 bg-white">
                   <div className="border-b-2 border-zinc-900 bg-zinc-900 px-6 py-6 text-white sm:px-8">
                     <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-orange-300">Selected listing</p>
@@ -829,10 +941,15 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
                   </div>
                   <div className="grid gap-6 px-6 py-6 sm:px-8 lg:grid-cols-[minmax(0,1fr)_15rem]">
                     <div>
+                      <div>
+                        <span className={`inline-flex items-center border px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.16em] ${getClaimStateBadgeClasses(targetedClaimState)}`}>
+                          {targetedClaimStateCopy.badge}
+                        </span>
+                      </div>
                       {selectedBusiness?.contact.address ? (
-                        <p className="text-sm leading-6 text-zinc-600">{selectedBusiness.contact.address}</p>
+                        <p className="mt-4 text-sm leading-6 text-zinc-600">{selectedBusiness.contact.address}</p>
                       ) : (
-                        <p className="text-sm leading-6 text-zinc-500">No street address is published for this listing yet.</p>
+                        <p className="mt-4 text-sm leading-6 text-zinc-500">No street address is published for this listing yet.</p>
                       )}
                     </div>
                     {listingPath ? (
@@ -847,130 +964,177 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
                   </div>
                 </section>
 
-                <section className="border border-zinc-200 bg-white p-6 sm:p-8">
-                  <div className="grid gap-6 md:grid-cols-2">
-                    <div>
-                      <label className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
-                        <User className="h-3.5 w-3.5" />
-                        Full name
-                      </label>
-                      <input
-                        type="text"
-                        value={claimData.claimantName}
-                        onChange={(event) => setClaimData({ ...claimData, claimantName: event.target.value })}
-                        required
-                        className="mt-3 w-full border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-900 focus:bg-white"
-                        placeholder="Your name"
-                      />
-                    </div>
-                    <div>
-                      <label className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
-                        <Phone className="h-3.5 w-3.5" />
-                        Phone number
-                      </label>
-                      <input
-                        type="tel"
-                        value={claimData.claimantPhone}
-                        onChange={(event) => setClaimData({ ...claimData, claimantPhone: event.target.value })}
-                        className="mt-3 w-full border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-900 focus:bg-white"
-                        placeholder="(250) 555-0000"
-                      />
-                    </div>
-                    <div>
-                      <label className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
-                        <ShieldCheck className="h-3.5 w-3.5" />
-                        Your role
-                      </label>
-                      <select
-                        value={claimData.relationshipToBusiness}
-                        onChange={(event) => setClaimData({ ...claimData, relationshipToBusiness: event.target.value })}
-                        className="mt-3 w-full border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none transition-colors focus:border-zinc-900 focus:bg-white"
-                      >
-                        <option value="owner">Owner</option>
-                        <option value="manager">Manager</option>
-                        <option value="employee">Employee</option>
-                        <option value="authorized">Authorized representative</option>
-                      </select>
-                    </div>
-                  </div>
-                  <p className="mt-6 text-sm leading-6 text-zinc-600">
-                    Claim notifications are sent to your signed-in account email:
-                    {' '}
-                    <span className="font-medium text-zinc-900">{accountEmail ?? 'No account email available'}</span>
-                  </p>
-                  <div className="mt-8">
-                    <label className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Verification notes</label>
-                    <textarea
-                      value={claimData.message}
-                      onChange={(event) => setClaimData({ ...claimData, message: event.target.value })}
-                      rows={5}
-                      className="mt-3 w-full resize-none border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-900 focus:bg-white"
-                      placeholder="Add anything that helps us verify ownership faster."
-                    />
-                  </div>
-                  <div className="mt-8">
-                    <div className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
-                      <Paperclip className="h-3.5 w-3.5" />
-                      Evidence upload
-                    </div>
-                    <p className="mt-3 text-sm leading-6 text-zinc-600">
-                      Upload optional proof like a business license, utility bill, storefront photo, or signed authorization letter.
-                    </p>
-                    <label className="mt-4 inline-flex cursor-pointer items-center gap-2 border border-zinc-200 bg-zinc-50 px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-700 transition-colors hover:border-zinc-900 hover:bg-white hover:text-zinc-950">
-                      <FileText className="h-4 w-4" strokeWidth={2.2} />
-                      Add evidence files
-                      <input
-                        type="file"
-                        accept=".pdf,image/jpeg,image/png,image/webp"
-                        multiple
-                        onChange={handleEvidenceSelection}
-                        className="sr-only"
-                      />
-                    </label>
-                    <p className="mt-3 text-xs leading-5 text-zinc-500">
-                      Up to {MAX_CLAIM_EVIDENCE_FILES} files. PDF, JPG, PNG, or WEBP. Maximum 10 MB each.
-                    </p>
-                    {evidenceFiles.length > 0 ? (
-                      <div className="mt-4 space-y-2">
-                        {evidenceFiles.map((file, index) => (
-                          <div key={`${file.name}-${file.size}-${index}`} className="flex items-center justify-between gap-3 border border-zinc-200 bg-zinc-50 px-3 py-3 text-sm text-zinc-700">
-                            <div className="min-w-0">
-                              <p className="truncate font-medium text-zinc-900">{file.name}</p>
-                              <p className="text-xs text-zinc-500">{(file.size / (1024 * 1024)).toFixed(1)} MB</p>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveEvidenceFile(index)}
-                              className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-zinc-500 transition-colors hover:text-rose-600"
-                            >
-                              <X className="h-3.5 w-3.5" strokeWidth={2.2} />
-                              Remove
-                            </button>
-                          </div>
-                        ))}
+                {targetedClaimState === 'claimable' ? (
+                  <form onSubmit={handleSubmit} className="space-y-8">
+                    <section className="border border-zinc-200 bg-white p-6 sm:p-8">
+                      <div className="grid gap-6 md:grid-cols-2">
+                        <div>
+                          <label className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                            <User className="h-3.5 w-3.5" />
+                            Full name
+                          </label>
+                          <input
+                            type="text"
+                            value={claimData.claimantName}
+                            onChange={(event) => setClaimData({ ...claimData, claimantName: event.target.value })}
+                            required
+                            className="mt-3 w-full border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-900 focus:bg-white"
+                            placeholder="Your name"
+                          />
+                        </div>
+                        <div>
+                          <label className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                            <Phone className="h-3.5 w-3.5" />
+                            Phone number
+                          </label>
+                          <input
+                            type="tel"
+                            value={claimData.claimantPhone}
+                            onChange={(event) => setClaimData({ ...claimData, claimantPhone: event.target.value })}
+                            className="mt-3 w-full border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-900 focus:bg-white"
+                            placeholder="(250) 555-0000"
+                          />
+                        </div>
+                        <div>
+                          <label className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                            <ShieldCheck className="h-3.5 w-3.5" />
+                            Your role
+                          </label>
+                          <select
+                            value={claimData.relationshipToBusiness}
+                            onChange={(event) => setClaimData({ ...claimData, relationshipToBusiness: event.target.value })}
+                            className="mt-3 w-full border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none transition-colors focus:border-zinc-900 focus:bg-white"
+                          >
+                            <option value="owner">Owner</option>
+                            <option value="manager">Manager</option>
+                            <option value="employee">Employee</option>
+                            <option value="authorized">Authorized representative</option>
+                          </select>
+                        </div>
                       </div>
-                    ) : null}
-                  </div>
-                  <div className="mt-8 flex flex-col gap-4 border-t border-zinc-100 pt-6 sm:flex-row">
-                    <button
-                      type="button"
-                      onClick={handleBackToSearch}
-                      className="inline-flex items-center justify-center gap-2 border border-zinc-200 bg-white px-5 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-700 transition-colors hover:bg-zinc-50 hover:text-zinc-950"
-                    >
-                      <ArrowLeft className="h-4 w-4" strokeWidth={2.4} />
-                      Change listing
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={submitting}
-                      className="inline-flex flex-1 items-center justify-center gap-3 border-2 border-zinc-900 bg-zinc-900 px-6 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white transition-all hover:border-orange-500 hover:bg-orange-500 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {submitting ? 'Submitting claim...' : 'Submit claim for review'}
-                      {!submitting ? <ArrowRight className="h-4 w-4" strokeWidth={2.6} /> : null}
-                    </button>
-                  </div>
-                </section>
-              </form>
+                      <p className="mt-6 text-sm leading-6 text-zinc-600">
+                        Claim notifications are sent to your signed-in account email:
+                        {' '}
+                        <span className="font-medium text-zinc-900">{accountEmail ?? 'No account email available'}</span>
+                      </p>
+                      <div className="mt-8">
+                        <label className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Verification notes</label>
+                        <textarea
+                          value={claimData.message}
+                          onChange={(event) => setClaimData({ ...claimData, message: event.target.value })}
+                          rows={5}
+                          className="mt-3 w-full resize-none border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-900 focus:bg-white"
+                          placeholder="Add anything that helps us verify ownership faster."
+                        />
+                      </div>
+                      <div className="mt-8">
+                        <div className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                          <Paperclip className="h-3.5 w-3.5" />
+                          Evidence upload
+                        </div>
+                        <p className="mt-3 text-sm leading-6 text-zinc-600">
+                          Upload optional proof like a business license, utility bill, storefront photo, or signed authorization letter.
+                        </p>
+                        <label className="mt-4 inline-flex cursor-pointer items-center gap-2 border border-zinc-200 bg-zinc-50 px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-700 transition-colors hover:border-zinc-900 hover:bg-white hover:text-zinc-950">
+                          <FileText className="h-4 w-4" strokeWidth={2.2} />
+                          Add evidence files
+                          <input
+                            type="file"
+                            accept=".pdf,image/jpeg,image/png,image/webp"
+                            multiple
+                            onChange={handleEvidenceSelection}
+                            className="sr-only"
+                          />
+                        </label>
+                        <p className="mt-3 text-xs leading-5 text-zinc-500">
+                          Up to {MAX_CLAIM_EVIDENCE_FILES} files. PDF, JPG, PNG, or WEBP. Maximum 10 MB each.
+                        </p>
+                        {evidenceFiles.length > 0 ? (
+                          <div className="mt-4 space-y-2">
+                            {evidenceFiles.map((file, index) => (
+                              <div key={`${file.name}-${file.size}-${index}`} className="flex items-center justify-between gap-3 border border-zinc-200 bg-zinc-50 px-3 py-3 text-sm text-zinc-700">
+                                <div className="min-w-0">
+                                  <p className="truncate font-medium text-zinc-900">{file.name}</p>
+                                  <p className="text-xs text-zinc-500">{(file.size / (1024 * 1024)).toFixed(1)} MB</p>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveEvidenceFile(index)}
+                                  className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-zinc-500 transition-colors hover:text-rose-600"
+                                >
+                                  <X className="h-3.5 w-3.5" strokeWidth={2.2} />
+                                  Remove
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+                      <div className="mt-8 flex flex-col gap-4 border-t border-zinc-100 pt-6 sm:flex-row">
+                        <button
+                          type="button"
+                          onClick={handleBackToSearch}
+                          className="inline-flex items-center justify-center gap-2 border border-zinc-200 bg-white px-5 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-700 transition-colors hover:bg-zinc-50 hover:text-zinc-950"
+                        >
+                          <ArrowLeft className="h-4 w-4" strokeWidth={2.4} />
+                          Change listing
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={submitting}
+                          className="inline-flex flex-1 items-center justify-center gap-3 border-2 border-zinc-900 bg-zinc-900 px-6 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white transition-all hover:border-orange-500 hover:bg-orange-500 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {submitting ? 'Submitting claim...' : 'Submit claim for review'}
+                          {!submitting ? <ArrowRight className="h-4 w-4" strokeWidth={2.6} /> : null}
+                        </button>
+                      </div>
+                    </section>
+                  </form>
+                ) : (
+                  <section className="border border-zinc-200 bg-white p-6 sm:p-8">
+                    <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Next step</p>
+                    <h3 className="mt-4 text-3xl font-bold tracking-tight text-zinc-950">{targetedClaimStateCopy.badge}</h3>
+                    <p className="mt-4 max-w-2xl text-base leading-7 text-zinc-600">{targetedClaimStateCopy.description}</p>
+                    <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                      {targetedClaimState === 'pending_by_me' ? (
+                        <Link
+                          to="/claim/status"
+                          className="inline-flex items-center justify-center gap-3 border-2 border-zinc-900 bg-zinc-900 px-6 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white transition-all hover:border-orange-500 hover:bg-orange-500"
+                        >
+                          View claim status
+                          <ArrowRight className="h-4 w-4" strokeWidth={2.6} />
+                        </Link>
+                      ) : null}
+                      {targetedClaimState === 'approved_by_me' ? (
+                        <Link
+                          to="/owner/dashboard"
+                          className="inline-flex items-center justify-center gap-3 border-2 border-zinc-900 bg-zinc-900 px-6 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white transition-all hover:border-orange-500 hover:bg-orange-500"
+                        >
+                          Open owner dashboard
+                          <ArrowRight className="h-4 w-4" strokeWidth={2.6} />
+                        </Link>
+                      ) : null}
+                      {targetedClaimState === 'claimed_by_other' || targetedClaimState === 'verification_unknown' ? (
+                        <Link
+                          to="/contact"
+                          className="inline-flex items-center justify-center gap-3 border-2 border-zinc-900 bg-zinc-900 px-6 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white transition-all hover:border-orange-500 hover:bg-orange-500"
+                        >
+                          Contact support
+                          <ArrowRight className="h-4 w-4" strokeWidth={2.6} />
+                        </Link>
+                      ) : null}
+                      <button
+                        type="button"
+                        onClick={handleBackToSearch}
+                        className="inline-flex items-center justify-center gap-2 border border-zinc-200 bg-white px-5 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-700 transition-colors hover:bg-zinc-50 hover:text-zinc-950"
+                      >
+                        <ArrowLeft className="h-4 w-4" strokeWidth={2.4} />
+                        Change listing
+                      </button>
+                    </div>
+                  </section>
+                )}
+              </div>
 
               <aside className="space-y-5">
                 <section className="border border-zinc-200 bg-white p-5">

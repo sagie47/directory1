@@ -97,6 +97,10 @@ function resolveOverrideValue(overrideValue: string | null | undefined, fallback
   return overrideValue ?? '';
 }
 
+function resolveClaimLabel(claim: BusinessClaim, businesses: Business[]) {
+  return businesses.find((entry) => entry.id === claim.business_id)?.name ?? claim.business_id;
+}
+
 export default function OwnerDashboardPage() {
   const { user, loading: authLoading } = useAuth();
   const { businesses, cities, isLoading: directoryLoading, refresh } = useDirectoryData();
@@ -166,6 +170,15 @@ export default function OwnerDashboardPage() {
     }
   }
 
+  async function handleClaimSelection(claim: BusinessClaim) {
+    setLoading(true);
+    try {
+      await hydrateClaim(claim);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   useEffect(() => {
     async function fetchClaims() {
       if (directoryLoading) {
@@ -195,8 +208,13 @@ export default function OwnerDashboardPage() {
           const preferredClaim = preferredClaimId
             ? claimList.find((claim) => claim.id === preferredClaimId) ?? null
             : null;
+          const initialClaim = preferredClaim ?? claimList[0];
+          const initialClaimHasBusiness = businesses.some((entry) => entry.id === initialClaim.business_id);
+          const recoverableClaim = claimList.find((claim) =>
+            businesses.some((entry) => entry.id === claim.business_id)
+          ) ?? null;
 
-          await hydrateClaim(preferredClaim ?? claimList[0]);
+          await hydrateClaim(initialClaimHasBusiness ? initialClaim : (recoverableClaim ?? initialClaim));
         }
       } catch (caughtError) {
         setError(caughtError instanceof Error ? caughtError.message : 'Failed to load the owner dashboard.');
@@ -346,7 +364,7 @@ export default function OwnerDashboardPage() {
     );
   }
 
-  if (!approvedClaim || !business) {
+  if (!approvedClaim) {
     return (
       <div className="min-h-screen bg-[#FAFAFA] px-4 py-24">
         {pageSeo}
@@ -373,6 +391,63 @@ export default function OwnerDashboardPage() {
               className="inline-flex items-center justify-center border border-zinc-200 bg-white px-6 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-700 transition-colors hover:bg-zinc-50 hover:text-zinc-950"
             >
               View claim status
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!business) {
+    return (
+      <div className="min-h-screen bg-[#FAFAFA] px-4 py-24">
+        {pageSeo}
+        <div className="mx-auto max-w-3xl border-2 border-zinc-900 bg-white p-8 shadow-[8px_8px_0px_0px_rgba(24,24,27,1)] sm:p-10">
+          <SectionEyebrow
+            icon={ShieldCheck}
+            className="inline-flex items-center gap-2 bg-zinc-900 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-white"
+            iconClassName="h-3.5 w-3.5 text-orange-400"
+          >
+            Owner Dashboard
+          </SectionEyebrow>
+          <h1 className="mt-6 text-4xl font-bold uppercase tracking-tight text-zinc-950">Owner access is active, but the listing could not be loaded.</h1>
+          <p className="mt-4 max-w-2xl text-lg leading-8 text-zinc-600">
+            Your approved claim still exists, but the linked business record is unavailable in the current directory data. Check claim status or contact support before trying again.
+          </p>
+          {approvedClaims.length > 1 ? (
+            <div className="mt-8 border-t border-zinc-200 pt-6">
+              <label className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Try another approved listing</label>
+              <select
+                value={selectedClaimId}
+                onChange={async (event) => {
+                  const nextClaim = approvedClaims.find((claim) => claim.id === event.target.value);
+                  if (nextClaim) {
+                    await handleClaimSelection(nextClaim);
+                  }
+                }}
+                className="mt-3 w-full border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none focus:border-zinc-900"
+              >
+                {approvedClaims.map((claim) => (
+                  <option key={claim.id} value={claim.id}>
+                    {resolveClaimLabel(claim, businesses)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <Link
+              to="/claim/status"
+              className="inline-flex items-center justify-center gap-3 border-2 border-zinc-900 bg-zinc-900 px-6 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white transition-all hover:border-orange-500 hover:bg-orange-500"
+            >
+              View claim status
+              <ArrowRight className="h-4 w-4" strokeWidth={2.6} />
+            </Link>
+            <Link
+              to="/contact"
+              className="inline-flex items-center justify-center border border-zinc-200 bg-white px-6 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-700 transition-colors hover:bg-zinc-50 hover:text-zinc-950"
+            >
+              Contact support
             </Link>
           </div>
         </div>
@@ -430,24 +505,16 @@ export default function OwnerDashboardPage() {
                     onChange={async (event) => {
                       const nextClaim = approvedClaims.find((claim) => claim.id === event.target.value);
                       if (nextClaim) {
-                        setLoading(true);
-                        try {
-                          await hydrateClaim(nextClaim);
-                        } finally {
-                          setLoading(false);
-                        }
+                        await handleClaimSelection(nextClaim);
                       }
                     }}
                     className="mt-3 w-full border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none focus:border-zinc-900"
                   >
-                    {approvedClaims.map((claim) => {
-                      const optionBusiness = businesses.find((entry) => entry.id === claim.business_id);
-                      return (
-                        <option key={claim.id} value={claim.id}>
-                          {optionBusiness?.name ?? claim.business_id}
-                        </option>
-                      );
-                    })}
+                    {approvedClaims.map((claim) => (
+                      <option key={claim.id} value={claim.id}>
+                        {resolveClaimLabel(claim, businesses)}
+                      </option>
+                    ))}
                   </select>
                 </div>
               ) : null}
