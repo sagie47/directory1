@@ -73514,7 +73514,7 @@ export const businesses: Business[] = [
     contact: {
       phone: "+1 250-575-3691",
       website: "http://luxurylimeplaster.com/",
-      address: "663 Westpoint Ct, Kelowna, BC V1W 4Y3, Canada"
+      address: "1048 Allison Pl, West Kelowna, BC V1Z 2E2, Canada"
     },
     coordinates: {
       lat: 49.825030299999995,
@@ -86116,10 +86116,12 @@ export const businesses: Business[] = [
     },
     rating: 4.9,
     reviewCount: 31,
-    description: "Mountain Air Duct Cleaning offers air duct cleaning and dryer vent cleaning services for commercial and residential properties in Kelowna and West Kelowna",
+    description: "Mountain Air Duct Cleaning offers air duct cleaning and dryer vent cleaning services for commercial and residential properties in Kelowna, West Kelowna, Vernon, and Penticton",
     serviceAreas: [
       "Kelowna",
-      "West Kelowna"
+      "West Kelowna",
+      "Vernon",
+      "Penticton"
     ],
     categoryTags: [
       "air duct cleaning service",
@@ -86128,6 +86130,7 @@ export const businesses: Business[] = [
     specialties: [
       "Online estimates",
       "Onsite services",
+      "Coil cleaning",
       "Appointment required"
     ],
     photos: [
@@ -264704,7 +264707,5 @@ export const businesses: Business[] = [
     }
   }
 ];
-
-
 
 
