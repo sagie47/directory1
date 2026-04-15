@@ -1,0 +1,213 @@
+{
+  "generatedAt": "2026-04-15T21:52:53.433Z",
+  "fixtureCount": 5,
+  "metrics": {
+    "loopClosureRate": 0.5957,
+    "unnecessaryQuestionRate": 0.2198,
+    "approvalCorrectnessRate": 0.7037,
+    "memoryUsefulnessRate": 0.7,
+    "interventionUsefulnessRate": 0.6,
+    "blockerRecurrenceRate": 0.7
+  },
+  "topRecurringBlockers": [
+    {
+      "blockerId": "inbox-overload",
+      "blockerLabel": "Inbox overload hides high-value leads",
+      "count": 2,
+      "recurringCount": 2
+    },
+    {
+      "blockerId": "proposal-fragmentation",
+      "blockerLabel": "Proposal artifacts are scattered across tools",
+      "count": 2,
+      "recurringCount": 1
+    },
+    {
+      "blockerId": "calendar-friction",
+      "blockerLabel": "Calendar friction for workout scheduling",
+      "count": 1,
+      "recurringCount": 1
+    },
+    {
+      "blockerId": "context-loss",
+      "blockerLabel": "Loses relationship context between sessions",
+      "count": 1,
+      "recurringCount": 1
+    },
+    {
+      "blockerId": "dependency-uncertainty",
+      "blockerLabel": "Unclear owner for pending dependencies",
+      "count": 1,
+      "recurringCount": 1
+    },
+    {
+      "blockerId": "constraint-conflict",
+      "blockerLabel": "Conflicting constraints are not surfaced early",
+      "count": 1,
+      "recurringCount": 1
+    },
+    {
+      "blockerId": "sleep-plan-drift",
+      "blockerLabel": "Bedtime plan drifts after evening meetings",
+      "count": 1,
+      "recurringCount": 0
+    },
+    {
+      "blockerId": "timing-mismatch",
+      "blockerLabel": "Outreach timing mismatches recipient preferences",
+      "count": 1,
+      "recurringCount": 0
+    }
+  ],
+  "capabilityProposals": [
+    {
+      "capabilityGap": "constraint_resolution",
+      "evidenceCount": 1,
+      "recurringEvidenceCount": 1,
+      "averageSeverity": 0.91,
+      "impactedScenarios": [
+        "contradictory_requests"
+      ],
+      "recommendationScore": 0.7995
+    },
+    {
+      "capabilityGap": "email_prioritization",
+      "evidenceCount": 2,
+      "recurringEvidenceCount": 2,
+      "averageSeverity": 0.805,
+      "impactedScenarios": [
+        "work_income",
+        "stalled_loops"
+      ],
+      "recommendationScore": 0.7923
+    },
+    {
+      "capabilityGap": "dependency_mapping",
+      "evidenceCount": 1,
+      "recurringEvidenceCount": 1,
+      "averageSeverity": 0.89,
+      "impactedScenarios": [
+        "stalled_loops"
+      ],
+      "recommendationScore": 0.7905
+    },
+    {
+      "capabilityGap": "calendar_orchestration",
+      "evidenceCount": 1,
+      "recurringEvidenceCount": 1,
+      "averageSeverity": 0.8,
+      "impactedScenarios": [
+        "health_performance"
+      ],
+      "recommendationScore": 0.75
+    },
+    {
+      "capabilityGap": "relationship_memory_synthesis",
+      "evidenceCount": 1,
+      "recurringEvidenceCount": 1,
+      "averageSeverity": 0.78,
+      "impactedScenarios": [
+        "relationships_networking"
+      ],
+      "recommendationScore": 0.741
+    },
+    {
+      "capabilityGap": "artifact_consolidation",
+      "evidenceCount": 2,
+      "recurringEvidenceCount": 1,
+      "averageSeverity": 0.71,
+      "impactedScenarios": [
+        "work_income",
+        "contradictory_requests"
+      ],
+      "recommendationScore": 0.5745
+    },
+    {
+      "capabilityGap": "timing_personalization",
+      "evidenceCount": 1,
+      "recurringEvidenceCount": 0,
+      "averageSeverity": 0.64,
+      "impactedScenarios": [
+        "relationships_networking"
+      ],
+      "recommendationScore": 0.328
+    },
+    {
+      "capabilityGap": "circadian_routine_adjustment",
+      "evidenceCount": 1,
+      "recurringEvidenceCount": 0,
+      "averageSeverity": 0.62,
+      "impactedScenarios": [
+        "health_performance"
+      ],
+      "recommendationScore": 0.319
+    }
+  ],
+  "skillHealth": [
+    {
+      "skillId": "pipeline-prioritization",
+      "successRate": 0.8571,
+      "totalAttempts": 7,
+      "trend": "promote"
+    },
+    {
+      "skillId": "habit-planning",
+      "successRate": 0.8333,
+      "totalAttempts": 6,
+      "trend": "promote"
+    },
+    {
+      "skillId": "follow-up-cadence",
+      "successRate": 0.8,
+      "totalAttempts": 5,
+      "trend": "promote"
+    },
+    {
+      "skillId": "conversation-briefing",
+      "successRate": 0.75,
+      "totalAttempts": 4,
+      "trend": "maintain"
+    },
+    {
+      "skillId": "campaign-reset",
+      "successRate": 0.6,
+      "totalAttempts": 5,
+      "trend": "maintain"
+    },
+    {
+      "skillId": "approval-routing",
+      "successRate": 0.6,
+      "totalAttempts": 5,
+      "trend": "maintain"
+    },
+    {
+      "skillId": "nutrition-basics",
+      "successRate": 0.5,
+      "totalAttempts": 4,
+      "trend": "maintain"
+    },
+    {
+      "skillId": "meeting-prep",
+      "successRate": 0.4,
+      "totalAttempts": 5,
+      "trend": "decay"
+    },
+    {
+      "skillId": "dependency-resolution",
+      "successRate": 0.3333,
+      "totalAttempts": 6,
+      "trend": "decay"
+    },
+    {
+      "skillId": "constraint-clarification",
+      "successRate": 0.3333,
+      "totalAttempts": 6,
+      "trend": "decay"
+    }
+  ],
+  "summary": {
+    "mostRecurringBlocker": "inbox-overload",
+    "topCapabilityUpgrade": "constraint_resolution",
+    "campaignLoopTrend": "flat_or_declining"
+  }
+}
