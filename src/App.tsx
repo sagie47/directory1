@@ -29,6 +29,7 @@ const BookDemoPage = lazy(() => import('./pages/BookDemoPage'));
 const DemoRequestedPage = lazy(() => import('./pages/DemoRequestedPage'));
 const WebsitesForTradesPage = lazy(() => import('./pages/WebsitesForTradesPage'));
 const ManagedGrowthPage = lazy(() => import('./pages/ManagedGrowthPage'));
+const OnDemandDayLaborPage = lazy(() => import('./pages/OnDemandDayLaborPage'));
 const BookCallPage = lazy(() => import('./pages/BookCallPage'));
 const CallRequestedPage = lazy(() => import('./pages/CallRequestedPage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
@@ -122,6 +123,7 @@ function AnimatedRoutes() {
           <Route path="demo-requested" element={<DemoRequestedPage />} />
           <Route path="websites-for-trades" element={<WebsitesForTradesPage />} />
           <Route path="managed-growth" element={<ManagedGrowthPage />} />
+          <Route path="on-demand-day-labor" element={<OnDemandDayLaborPage />} />
           <Route path="book-call" element={<BookCallPage />} />
           <Route path="call-requested" element={<CallRequestedPage />} />
 

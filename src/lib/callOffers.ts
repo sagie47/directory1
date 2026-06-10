@@ -1,6 +1,6 @@
-import { BriefcaseBusiness, Globe, LineChart, type LucideIcon } from 'lucide-react';
+import { BriefcaseBusiness, Globe, HardHat, LineChart, type LucideIcon } from 'lucide-react';
 
-export type CallOffer = 'website' | 'managed-growth';
+export type CallOffer = 'website' | 'managed-growth' | 'day-labor';
 export type CallOfferFlow =
   | 'request-only'
   | 'request-and-schedule'
@@ -132,10 +132,34 @@ const callOffers: Record<CallOffer, CallOfferDefinition> = {
     stripePaymentUrl: import.meta.env.VITE_STRIPE_MANAGED_GROWTH_CALL_PAYMENT_URL,
     scheduleUrl: import.meta.env.VITE_MANAGED_GROWTH_CALL_SCHEDULING_URL,
   },
+  'day-labor': {
+    eyebrow: 'Labor Request Intake',
+    icon: HardHat,
+    title: 'Request Day Labor Support',
+    intro: 'Tell us what kind of extra hands you need, where the job is, and how quickly the crew gap needs to be filled. We will use this to confirm fit, timing, and next steps.',
+    successEyebrow: 'Labor Request Received',
+    successTitle: 'Thanks. Your Labor Request Is In.',
+    successBody: 'We have your details. We will review availability, site requirements, timing, and safety expectations before confirming the next step.',
+    backTo: '/on-demand-day-labor',
+    backLabel: 'Back to On-Demand Day Labor',
+    primaryNeedIcon: HardHat,
+    serviceNeeds: [
+      { value: '', label: 'What kind of labor do you need?' },
+      { value: 'site-cleanup', label: 'Job-site cleanup' },
+      { value: 'material-moving', label: 'Material moving or loading' },
+      { value: 'general-labor', label: 'General labor help' },
+      { value: 'short-notice-crew', label: 'Short-notice extra hands' },
+      { value: 'recurring-labor', label: 'Recurring labor support' },
+    ],
+    stripePaymentUrl: import.meta.env.VITE_STRIPE_DAY_LABOR_CALL_PAYMENT_URL,
+    scheduleUrl: import.meta.env.VITE_DAY_LABOR_CALL_SCHEDULING_URL,
+  },
 };
 
 export function getCallOffer(value: string | null | undefined): CallOffer {
-  return value === 'managed-growth' ? 'managed-growth' : 'website';
+  if (value === 'managed-growth') return 'managed-growth';
+  if (value === 'day-labor') return 'day-labor';
+  return 'website';
 }
 
 export function getCallOfferConfig(value: string | null | undefined): CallOfferConfig {

@@ -313,6 +313,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                 <li><Link to="/never-miss-a-lead" className="font-sans text-sm text-zinc-600 hover:text-zinc-900 transition-colors">Lead Capture System</Link></li>
                 <li><Link to="/websites-for-trades" className="font-sans text-sm text-zinc-600 hover:text-zinc-900 transition-colors">Websites for Trades</Link></li>
                 <li><Link to="/managed-growth" className="font-sans text-sm text-zinc-600 hover:text-zinc-900 transition-colors">Managed Growth</Link></li>
+                <li><Link to="/on-demand-day-labor" className="font-sans text-sm text-zinc-600 hover:text-zinc-900 transition-colors">On-Demand Day Labor</Link></li>
                 <li><Link to="/for-business" className="font-sans text-sm text-zinc-600 hover:text-zinc-900 transition-colors">For Business</Link></li>
                 <li><Link to="/book-demo" className="font-sans text-sm text-zinc-600 hover:text-zinc-900 transition-colors">Book Demo</Link></li>
                 <li><Link to="/book-call?offer=website" className="font-sans text-sm text-zinc-600 hover:text-zinc-900 transition-colors">Book Call</Link></li>

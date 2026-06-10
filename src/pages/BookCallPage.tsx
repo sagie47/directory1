@@ -52,8 +52,15 @@ export default function BookCallPage() {
     website: '',
     teamSize: '',
     primaryNeed: '',
+    requestedDate: '',
+    startTime: '',
+    duration: '',
+    workerCount: '',
+    jobSite: '',
+    safetyRequirements: '',
   });
 
+  const isDayLaborOffer = offer === 'day-labor';
   const hasStripePayment = content.hasStripePayment;
   const hasSchedulingLink = content.hasSchedulingLink;
 
@@ -78,14 +85,14 @@ export default function BookCallPage() {
   const reassurance = useMemo(
     () => [
       'Built around local trade businesses',
-      offer === 'website' ? 'Website-first conversation' : 'Operational strategy conversation',
+      offer === 'website' ? 'Website-first conversation' : offer === 'day-labor' ? 'Labor request triage' : 'Operational strategy conversation',
       hasStripePayment ? 'Stripe checkout is configured' : 'No Stripe payment step is configured yet',
       hasSchedulingLink ? 'Scheduling link is configured' : 'Scheduling is still handled manually',
     ],
     [hasSchedulingLink, hasStripePayment, offer],
   );
 
-  function handleChange(event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
+  function handleChange(event: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
     if (!hasTrackedFormStart) {
       const normalizedCity = normalizeCity(event.target.name === 'city' ? event.target.value : formData.city);
       trackFormStarted({
@@ -142,6 +149,12 @@ export default function BookCallPage() {
       website: formData.website || undefined,
       teamSize: formData.teamSize || undefined,
       primaryNeed: formData.primaryNeed,
+      requestedDate: formData.requestedDate || undefined,
+      startTime: formData.startTime || undefined,
+      duration: formData.duration || undefined,
+      workerCount: formData.workerCount || undefined,
+      jobSite: formData.jobSite || undefined,
+      safetyRequirements: formData.safetyRequirements || undefined,
       stripePaymentUrl: content.stripePaymentUrl,
       scheduleUrl: content.scheduleUrl,
     });
@@ -330,6 +343,45 @@ export default function BookCallPage() {
                   <content.primaryNeedIcon className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400" />
                 </div>
               </div>
+
+              {isDayLaborOffer ? (
+                <div className="rounded-2xl border border-orange-200 bg-orange-50/80 p-5 sm:p-6">
+                  <div className="mb-5">
+                    <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-orange-700">Labor request details</p>
+                    <p className="mt-2 text-sm leading-6 text-orange-900/80">Add the timing, worker count, site, and safety notes so the request can be triaged before anyone confirms availability.</p>
+                  </div>
+
+                  <div className="grid gap-5 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">Requested Date</label>
+                      <input type="date" name="requestedDate" value={formData.requestedDate} onChange={handleChange} className="w-full rounded-xl border border-orange-200 bg-white px-4 py-4 text-base font-medium text-zinc-900 outline-none transition-colors focus:border-orange-500" />
+                    </div>
+                    <div>
+                      <label className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">Start Time</label>
+                      <input type="time" name="startTime" value={formData.startTime} onChange={handleChange} className="w-full rounded-xl border border-orange-200 bg-white px-4 py-4 text-base font-medium text-zinc-900 outline-none transition-colors focus:border-orange-500" />
+                    </div>
+                    <div>
+                      <label className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">Duration</label>
+                      <input type="text" name="duration" value={formData.duration} onChange={handleChange} className="w-full rounded-xl border border-orange-200 bg-white px-4 py-4 text-base font-medium text-zinc-900 outline-none transition-colors focus:border-orange-500" placeholder="Full day, half day, 2 days" />
+                    </div>
+                    <div>
+                      <label className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">Workers Needed</label>
+                      <input type="number" name="workerCount" min="1" value={formData.workerCount} onChange={handleChange} className="w-full rounded-xl border border-orange-200 bg-white px-4 py-4 text-base font-medium text-zinc-900 outline-none transition-colors focus:border-orange-500" placeholder="2" />
+                    </div>
+                  </div>
+
+                  <div className="mt-5 space-y-5">
+                    <div>
+                      <label className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">Job Site / Area</label>
+                      <input type="text" name="jobSite" value={formData.jobSite} onChange={handleChange} className="w-full rounded-xl border border-orange-200 bg-white px-4 py-4 text-base font-medium text-zinc-900 outline-none transition-colors focus:border-orange-500" placeholder="Kelowna job site, downtown Vernon, West Kelowna site" />
+                    </div>
+                    <div>
+                      <label className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">Safety / PPE / Physical Requirements</label>
+                      <textarea name="safetyRequirements" value={formData.safetyRequirements} onChange={handleChange} rows={4} className="w-full resize-y rounded-xl border border-orange-200 bg-white px-4 py-4 text-base font-medium text-zinc-900 outline-none transition-colors focus:border-orange-500" placeholder="Hard hats, boots, lifting requirements, supervised site access, parking notes..." />
+                    </div>
+                  </div>
+                </div>
+              ) : null}
 
               <button type="submit" disabled={loading} className="inline-flex w-full items-center justify-center gap-3 rounded-xl border border-zinc-900 bg-zinc-900 px-8 py-5 font-sans text-sm font-bold uppercase tracking-wider text-white shadow-sm transition-all hover:bg-zinc-800 hover:-translate-y-1 active:scale-95 disabled:pointer-events-none disabled:opacity-50">
                 {loading ? (
