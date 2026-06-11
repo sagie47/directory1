@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 
 import {
   DEFAULT_OG_IMAGE,
@@ -54,6 +54,12 @@ export default function Seo({
   keywords = DEFAULT_SEO_KEYWORDS,
   jsonLd,
 }: SeoProps) {
+  const keywordsContent = keywords.join(', ');
+  const jsonLdContent = useMemo(
+    () => jsonLd ? JSON.stringify(Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : '',
+    [jsonLd],
+  );
+
   useEffect(() => {
     const absoluteUrl = toAbsoluteUrl(path);
     const socialImage = toAbsoluteUrl(image ?? DEFAULT_OG_IMAGE);
@@ -73,7 +79,7 @@ export default function Seo({
 
     upsertMeta('meta[name="keywords"]', {
       name: 'keywords',
-      content: keywords.join(', '),
+      content: keywordsContent,
     });
 
     upsertMeta('meta[name="author"]', {
@@ -166,11 +172,11 @@ export default function Seo({
       existingJsonLd.remove();
     }
 
-    if (jsonLd) {
+    if (jsonLdContent) {
       const script = document.createElement('script');
       script.id = jsonLdScriptId;
       script.type = 'application/ld+json';
-      script.text = JSON.stringify(Array.isArray(jsonLd) ? jsonLd : [jsonLd]);
+      script.text = jsonLdContent;
       document.head.appendChild(script);
     }
 
@@ -180,7 +186,7 @@ export default function Seo({
         script.remove();
       }
     };
-  }, [description, image, jsonLd, keywords, path, robots, title, type]);
+  }, [description, image, jsonLdContent, keywordsContent, path, robots, title, type]);
 
   return null;
 }

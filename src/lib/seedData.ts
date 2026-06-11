@@ -28,6 +28,10 @@ export async function loadSeedDataFromJson(): Promise<SeedDataModule> {
           categories: asArray<Category>(payload.categories),
           businesses: asArray<Business>(payload.businesses),
         };
+      })
+      .catch((error: unknown) => {
+        seedDataPromise = null;
+        throw error;
       });
   }
 
