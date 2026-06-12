@@ -121,7 +121,14 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
   const targetedBusinessCategoryName = targetedBusiness ? categoryNames.get(targetedBusiness.categoryId) : undefined;
 
   useEffect(() => {
-    if (!user || directoryLoading || !selectedBusinessId) {
+    if (!user || directoryLoading) {
+      return;
+    }
+
+    if (!selectedBusinessId) {
+      // Keep the wizard in sync with the URL (e.g. browser back from step 2).
+      setSelectedBusiness(null);
+      setStep(1);
       return;
     }
 
@@ -369,7 +376,9 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
           return;
         }
 
-        if (code === 'P0001' || msg.toLowerCase().includes('not authenticated')) {
+        // P0001 alone is not specific: it is the default SQLSTATE for any unqualified
+        // `raise exception` in the claim RPC, so match on the message instead.
+        if (msg.toLowerCase().includes('not authenticated')) {
           setError('Your session expired. Please sign in again and resubmit your claim.');
           return;
         }

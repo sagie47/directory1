@@ -73,7 +73,7 @@ function getPaidIntentFromHref(href?: string) {
 
 export default function ClaimStatusPage() {
   const [searchParams] = useSearchParams();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, hasApprovedClaim, refreshProfile } = useAuth();
   const { businesses, isLoading: directoryLoading } = useDirectoryData();
   const [claims, setClaims] = useState<BusinessClaim[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,6 +81,7 @@ export default function ClaimStatusPage() {
   const [evidenceSignedUrls, setEvidenceSignedUrls] = useState<Record<string, string[]>>({});
   const claimsAvailable = Boolean(supabase && isSupabaseConfigured());
   const trackedRecommendationViews = useRef(new Set<string>());
+  const attemptedClaimFlagRefresh = useRef(false);
   const showSubmittedBanner = searchParams.get('submitted') === '1';
   const pageSeo = (
     <Seo
@@ -173,8 +174,27 @@ export default function ClaimStatusPage() {
         } else {
           const nextClaims = (data ?? []) as BusinessClaim[];
           setClaims(nextClaims);
-          const evidenceUrlsMap = await createEvidenceSignedUrlMap(supabase, nextClaims);
-          setEvidenceSignedUrls(evidenceUrlsMap);
+
+          // The auth context caches hasApprovedClaim at sign-in. If an admin approved a
+          // claim since then, refresh it so AuthGuard stops bouncing the owner dashboard
+          // link back to this page.
+          if (
+            !attemptedClaimFlagRefresh.current
+            && !hasApprovedClaim
+            && nextClaims.some((claim) => claim.status === 'approved')
+          ) {
+            attemptedClaimFlagRefresh.current = true;
+            void refreshProfile();
+          }
+
+          try {
+            const evidenceUrlsMap = await createEvidenceSignedUrlMap(supabase, nextClaims);
+            setEvidenceSignedUrls(evidenceUrlsMap);
+          } catch (evidenceError) {
+            // Evidence links are secondary; never block the status page on them.
+            console.error('Failed to create evidence signed URLs:', evidenceError);
+            setEvidenceSignedUrls({});
+          }
         }
       } catch (caughtError) {
         setError(caughtError instanceof Error ? caughtError.message : 'Failed to load claims.');
@@ -184,7 +204,8 @@ export default function ClaimStatusPage() {
     }
 
     fetchClaims();
-  }, [claimsAvailable, user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- refetch only when the signed-in user changes, not on token refresh
+  }, [claimsAvailable, user?.id]);
 
   if (authLoading || loading || directoryLoading) {
     return (
