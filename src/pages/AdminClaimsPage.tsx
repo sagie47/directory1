@@ -292,18 +292,19 @@ export default function AdminClaimsPage() {
     try {
       const review = await supabase.rpc('review_business_claim', { p_claim_id: claimId, p_status: status, p_rejection_reason: reason });
       if (review.error) {
-        setError(review.error.message);
-        // The claim may have been reviewed by someone else (P1013); resync the list.
+        // The claim may have been reviewed by someone else (P1013); resync the list
+        // before setting the error, since fetchClaims clears errors on success.
         await fetchClaims({ silent: true });
+        setError(review.error.message);
         return;
       }
 
       setRejectionReason((current) => ({ ...current, [claimId]: '' }));
       const notify = await supabase.functions.invoke('notify_claim_status', { body: { claim_id: claimId } });
+      await fetchClaims({ silent: true });
       if (notify.error) {
         setError(`Claim ${status} but notification dispatch reported an error: ${notify.error.message}`);
       }
-      await fetchClaims({ silent: true });
     } finally {
       setProcessingId(null);
     }
