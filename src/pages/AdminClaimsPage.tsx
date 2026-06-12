@@ -293,6 +293,8 @@ export default function AdminClaimsPage() {
       const review = await supabase.rpc('review_business_claim', { p_claim_id: claimId, p_status: status, p_rejection_reason: reason });
       if (review.error) {
         setError(review.error.message);
+        // The claim may have been reviewed by someone else (P1013); resync the list.
+        await fetchClaims({ silent: true });
         return;
       }
 
