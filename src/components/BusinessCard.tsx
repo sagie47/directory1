@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Star, ArrowRight, MapPin, Globe, Phone, Image as ImageIcon, CheckCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -24,22 +24,29 @@ export default function BusinessCard({ business, contextCityName }: BusinessCard
   const photos = getBusinessPhotos(business);
   
   // Sort reviews to favor shorter, high-quality ones first
-  const reviews = getBusinessReviews(business)
+  const reviews = useMemo(() => getBusinessReviews(business)
     .filter(r => r.rating >= 4 && r.text.trim().length > 10)
-    .sort((a, b) => a.text.length - b.text.length);
+    .sort((a, b) => a.text.length - b.text.length), [business]);
 
   const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
+  const [isReviewRotationActive, setIsReviewRotationActive] = useState(false);
 
-  // Rotate through top reviews every 8 seconds
   useEffect(() => {
-    if (reviews.length <= 1) return;
+    setCurrentReviewIndex(0);
+    setIsReviewRotationActive(false);
+  }, [business.id, reviews.length]);
+
+  // Rotate only while a user is interacting with the card to avoid one timer per visible card.
+  useEffect(() => {
+    if (!isReviewRotationActive || reviews.length <= 1) return;
+
     const interval = setInterval(() => {
       setCurrentReviewIndex(prev => (prev + 1) % Math.min(reviews.length, 3));
     }, 8000);
     return () => clearInterval(interval);
-  }, [reviews.length]);
+  }, [isReviewRotationActive, reviews.length]);
 
-  const activeReview = reviews[currentReviewIndex];
+  const activeReview = reviews[currentReviewIndex % Math.max(reviews.length, 1)];
   const summaryText = activeReview?.text || business.description || `${business.name} serves ${serviceAreas.slice(0, 2).join(' and ')}.`;
   const summaryLabel = activeReview?.author || 'Listing summary';
   
@@ -55,7 +62,13 @@ export default function BusinessCard({ business, contextCityName }: BusinessCard
     : `${city?.name || business.cityId} · serving ${serviceAreas[0]}`;
 
   return (
-    <div className="group bg-white rounded-sm border border-zinc-200 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.08)] hover:border-zinc-300 hover:-translate-y-1 transition-all duration-500 flex flex-col h-full overflow-hidden relative">
+    <div
+      className="group bg-white rounded-sm border border-zinc-200 hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.08)] hover:border-zinc-300 hover:-translate-y-1 transition-all duration-500 flex flex-col h-full overflow-hidden relative"
+      onMouseEnter={() => setIsReviewRotationActive(true)}
+      onMouseLeave={() => setIsReviewRotationActive(false)}
+      onFocus={() => setIsReviewRotationActive(true)}
+      onBlur={() => setIsReviewRotationActive(false)}
+    >
       {/* Image Header */}
       <div className="relative h-48 sm:h-52 w-full overflow-hidden bg-zinc-100 shrink-0">
         {imageSrc ? (

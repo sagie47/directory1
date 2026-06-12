@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { MapPin, ArrowRight, Star } from 'lucide-react';
 import BusinessCard from '../components/BusinessCard';
@@ -29,6 +30,24 @@ const itemVariants = {
 export default function CityPage() {
   const { cityId } = useParams<{ cityId: string }>();
   const { cities, categories, businesses, isLoading } = useDirectoryData();
+  const city = useMemo(() => cities.find(c => c.id === cityId), [cities, cityId]);
+  const cityBusinesses = useMemo(() => {
+    if (!city) {
+      return [];
+    }
+
+    return businesses.filter((business) => businessServesCity(business, city.id, city.name));
+  }, [businesses, city]);
+  const featuredBusinesses = useMemo(() => cityBusinesses.slice(0, 3), [cityBusinesses]);
+  const popularCategoryIds = useMemo(() => new Set(['electricians', 'plumbers', 'hvac-contractors', 'roofing']), []);
+  const popularCategories = useMemo(
+    () => categories.filter(c => popularCategoryIds.has(c.id)),
+    [categories, popularCategoryIds],
+  );
+  const otherCategories = useMemo(
+    () => categories.filter(c => !popularCategoryIds.has(c.id)),
+    [categories, popularCategoryIds],
+  );
 
   if (isLoading) {
     return (
@@ -41,20 +60,12 @@ export default function CityPage() {
     );
   }
 
-  const city = cities.find(c => c.id === cityId);
-
   if (!city) {
     return <Navigate to="/" replace />;
   }
 
-  const cityBusinesses = businesses.filter((business) => businessServesCity(business, city.id, city.name));
-  const featuredBusinesses = cityBusinesses.slice(0, 3);
   const cityDescription = city.description ?? `Browse verified contractors and trade businesses serving ${city.name}.`;
   
-  const popularCategoryIds = ['electricians', 'plumbers', 'hvac-contractors', 'roofing'];
-  const popularCategories = categories.filter(c => popularCategoryIds.includes(c.id));
-  const otherCategories = categories.filter(c => !popularCategoryIds.includes(c.id));
-
   // Same vibrant color cycle used on Home page for core trades
   const colorGradients = [
     'from-amber-400 to-orange-500', 

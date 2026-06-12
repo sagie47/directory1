@@ -290,8 +290,9 @@ async function fetchDirectoryData(): Promise<DirectoryData> {
       async (from, to) => {
         const result = await supabase
           .from('businesses')
-          .select('id, name, city_id, category_id, description, rating, review_count, service_areas, category_tags, specialties, photos, hours, contact')
+          .select('id, name, city_id, category_id, description, rating, review_count, service_areas, category_tags, specialties, photos, reviews, hours, coordinates, contact, source')
           .order('name')
+          .order('id')
           .range(from, to);
 
         return {
