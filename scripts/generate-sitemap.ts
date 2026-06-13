@@ -11,6 +11,8 @@ const ROOT_ROUTES = [
   '/regions',
   '/verified',
   '/search',
+  '/classifieds',
+  '/classifieds/post',
   '/for-business',
   '/claim',
   '/claim-business',
