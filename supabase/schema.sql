@@ -176,6 +176,7 @@ create table if not exists public.classifieds (
 );
 
 alter table public.business_overrides add column if not exists name text;
+alter table public.business_claims add column if not exists evidence_urls text[] not null default '{}';
 alter table public.business_claims add column if not exists notification_status text not null default 'pending';
 alter table public.business_claims add column if not exists notification_retry_count integer not null default 0;
 alter table public.business_claims add column if not exists notification_last_attempt_at timestamptz;
@@ -477,9 +478,9 @@ create or replace function public.submit_business_claim(
   p_claimant_name text,
   p_claimant_email text,
   p_claimant_phone text default null,
-  p_relationship_to_business text,
+  p_relationship_to_business text default null,
   p_message text default null,
-  p_evidence_urls text[] default '{}'
+  p_evidence_urls text[] default null
 )
 returns uuid
 language plpgsql
@@ -498,14 +499,27 @@ begin
       message = 'Not authenticated';
   end if;
 
-  select coalesce(
-    nullif(btrim(p.email), ''),
-    nullif(btrim(au.email), '')
-  )
-  into v_claimant_email
-  from auth.users au
-  left join public.profiles p on p.id = au.id
-  where au.id = v_user_id;
+  if nullif(btrim(p_relationship_to_business), '') is null then
+    raise exception using
+      sqlstate = 'P0001',
+      message = 'Relationship to business is required';
+  end if;
+
+  v_claimant_email := nullif(btrim(p_claimant_email), '');
+
+  if v_claimant_email is null then
+    select nullif(btrim(email), '')
+    into v_claimant_email
+    from public.profiles
+    where id = v_user_id;
+  end if;
+
+  if v_claimant_email is null then
+    v_claimant_email := coalesce(
+      nullif(btrim(auth.jwt() ->> 'email'), ''),
+      nullif(btrim(auth.jwt() -> 'user_metadata' ->> 'email'), '')
+    );
+  end if;
 
   if v_claimant_email is null then
     raise exception using
@@ -568,7 +582,7 @@ begin
       p_claimant_phone,
       p_relationship_to_business,
       p_message,
-      coalesce(p_evidence_urls, '{}')
+      coalesce(p_evidence_urls, '{}'::text[])
     )
     returning id into v_claim_id;
   exception
@@ -610,10 +624,38 @@ language plpgsql
 security definer
 set search_path = public
 as $$
+declare
+  v_auth_time timestamptz;
+  v_token_age interval;
 begin
   -- Ensure the user is authenticated
   if auth.uid() is null then
     raise exception 'Not authenticated';
+  end if;
+
+  -- Validate that the user has recently re-authenticated (within 5 minutes)
+  -- This provides step-up verification for destructive actions
+  v_auth_time := coalesce(
+    case
+      when nullif(auth.jwt() ->> 'auth_time', '') is not null
+        then to_timestamp((auth.jwt() ->> 'auth_time')::double precision)
+      else null
+    end,
+    case
+      when nullif(auth.jwt() ->> 'iat', '') is not null
+        then to_timestamp((auth.jwt() ->> 'iat')::double precision)
+      else null
+    end
+  );
+
+  if v_auth_time is null then
+    raise exception 'Please re-authenticate before deleting your account. A fresh session is required for this action.';
+  end if;
+
+  v_token_age := now() - v_auth_time;
+  
+  if v_token_age > interval '5 minutes' then
+    raise exception 'Please re-authenticate before deleting your account. Your session is too old for this action.';
   end if;
 
   -- Delete the user from auth.users. 
@@ -869,6 +911,7 @@ using (exists (select 1 from public.profiles where id = auth.uid() and role = 'a
 
 create table if not exists public.call_requests (
   id uuid primary key default gen_random_uuid(),
+  idempotency_key uuid unique,
   offer text not null check (offer in ('website', 'managed-growth')),
   name text not null,
   business_name text not null,
@@ -889,12 +932,9 @@ create index if not exists call_requests_created_at_idx on public.call_requests 
 
 alter table public.call_requests enable row level security;
 
+-- Direct inserts are disabled; all inserts must go through the submit-call-request edge function
+-- which performs validation, rate-limiting, and sanitization before inserting.
 drop policy if exists "call_requests_insert_public" on public.call_requests;
-create policy "call_requests_insert_public"
-on public.call_requests
-for insert
-to anon, authenticated
-with check (true);
 
 drop policy if exists "call_requests_select_admin" on public.call_requests;
 create policy "call_requests_select_admin"
@@ -902,58 +942,3 @@ on public.call_requests
 for select
 to authenticated
 using (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'));
-
--- Storage bucket for claim evidence uploads
-insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-values (
-  'claims',
-  'claims',
-  false,
-  10485760,
-  array['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
-)
-on conflict (id) do update
-set
-  public = false,
-  file_size_limit = 10485760,
-  allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
-
--- Allow authenticated users to upload evidence to their own claims folder
-create policy "claims_upload_own"
-on storage.objects
-for insert
-to authenticated
-with check (
-  bucket_id = 'claims'
-  and (storage.foldername(name))[1] = auth.uid()::text
-);
-
--- Allow authenticated users to read evidence from their own claims folder
-create policy "claims_read_own"
-on storage.objects
-for select
-to authenticated
-using (
-  bucket_id = 'claims'
-  and (storage.foldername(name))[1] = auth.uid()::text
-);
-
--- Allow authenticated users to delete their own evidence
-create policy "claims_delete_own"
-on storage.objects
-for delete
-to authenticated
-using (
-  bucket_id = 'claims'
-  and (storage.foldername(name))[1] = auth.uid()::text
-);
-
--- Allow admins to read all claim evidence
-create policy "claims_read_admin"
-on storage.objects
-for select
-to authenticated
-using (
-  bucket_id = 'claims'
-  and exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
-);

@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Check, Phone, Mail } from 'lucide-react';
 import { motion } from 'motion/react';
 import SectionEyebrow from '../components/SectionEyebrow';
+import Seo from '../components/Seo';
 
 export default function DemoRequestedPage() {
   return (
@@ -12,6 +13,13 @@ export default function DemoRequestedPage() {
       transition={{ duration: 0.5 }}
       className="relative flex min-h-screen flex-col justify-center overflow-hidden bg-[#FAFAFA] py-24 font-sans text-zinc-900 selection:bg-indigo-200 selection:text-indigo-900"
     >
+      <Seo
+        title="Demo Request Received | Okanagan Trades"
+        description="Confirmation page for a Never Miss a Lead demo request."
+        path="/demo-requested"
+        robots="noindex,nofollow"
+      />
+
       <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-[0.03] mix-blend-overlay pointer-events-none"></div>
 
       <div className="relative z-10 mx-auto w-full max-w-3xl px-4 sm:px-6">

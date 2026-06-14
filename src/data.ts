@@ -56876,119 +56876,6 @@ export const businesses: Business[] = [
     }
   },
   {
-    id: "kelowna-electricians-11382221223678369907",
-    name: "Pro Electric Ltd",
-    cityId: "kelowna",
-    cityName: "Kelowna",
-    categoryId: "electricians",
-    categoryName: "Electricians",
-    searchQuery: "electrical contractors in Kelowna BC",
-    contact: {
-      phone: "+1 250-860-5818",
-      website: "http://www.proelectricltd.ca/",
-      address: "1817 Edgehill Ave, Kelowna, BC V1V 1R7, Canada"
-    },
-    coordinates: {
-      lat: 49.9296005,
-      lng: -119.44194949999999
-    },
-    source: {
-      provider: "serper",
-      cid: "11382221223678369907",
-      position: 2,
-      mapsUrl: "https://www.google.com/maps/search/?api=1&query=Pro%20Electric%20Ltd%2C%201817%20Edgehill%20Ave%2C%20Kelowna%2C%20BC%20V1V%201R7",
-      placeId: "ChIJAywPTvfyfVMRc-BCuOXF9Z0",
-      category: "Electrician"
-    },
-    rating: 5,
-    reviewCount: 4,
-    description: "Pro Electric Ltd provides electrical services in Kelowna, Lake Country, and Summerland",
-    serviceAreas: [
-      "Kelowna",
-      "Lake Country",
-      "Summerland",
-      "West Kelowna"
-    ],
-    validation: {
-      queryCityId: "kelowna",
-      matchedBy: "exact"
-    },
-    categoryTags: [
-      "electrician",
-      "construction company",
-      "electricians"
-    ],
-    photos: [
-      "https://streetviewpixels-pa.googleapis.com/v1/thumbnail?panoid=5b6VS7Ccx39Pqoq5muBaFA&cb_client=maps_sv.tactile.gps&w=224&h=298&yaw=203.34024&pitch=0&thumbfov=100"
-    ],
-    reviews: [
-      {
-        author: "Dave",
-        rating: 5,
-        text: "We dealt with many trades during our new construction build in Wilden;  bar none, Pro Electric was the best to deal with from start to finish! Erland provided us with many suggestions that we really appreciated and the followup service was outstanding. Erland and his team of electricians are professional in every aspect. We highly recommend Pro Electric, you won't be disappointed!"
-      },
-      {
-        author: "Tyson Percival",
-        rating: 5,
-        text: "Pro-Electric completed an industrial service upgrade and transformer installation in the most professional and efficient manner possible. Our schedule requirements were pretty involved (had to pull cable through specific parts of the building at specific times, etc) and everything was organized perfectly by Erland and his crew."
-      },
-      {
-        author: "Susan Maygard",
-        rating: 5,
-        text: "Pro Electric was wonderful and professional to deal with throughout our renovation.  All the employees were very patient in explaining any questions we had.   Erland was great with suggestions both creative and functional.\n\nSue and Olav"
-      },
-      {
-        author: "Lou Brombale",
-        rating: 5,
-        text: "Very prompt to answer  questions. Very professional and very informative."
-      }
-    ]
-  },
-  {
-    id: "kelowna-electricians-6498918175146482372",
-    name: "Pro Electric Ltd",
-    cityId: "kelowna",
-    cityName: "Kelowna",
-    categoryId: "electricians",
-    categoryName: "Electricians",
-    searchQuery: "electrical contractors in Kelowna BC",
-    contact: {
-      phone: "+1 250-860-5818",
-      website: "http://www.proelectricltd.ca/",
-      address: "1920 Kent Rd, Kelowna, BC V1Y 7S1, Canada"
-    },
-    coordinates: {
-      lat: 49.8790085,
-      lng: -119.45355239999999
-    },
-    source: {
-      provider: "serper",
-      cid: "6498918175146482372",
-      position: 10,
-      mapsUrl: "https://www.google.com/maps/search/?api=1&query=Pro%20Electric%20Ltd%2C%201920%20Kent%20Rd%2C%20Kelowna%2C%20BC%20V1Y%207S1",
-      placeId: "ChIJFVb04SCNfVMRxJrvxaXLMFo",
-      category: "Electrician"
-    },
-    description: "Pro Electric Ltd provides electrical services in Kelowna and West Kelowna",
-    serviceAreas: [
-      "Kelowna",
-      "West Kelowna"
-    ],
-    validation: {
-      queryCityId: "kelowna",
-      matchedBy: "exact"
-    },
-    rating: 0,
-    reviewCount: 0,
-    categoryTags: [
-      "electrician",
-      "electricians"
-    ],
-    photos: [
-      "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerbQxkkzspAzmZFKv6QfvxC_UEOSGqerbeeZIccIrfBIIJSqlGRE7Dg4llgaf5Fr-9QXZFs9HB8T0DkJ3MOHOdiJoDq2drRnbT69JH8JiTzzZ3MObw60-hF0NzbamJMrM64T4Ag=w397-h298-k-no"
-    ]
-  },
-  {
     id: "kelowna-electricians-8151255607928474045",
     name: "Project Electric Inc",
     cityId: "kelowna",
@@ -73627,7 +73514,7 @@ export const businesses: Business[] = [
     contact: {
       phone: "+1 250-575-3691",
       website: "http://luxurylimeplaster.com/",
-      address: "663 Westpoint Ct, Kelowna, BC V1W 4Y3, Canada"
+      address: "1048 Allison Pl, West Kelowna, BC V1Z 2E2, Canada"
     },
     coordinates: {
       lat: 49.825030299999995,
@@ -77700,10 +77587,12 @@ export const businesses: Business[] = [
     },
     rating: 0,
     reviewCount: 0,
-    description: "West Coast Plaster and Art is an interior construction contractor offering Venetian plaster, fireplace services, and custom walls. They serve Kelowna and West Kelowna",
+    description: "West Coast Plaster and Art is an interior construction contractor offering Venetian plaster, fireplace services, and custom walls. They serve Kelowna, West Kelowna, Vernon, and Penticton",
     serviceAreas: [
       "Kelowna",
-      "West Kelowna"
+      "West Kelowna",
+      "Vernon",
+      "Penticton"
     ],
     categoryTags: [
       "interior construction contractor",
@@ -86227,10 +86116,12 @@ export const businesses: Business[] = [
     },
     rating: 4.9,
     reviewCount: 31,
-    description: "Mountain Air Duct Cleaning offers air duct cleaning and dryer vent cleaning services for commercial and residential properties in Kelowna and West Kelowna",
+    description: "Mountain Air Duct Cleaning offers air duct cleaning and dryer vent cleaning services for commercial and residential properties in Kelowna, West Kelowna, Vernon, and Penticton",
     serviceAreas: [
       "Kelowna",
-      "West Kelowna"
+      "West Kelowna",
+      "Vernon",
+      "Penticton"
     ],
     categoryTags: [
       "air duct cleaning service",
@@ -86239,6 +86130,7 @@ export const businesses: Business[] = [
     specialties: [
       "Online estimates",
       "Onsite services",
+      "Coil cleaning",
       "Appointment required"
     ],
     photos: [
@@ -110242,85 +110134,6 @@ export const businesses: Business[] = [
     }
   },
   {
-    id: "kelowna-pool-spa-installers-ChIJtdRPRKPyfVMRbBYwkheqHwU",
-    name: "Kelowna Pool & Spa Services",
-    cityId: "kelowna",
-    cityName: "Kelowna",
-    categoryId: "pool-spa-installers",
-    categoryName: "Pool & Spa Installers",
-    contact: {
-      phone: "+1 250-765-7677",
-      website: "http://www.kelownapoolandspa.com/",
-      address: "3306 Appaloosa Rd Unit 12, Kelowna, BC V1V 2W5, Canada"
-    },
-    coordinates: {
-      lat: 49.9209044,
-      lng: -119.3949947
-    },
-    source: {
-      provider: "google-maps-scraper",
-      cid: "369200712681264748",
-      placeId: "ChIJtdRPRKPyfVMRbBYwkheqHwU",
-      category: "Swimming pool contractor",
-      mapsUrl: "https://www.google.com/maps/place/Kelowna+Pool+%26+Spa+Services/data=!4m7!3m6!1s0x537df2a3444fd4b5:0x51faa179230166c!8m2!3d49.9209044!4d-119.3949947!16s%2Fg%2F11btrst5y0!19sChIJtdRPRKPyfVMRbBYwkheqHwU?authuser=0&hl=en&rclk=1"
-    },
-    rating: 5,
-    reviewCount: 8,
-    description: "Kelowna Pool & Spa Services is a swimming pool contractor offering maintenance, repair, and installation services at customer locations. It operates a service shop in Mill Creek Industrial Park and serves Kelowna, West Kelowna, and Peachland",
-    serviceAreas: [
-      "Kelowna",
-      "West Kelowna",
-      "Peachland"
-    ],
-    categoryTags: [
-      "swimming pool contractor",
-      "hot tub repair service",
-      "pool & spa installers"
-    ],
-    photos: [
-      "https://lh3.googleusercontent.com/p/AF1QipNzpiEKv_UmBw20fQpW4ZDzp2yhYlsz1_fMa2fL=w397-h298-k-no",
-      "https://lh3.googleusercontent.com/gps-cs-s/AHVAwerZzmvIzDrUdxTE2J-zDw5GPfvka_OhBNC6xCEksHIHGiBsEscS0Nujre0UWRMjsq1UQS6B4Dsia2Fgh3q40XU0H3TagX915mWfLDYTRyuwBvYdS5RDBE-bwRs_8TH5bvoUv42F=w224-h298-k-no",
-      "https://lh3.googleusercontent.com/p/AF1QipMfO2GNyZ9_Qxg_PWvBX1rOgO3t89-b7IH3S2om=w725-h298-k-no",
-      "https://streetviewpixels-pa.googleapis.com/v1/thumbnail?panoid=DAjUka7PuHz-mgPDP0PTEw&cb_client=maps_sv.tactile.gps&w=224&h=298&yaw=286.41083&pitch=0&thumbfov=100"
-    ],
-    reviews: [
-      {
-        author: "Alex Labreque",
-        rating: 5,
-        text: "After struggling to find a reliable, competent pool guy for several years, we found Jim at Kelowna Pool and Spa. Talk about efficient, reliable, trustworthy- these are all characteristics that Jim and his team possess.  Thank you for your hard work and for being the best pool and spa service company in the Okanagan!"
-      },
-      {
-        author: "Igor Cherkasskiy",
-        rating: 5,
-        text: "Great, knowledgeable and very helpful professional people! I had a leaking circulation pump in my Hot tub. Me been a hands-on person I needed a parts and advise for the DIY repair. With the estimated  price of the new circulation pump been reasonable comparing to spending parts, time and money on fixing the old pump decided to get a new one and use the old one as a spare. Ordered a replacement pump from them, they understood the situation + my need to get the part ASAP - got the new pump next day, they called me to let me know its waiting for me!!!\nThey also helped me very quick and professionally with picking up a new PVC  fittings, O-rings and pipe unions to match exactly the old configuration for pump plumbing to Hot tab - so new pump could be connected same way as the old one.  As a result replacement was easy and fast ,as with their help and advise I had everything I needed for the task. Hot tub is back running again -  :-)))  !!!  Thank you!"
-      },
-      {
-        author: "lara lara",
-        rating: 5,
-        text: "Recently my hot tub stopped working, and a friend at work recommended Kelowna Pool and Spa as they had the same problem last year.  I gave the business a call and they assured me over the phone that they would be able to fix it.  The  technician arrived the same day and I was able to use my hot tub that night!  Great service, would use KP&S again."
-      },
-      {
-        author: "Heather Irvine",
-        rating: 5,
-        text: "ABSOLUTELY the BEST pool place in Ktown. Jim and the crew have been with us as newbie pool owners 9 years ago, set us up for success with pool openings and closings not to mention emergency visit for a clogged line. Will NEVER call anyone else but them. 💗"
-      },
-      {
-        author: "Pete McTiernan",
-        rating: 5,
-        text: "Great service and attentiveness to servicing our pool and hot tub and doing repairs. Big Tks.  Nice to have people you can trust."
-      }
-    ],
-    hours: {
-      Friday: "8 AM–4:30 PM",
-      Monday: "8 AM–4:30 PM",
-      Saturday: "Closed",
-      Sunday: "Closed",
-      Thursday: "8 AM–4:30 PM",
-      Tuesday: "8 AM–4:30 PM",
-      Wednesday: "8 AM–4:30 PM"
-    }
-  },
-  {
     id: "kelowna-pool-spa-installers-ChIJw-lR3C2NfVMRwgbWoLxUHic",
     name: "Lakeview Infinity Pools",
     cityId: "kelowna",
@@ -120788,12 +120601,14 @@ export const businesses: Business[] = [
     },
     rating: 0,
     reviewCount: 0,
-    description: "Turtle Tanks Okanagan provides wastewater and septic solutions including tank sales, inspections, drain field replacements, and system upgrades. They serve Kelowna, Lake Country, West Kelowna, and Peachland",
+    description: "Turtle Tanks Okanagan provides wastewater and septic solutions including designs, installations, inspections, drain field replacements, and system upgrades. They serve Kelowna, Lake Country, West Kelowna, Peachland, Okanagan, and Summerland",
     serviceAreas: [
       "Kelowna",
       "Lake Country",
       "West Kelowna",
-      "Peachland"
+      "Peachland",
+      "Okanagan",
+      "Summerland"
     ],
     categoryTags: [
       "septic system service",
@@ -125445,7 +125260,7 @@ export const businesses: Business[] = [
   },
   {
     id: "kelowna-tile-installers-8274021185998171686",
-    name: "Queen of Floors - Kelowna Flooring & Countertops",
+    name: "The Queen of Floors & More Inc.",
     cityId: "kelowna",
     cityName: "Kelowna",
     categoryId: "tile-installers",
@@ -125453,8 +125268,8 @@ export const businesses: Business[] = [
     searchQuery: "tile installers in Kelowna BC",
     contact: {
       phone: "+1 236-795-5160",
-      website: "https://www.thekqoffloors.ca/?utm_source=iNFOTEL+Multedia&utm_medium=website+&utm_id=10076243",
-      address: "2495 Enterprise Way Suite 104, Kelowna, BC V1X 6X2, Canada"
+      website: "https://www.thekqoffloors.ca/",
+      address: "104-2495 Enterprise Way, Kelowna, BC V1X 7K2, Canada"
     },
     coordinates: {
       lat: 49.8862142,
@@ -125470,7 +125285,7 @@ export const businesses: Business[] = [
     },
     rating: 4.8,
     reviewCount: 63,
-    description: "Queen of Floors - Kelowna Flooring & Countertops supplies and installs flooring, tile, countertops, and cabinets in Kelowna, Lake Country, and Summerland",
+    description: "The Queen of Floors & More Inc. specializes in quartz countertops with in-house fabrication from their family-owned shop, and also supplies and installs cabinets, vinyl plank flooring, tile, and countertops across Kelowna, Lake Country, Summerland, and West Kelowna",
     serviceAreas: [
       "Kelowna",
       "Lake Country",
@@ -125494,6 +125309,12 @@ export const businesses: Business[] = [
       "tile installers"
     ],
     specialties: [
+      "Quartz countertop fabrication and installation",
+      "Family-owned fabrication shop",
+      "Cabinets",
+      "Vinyl plank flooring",
+      "Tile installation",
+      "Countertops",
       "Delivery",
       "In-store pickup",
       "In-store shopping",
@@ -125981,16 +125802,16 @@ export const businesses: Business[] = [
   },
   {
     id: "kelowna-tile-installers-6401728779979239797",
-    name: "Vancoast Tile And Stone",
+    name: "Vancoast Tile & Stone",
     cityId: "kelowna",
     cityName: "Kelowna",
     categoryId: "tile-installers",
     categoryName: "Tile Installers",
     searchQuery: "tile installers in Kelowna BC",
     contact: {
-      website: "https://www.vancoasttilestone.ca/",
+      website: "https://vancoasttilestone.ca",
       address: "328 Phipps Crescent, Kelowna, BC V1X 7N8, Canada",
-      phone: ""
+      phone: "778-552-5348"
     },
     coordinates: {
       lat: 49.9016685,
@@ -126006,10 +125827,12 @@ export const businesses: Business[] = [
     },
     rating: 5,
     reviewCount: 2,
-    description: "Vancoast Tile And Stone provides high-quality tile installation services for homes and businesses in Kelowna and Lake Country",
+    description: "Vancoast Tile & Stone specializes in high-quality tile installation with a focus on durability, proper preparation, and clean finishes. We serve Kelowna and surrounding areas, offering professional solutions for bathrooms, kitchens, and custom tile projects.",
     serviceAreas: [
       "Kelowna",
-      "Lake Country"
+      "Lake Country",
+      "West Kelowna",
+      "Peachland"
     ],
     validation: {
       queryCityId: "kelowna",
@@ -126017,7 +125840,16 @@ export const businesses: Business[] = [
     },
     categoryTags: [
       "flooring contractor",
+      "tile contractor",
       "tile installers"
+    ],
+    specialties: [
+      "Tile installation (residential & commercial)",
+      "Bathroom renovations & waterproofing",
+      "Walk-in showers & custom tile work",
+      "Kitchen backsplashes",
+      "Tile flooring & heated floors",
+      "Grout repair & re-caulking"
     ],
     photos: [
       "https://lh3.googleusercontent.com/gps-cs-s/AHVAweooNLyhhAA5MR5TkLgrIHVUhPfhZvcr7HNyFNUnWCUhpVZJ6NpTP3FeJM4eUsvysCcjeuyAjCdCZxIJvul2wG2VTNCj-gYX_J2rPAg6WzTbTxl2CR4VCmq0uFULgXkMcLj1k52jWV9PclDK=w224-h298-k-no",
@@ -242776,10 +242608,18 @@ export const businesses: Business[] = [
     },
     rating: 5,
     reviewCount: 1,
-    description: "Green Earth Hydrovac Ltd provides excavation and site preparation services in West Kelowna and Peachland",
+    description: "Green Earth Hydrovac Ltd provides excavation and site preparation services throughout the Okanagan region",
     serviceAreas: [
       "West Kelowna",
-      "Peachland"
+      "Kelowna",
+      "Lake Country",
+      "Peachland",
+      "Summerland",
+      "Penticton",
+      "Vernon",
+      "Oliver",
+      "Osoyoos",
+      "Armstrong"
     ],
     categoryTags: [
       "excavating contractor",
@@ -253989,86 +253829,6 @@ export const businesses: Business[] = [
     }
   },
   {
-    id: "west-kelowna-landscapers-ChIJFUGOSab0fVMR4yCf3w7uVyE",
-    name: "Pacific Northwest Garden Supply Kelowna",
-    cityId: "west-kelowna",
-    cityName: "West Kelowna",
-    categoryId: "landscapers",
-    categoryName: "Landscapers",
-    contact: {
-      phone: "+1 250-769-4791",
-      website: "https://pnwgardensupply.com/",
-      address: "1810 Kyle Ct Unit C1, West Kelowna, BC V1Z 3Z4, Canada"
-    },
-    coordinates: {
-      lat: 49.8610378,
-      lng: -119.5911234
-    },
-    source: {
-      provider: "google-maps-scraper",
-      cid: "2402650673874149603",
-      placeId: "ChIJFUGOSab0fVMR4yCf3w7uVyE",
-      category: "Hydroponics equipment supplier",
-      mapsUrl: "https://www.google.com/maps/place/Pacific+Northwest+Garden+Supply+Kelowna/data=!4m7!3m6!1s0x537df4a6498e4115:0x2157ee0edf9f20e3!8m2!3d49.8610378!4d-119.5911234!16s%2Fg%2F11f1s2xjcv!19sChIJFUGOSab0fVMR4yCf3w7uVyE?authuser=0&hl=en&rclk=1"
-    },
-    rating: 4.9,
-    reviewCount: 35,
-    description: "Pacific Northwest Garden Supply Kelowna supplies hydroponics equipment in West Kelowna",
-    serviceAreas: [
-      "West Kelowna"
-    ],
-    categoryTags: [
-      "hydroponics equipment supplier",
-      "landscapers"
-    ],
-    specialties: [
-      "Onsite services",
-      "Wheelchair accessible entrance",
-      "Wheelchair accessible parking lot"
-    ],
-    photos: [
-      "https://lh3.googleusercontent.com/p/AF1QipOc5wguDDBNOwcvaRmdjLg2dxx3EDruob_xFJ-b=w397-h298-k-no",
-      "https://lh3.googleusercontent.com/p/AF1QipM4bj87hZJi1trnhrQAkA0LCHSWfLTSHA3xuj2e=w397-h298-k-no",
-      "https://streetviewpixels-pa.googleapis.com/v1/thumbnail?panoid=wpsECWLJ-tLMQNdtNgMagQ&cb_client=maps_sv.tactile.gps&w=224&h=298&yaw=56.026836&pitch=0&thumbfov=100"
-    ],
-    reviews: [
-      {
-        author: "Kurtis Fernandes",
-        rating: 5,
-        text: "Just got off the phone with a really helpful person.  I forgot to ask her name, she helped answer all my questions and helped me set myself up for success with my indoor garden for the winter!  Thanks a ton!  So knowledgeable and friendly I highly recommend!"
-      },
-      {
-        author: "Conner",
-        rating: 5,
-        text: "The folks here are so friendly. Such good knowledge with all questions I had for them and such a wide variety of products"
-      },
-      {
-        author: "David & Laura Wilkinson",
-        rating: 5,
-        text: "We absolutely love working with the fantastic staff at PNW Garden Supply Kelowna. They are all friendly, knowledgeable and they sell good quality products. Can't recommend them enough! They absolutely go above and beyond for their customers, well worth the drive for us (2.5 hours away)."
-      },
-      {
-        author: "Blair and Jennifer Peel",
-        rating: 5,
-        text: "This is a GREAT store and the staff is KILLER awsome!! Dave is the real deal and helped our team out in a pinch! We historically worked with the PNW team out of Nelson, who is AMAZING as well but it seems no matter the location, PNW has a consistent track record of the BEST customer service!!"
-      },
-      {
-        author: "Danny Clemente",
-        rating: 5,
-        text: "The staff is very knowledgeable in their equipment and products, I learn something new every time I see them. Super friendly people and I don't see much price difference compared to other local hydroponic/grow stores. Would recommend."
-      }
-    ],
-    hours: {
-      Friday: "9 AM–5:30 PM",
-      Monday: "9 AM–5:30 PM",
-      Saturday: "Closed",
-      Sunday: "Closed",
-      Thursday: "9 AM–5:30 PM",
-      Tuesday: "9 AM–5:30 PM",
-      Wednesday: "9 AM–5:30 PM"
-    }
-  },
-  {
     id: "west-kelowna-landscapers-16728125180278745947",
     name: "Precision Greens - Kelowna",
     cityId: "west-kelowna",
@@ -262773,7 +262533,7 @@ export const businesses: Business[] = [
     contact: {
       phone: "+1 250-258-8344",
       website: "https://solosenergy.ca/kelowna/",
-      address: "945 Rumney Rd, West Kelowna, BC V1Z 1H8, Canada"
+      address: "2636 Kyle Road, West Kelowna"
     },
     coordinates: {
       lat: 49.862497399999995,
@@ -264947,14 +264707,5 @@ export const businesses: Business[] = [
     }
   }
 ];
-
-
-
-
-
-
-
-
-
 
 

@@ -4,13 +4,14 @@ import {
   AlertCircle,
   ArrowRight,
   Building2,
+  CalendarClock,
   CreditCard,
-  ShieldCheck,
   Wrench,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
 import SectionEyebrow from '@/src/components/SectionEyebrow';
+import Seo from '@/src/components/Seo';
 import { getCallOffer, getCallOfferConfig } from '@/src/lib/callOffers';
 import {
   trackPaidPlanIntentClicked,
@@ -53,8 +54,8 @@ export default function BookCallPage() {
     primaryNeed: '',
   });
 
-  const hasStripePayment = Boolean(content.stripePaymentUrl);
-  const hasSchedulingLink = Boolean(content.scheduleUrl);
+  const hasStripePayment = content.hasStripePayment;
+  const hasSchedulingLink = content.hasSchedulingLink;
 
   useEffect(() => {
     trackFormViewed({
@@ -78,8 +79,8 @@ export default function BookCallPage() {
     () => [
       'Built around local trade businesses',
       offer === 'website' ? 'Website-first conversation' : 'Operational strategy conversation',
-      hasStripePayment ? 'Stripe checkout supported' : 'No payment step configured yet',
-      hasSchedulingLink ? 'Scheduling link ready after payment' : 'We can still follow up manually',
+      hasStripePayment ? 'Stripe checkout is configured' : 'No Stripe payment step is configured yet',
+      hasSchedulingLink ? 'Scheduling link is configured' : 'Scheduling is still handled manually',
     ],
     [hasSchedulingLink, hasStripePayment, offer],
   );
@@ -116,7 +117,7 @@ export default function BookCallPage() {
       plan_id: offer,
       plan_category: 'service',
       source_page: '/book-call',
-      cta_label: content.cta,
+      cta_label: content.submitCta,
       destination,
       city: normalizedCity || undefined,
     });
@@ -182,6 +183,13 @@ export default function BookCallPage() {
       transition={{ duration: 0.5 }}
       className="min-h-screen bg-[#FAFAFA] py-24 font-sans text-zinc-900 selection:bg-indigo-200 selection:text-indigo-900"
     >
+      <Seo
+        title={`${content.title} | Okanagan Trades`}
+        description={content.intro}
+        path="/book-call"
+        robots="noindex,nofollow"
+      />
+
       <div className="mx-auto max-w-[96rem] px-4 sm:px-6 lg:px-10">
         <div className="grid gap-12 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-start">
           <div className="max-w-xl">
@@ -204,19 +212,26 @@ export default function BookCallPage() {
 
             <div className="mt-8 border border-zinc-200 bg-white p-5 shadow-sm">
               <div className="flex items-start gap-3">
-                <CreditCard className="mt-0.5 h-5 w-5 text-orange-500" strokeWidth={2} />
+                {hasStripePayment ? (
+                  <CreditCard className="mt-0.5 h-5 w-5 text-orange-500" strokeWidth={2} />
+                ) : (
+                  <CalendarClock className="mt-0.5 h-5 w-5 text-orange-500" strokeWidth={2} />
+                )}
                 <div>
-                  <p className="font-semibold text-zinc-900">
-                    {hasStripePayment ? 'This flow continues to Stripe after submit.' : 'This flow currently ends as a request form.'}
-                  </p>
-                  <p className="mt-1 text-sm leading-6 text-zinc-600">
-                    {hasStripePayment
-                      ? 'Submit your intake, then you will be redirected to Stripe to handle payment before scheduling.'
-                      : 'If you want paid scheduling, add the Stripe payment URL env vars and this page will redirect automatically.'}
-                  </p>
+                  <p className="font-semibold text-zinc-900">{content.configurationTitle}</p>
+                  <p className="mt-1 text-sm leading-6 text-zinc-600">{content.configurationBody}</p>
                 </div>
               </div>
             </div>
+
+            {!content.isFullyConfigured ? (
+              <div className="mt-4 border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900 shadow-sm">
+                <p className="font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-amber-700">Configuration note</p>
+                <p className="mt-2">
+                  This offer is still usable, but at least one self-serve step is missing. The confirmation page will only promise the next step that is actually configured.
+                </p>
+              </div>
+            ) : null}
 
             <div className="mt-12 border-t-2 border-zinc-200 pt-8">
               <div className="mb-6 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">What to Expect</div>
@@ -325,7 +340,7 @@ export default function BookCallPage() {
                     </svg>
                     Submitting...
                   </>
-                ) : hasStripePayment ? content.cta : 'Request Call'}
+                ) : content.submitCta}
                 {!loading && <ArrowRight className="h-5 w-5" strokeWidth={2.5} />}
               </button>
 
@@ -337,9 +352,7 @@ export default function BookCallPage() {
               )}
 
               <p className="text-center font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">
-                {hasStripePayment
-                  ? 'Simple intake first, then Stripe checkout.'
-                  : 'No Stripe payment link configured yet.'}
+                {content.configurationTitle}
               </p>
             </form>
 

@@ -6,6 +6,7 @@ import {motion} from 'motion/react';
 import Breadcrumbs from '../components/Breadcrumbs';
 import MobileDirectorySearch from '../components/MobileDirectorySearch';
 import BusinessCard from '../components/BusinessCard';
+import Seo from '../components/Seo';
 import {Business, businessServesCity} from '../business';
 import {useDirectoryData} from '../directory-data';
 
@@ -60,6 +61,10 @@ function getQueryCityId(query: string, cityOptions: { id: string; name: string }
   return cityOptions.find((city) => normalized.includes(normalizeSearchValue(city.name)))?.id ?? '';
 }
 
+function rankBusiness(left: Business, right: Business) {
+  return (right.rating ?? 0) - (left.rating ?? 0) || (right.reviewCount ?? 0) - (left.reviewCount ?? 0);
+}
+
 export default function SearchPage() {
   const {businesses, categories, cities, verifiedLookupDegraded} = useDirectoryData();
   const [searchParams] = useSearchParams();
@@ -69,8 +74,26 @@ export default function SearchPage() {
   const deferredQuery = useDeferredValue(query);
   const inferredCityId = rawCityId || getQueryCityId(rawQuery, cities);
   const tokenGroups = useMemo(() => buildTokenGroups(tokenize(deferredQuery)), [deferredQuery]);
+  const categoryById = useMemo(() => new Map(categories.map((category) => [category.id, category])), [categories]);
+  const cityById = useMemo(() => new Map(cities.map((cityOption) => [cityOption.id, cityOption])), [cities]);
+  const businessHaystacks = useMemo(() => new Map(businesses.map((business) => {
+    const category = categoryById.get(business.categoryId);
+    const businessCity = cityById.get(business.cityId);
 
-  const city = cities.find((entry) => entry.id === inferredCityId);
+    return [business.id, normalizeSearchValue([
+      business.name,
+      businessCity?.name,
+      business.contact.address,
+      business.contact.website,
+      business.description,
+      category?.name,
+      ...(business.serviceAreas ?? []),
+    ]
+      .filter(Boolean)
+      .join(' '))];
+  })), [businesses, categoryById, cityById]);
+
+  const city = cityById.get(inferredCityId);
 
   const results = useMemo(() => {
     const filteredByCity = (() => {
@@ -89,29 +112,18 @@ export default function SearchPage() {
 
     if (!deferredQuery) {
       return [...filteredByCity]
-        .sort((left, right) => (right.rating ?? 0) - (left.rating ?? 0) || (right.reviewCount ?? 0) - (left.reviewCount ?? 0))
+        .sort(rankBusiness)
         .slice(0, 60) as Business[];
     }
 
     return filteredByCity
       .filter((business) => {
-        const category = categories.find((entry) => entry.id === business.categoryId);
-        const haystack = normalizeSearchValue([
-          business.name,
-          cities.find((entry) => entry.id === business.cityId)?.name,
-          business.contact.address,
-          business.contact.website,
-          business.description,
-          category?.name,
-          ...(business.serviceAreas ?? []),
-        ]
-          .filter(Boolean)
-          .join(' '));
+        const haystack = businessHaystacks.get(business.id) ?? '';
 
         return tokenGroups.every((group) => group.some((token) => haystack.includes(token)));
       })
-      .sort((left, right) => (right.rating ?? 0) - (left.rating ?? 0) || (right.reviewCount ?? 0) - (left.reviewCount ?? 0)) as Business[];
-  }, [businesses, categories, cities, city, deferredQuery, inferredCityId, tokenGroups]);
+      .sort(rankBusiness) as Business[];
+  }, [businessHaystacks, businesses, city, deferredQuery, inferredCityId, tokenGroups]);
 
   return (
     <motion.div
@@ -121,6 +133,14 @@ export default function SearchPage() {
       transition={{duration: 0.4, ease: 'easeOut'}}
       className="bg-[#FAFAFA] min-h-screen pt-0 pb-16"
     >
+      <Seo
+        title={rawQuery ? `Search results for ${rawQuery} | Okanagan Trades` : 'Search Contractors | Okanagan Trades'}
+        description={rawQuery
+          ? `Search Okanagan Trades for ${rawQuery}${city ? ` in ${city.name}` : ''}.`
+          : 'Search Okanagan Trades by trade, city, or business name.'}
+        path="/search"
+        robots="noindex,follow"
+      />
       <MobileDirectorySearch
         cities={cities}
         initialQuery={rawQuery}

@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { businesses, cities } from '../src/data';
+import { ACTIVE_CITY_IDS } from '../src/lib/directoryFilters';
 
 const SITE_URL = (process.env.SITE_URL || process.env.VITE_SITE_URL || 'https://okanagantradesdirectory.com').replace(/\/$/, '');
 
@@ -10,19 +11,14 @@ const ROOT_ROUTES = [
   '/trades',
   '/regions',
   '/verified',
-  '/search',
   '/classifieds',
   '/classifieds/post',
   '/for-business',
   '/claim',
   '/claim-business',
   '/never-miss-a-lead',
-  '/book-demo',
   '/websites-for-trades',
   '/managed-growth',
-  '/book-call',
-  '/terms',
-  '/privacy',
   '/contact',
 ];
 
@@ -50,12 +46,15 @@ function main() {
   const outputDir = path.resolve('public');
   fs.mkdirSync(outputDir, { recursive: true });
 
-  const cityRoutes = cities.map((city) => `/${city.id}`);
+  const activeCities = cities.filter((city) => ACTIVE_CITY_IDS.has(city.id));
+  const activeBusinesses = businesses.filter((business) => ACTIVE_CITY_IDS.has(business.cityId));
+
+  const cityRoutes = activeCities.map((city) => `/${city.id}`);
 
   const categoryRoutes = new Set<string>();
   const businessRoutes = new Set<string>();
 
-  for (const business of businesses) {
+  for (const business of activeBusinesses) {
     categoryRoutes.add(`/${business.cityId}/${business.categoryId}`);
     businessRoutes.add(`/${business.cityId}/${business.categoryId}/${business.id}`);
   }

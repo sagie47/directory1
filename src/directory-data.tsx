@@ -1,6 +1,7 @@
 import { createContext, startTransition, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import { Business } from './business';
+import { ACTIVE_CITY_IDS } from './lib/directoryFilters';
 import { loadSeedDataFromJson } from './lib/seedData';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
 
@@ -73,21 +74,6 @@ type BusinessOverrideRow = {
 
 const PAGE_SIZE = 1000;
 const MAX_CONCURRENT_PREFETCH = 5;
-const ACTIVE_CITY_IDS = new Set([
-  'kelowna',
-  'vernon',
-  'penticton',
-  'west-kelowna',
-  'lake-country',
-  'summerland',
-  'kamloops',
-  'salmon-arm',
-  'oliver',
-  'peachland',
-  'osoyoos',
-  'armstrong',
-]);
-
 function isMissingTableError(error: { code?: string; message?: string } | null | undefined) {
   if (!error) {
     return false;
@@ -304,8 +290,9 @@ async function fetchDirectoryData(): Promise<DirectoryData> {
       async (from, to) => {
         const result = await supabase
           .from('businesses')
-          .select('id, name, city_id, category_id, description, rating, review_count, service_areas, category_tags, specialties, photos, hours, contact')
+          .select('id, name, city_id, category_id, description, rating, review_count, service_areas, category_tags, specialties, photos, reviews, hours, coordinates, contact, source')
           .order('name')
+          .order('id')
           .range(from, to);
 
         return {

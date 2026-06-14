@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { hasApprovedClaim as checkApprovedClaim } from '../lib/auth';
@@ -99,6 +99,19 @@ function hasAuthCallbackParams(currentUrl: URL) {
   );
 }
 
+
+function getSafeInternalRedirectPath(redirectPath: string) {
+  const candidateUrl = new URL(redirectPath, window.location.origin);
+  const isSafeInternalPath =
+    redirectPath.startsWith('/')
+    && !redirectPath.startsWith('//')
+    && candidateUrl.origin === window.location.origin;
+
+  return isSafeInternalPath
+    ? `${candidateUrl.pathname}${candidateUrl.search}${candidateUrl.hash}`
+    : '/account';
+}
+
 function clearAuthCallbackParams(currentUrl: URL) {
   const hashParams = parseAuthCallbackParams(currentUrl.hash);
   let changedSearchParams = false;
@@ -168,18 +181,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const nextProfile = await fetchProfile(authUser);
 
       if (!mountedRef.current || profileRequestRef.current !== requestId) {
-        return;
+        return null;
       }
 
       setProfile(nextProfile);
+      return nextProfile;
     } catch (profileError) {
       console.error('Unexpected profile load failure:', profileError);
 
       if (!mountedRef.current || profileRequestRef.current !== requestId) {
-        return;
+        return null;
       }
 
-      setProfile(buildFallbackProfile(authUser));
+      const fallbackProfile = buildFallbackProfile(authUser);
+      setProfile(fallbackProfile);
+      return fallbackProfile;
     }
   }, [fetchProfile]);
 
@@ -190,38 +206,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(nextUser);
 
     if (!nextUser) {
+      profileRequestRef.current += 1;
       setProfile(null);
       setApprovedClaim(false);
       setLoading(false);
       return;
     }
 
+    setLoading(true);
     setProfile((currentProfile) => currentProfile?.id === nextUser.id ? currentProfile : buildFallbackProfile(nextUser));
-    setLoading(false);
 
     window.setTimeout(() => {
       if (!mountedRef.current) {
         return;
       }
 
-      void loadProfile(nextUser);
-      void checkApprovedClaim(nextUser.id).then((hasClaim) => {
-        if (mountedRef.current) {
-          setApprovedClaim(hasClaim);
+      void (async () => {
+        const [loadedProfile, hasClaim] = await Promise.all([
+          loadProfile(nextUser),
+          checkApprovedClaim(nextUser.id),
+        ]);
+
+        if (!mountedRef.current || !loadedProfile) {
+          return;
         }
-      });
+
+        setApprovedClaim(hasClaim);
+        setLoading(false);
+      })();
     }, 0);
   }, [loadProfile]);
 
-  const refreshProfile = async () => {
+  const refreshProfile = useCallback(async () => {
     if (user) {
-      await loadProfile(user);
-      const hasClaim = await checkApprovedClaim(user.id);
-      if (mountedRef.current) {
+      setLoading(true);
+      const [loadedProfile, hasClaim] = await Promise.all([
+        loadProfile(user),
+        checkApprovedClaim(user.id),
+      ]);
+
+      if (mountedRef.current && loadedProfile) {
         setApprovedClaim(hasClaim);
+        setLoading(false);
       }
     }
-  };
+  }, [loadProfile, user]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -301,7 +330,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [configured, syncSessionState]);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = useCallback(async (email: string, password: string) => {
     if (!supabase) {
       return { error: new Error('Supabase not configured') };
     }
@@ -324,9 +353,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setError(normalizedError.message);
       return { error: normalizedError };
     }
-  };
+  }, []);
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = useCallback(async (email: string, password: string) => {
     if (!supabase) {
       return { error: new Error('Supabase not configured'), session: null, user: null };
     }
@@ -353,9 +382,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setError(normalizedError.message);
       return { error: normalizedError, session: null, user: null };
     }
-  };
+  }, []);
 
-  const signInWithGoogle = async (redirectPath = '/account') => {
+  const signInWithGoogle = useCallback(async (redirectPath = '/account') => {
     if (!supabase) {
       return { error: new Error('Supabase not configured') };
     }
@@ -363,7 +392,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setError(null);
 
-      const safeRedirectPath = redirectPath.startsWith('/') ? redirectPath : '/account';
+      const safeRedirectPath = getSafeInternalRedirectPath(redirectPath);
       const redirectTo = new URL(safeRedirectPath, window.location.origin).toString();
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -382,9 +411,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setError(normalizedError.message);
       return { error: normalizedError };
     }
-  };
+  }, []);
 
-  const signInWithMagicLink = async (email: string, redirectPath = '/account') => {
+  const signInWithMagicLink = useCallback(async (email: string, redirectPath = '/account') => {
     if (!supabase) {
       return { error: new Error('Supabase not configured') };
     }
@@ -392,14 +421,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setError(null);
 
-      const candidateUrl = new URL(redirectPath, window.location.origin);
-      const isSafeInternalPath =
-        redirectPath.startsWith('/') &&
-        !redirectPath.startsWith('//') &&
-        candidateUrl.origin === window.location.origin;
-      const safeRedirectPath = isSafeInternalPath
-        ? `${candidateUrl.pathname}${candidateUrl.search}${candidateUrl.hash}`
-        : '/account';
+      const safeRedirectPath = getSafeInternalRedirectPath(redirectPath);
       const emailRedirectTo = new URL(safeRedirectPath, window.location.origin).toString();
       const { error: magicLinkError } = await supabase.auth.signInWithOtp({
         email: email.trim().toLowerCase(),
@@ -418,9 +440,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setError(normalizedError.message);
       return { error: normalizedError };
     }
-  };
+  }, []);
 
-  const resetPassword = async (email: string) => {
+  const resetPassword = useCallback(async (email: string) => {
     if (!supabase) {
       return { error: new Error('Supabase not configured') };
     }
@@ -444,9 +466,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setError(normalizedError.message);
       return { error: normalizedError };
     }
-  };
+  }, []);
 
-  const updatePassword = async (password: string) => {
+  const updatePassword = useCallback(async (password: string) => {
     if (!supabase) {
       return { error: new Error('Supabase not configured') };
     }
@@ -468,9 +490,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setError(normalizedError.message);
       return { error: normalizedError };
     }
-  };
+  }, []);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     if (!supabase) {
       return;
     }
@@ -478,34 +500,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       setError(null);
       await supabase.auth.signOut();
+      profileRequestRef.current += 1;
       setProfile(null);
       setApprovedClaim(false);
     } catch (signOutError) {
       console.error('Error signing out:', signOutError);
       setError(signOutError instanceof Error ? signOutError.message : 'Unable to sign out right now.');
     }
-  };
+  }, []);
+
+  const authContextValue = useMemo<AuthContextType>(() => ({
+    user,
+    session,
+    profile,
+    loading,
+    error,
+    isConfigured: configured,
+    signIn,
+    signInWithMagicLink,
+    signInWithGoogle,
+    signUp,
+    signOut,
+    refreshProfile,
+    resetPassword,
+    updatePassword,
+    hasApprovedClaim: approvedClaim,
+  }), [
+    approvedClaim,
+    configured,
+    error,
+    loading,
+    profile,
+    refreshProfile,
+    resetPassword,
+    session,
+    signIn,
+    signInWithGoogle,
+    signInWithMagicLink,
+    signOut,
+    signUp,
+    updatePassword,
+    user,
+  ]);
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        session,
-        profile,
-        loading,
-        error,
-        isConfigured: configured,
-        signIn,
-        signInWithMagicLink,
-        signInWithGoogle,
-        signUp,
-        signOut,
-        refreshProfile,
-        resetPassword,
-        updatePassword,
-        hasApprovedClaim: approvedClaim,
-      }}
-    >
+    <AuthContext.Provider value={authContextValue}>
       {children}
     </AuthContext.Provider>
   );

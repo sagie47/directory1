@@ -1,4 +1,4 @@
-import { supabase, isSupabaseConfigured } from './supabase';
+import { isSupabaseConfigured } from './supabase';
 import { trackEvent } from './analytics';
 import type { CallOffer } from './callOffers';
 
@@ -24,40 +24,75 @@ export interface SubmitCallRequestResult {
 
 const MAX_RETRIES = 2;
 
+function generateIdempotencyKey(): string {
+  return crypto.randomUUID();
+}
+
 export async function submitCallRequest(data: CallRequestData): Promise<SubmitCallRequestResult> {
-  if (!isSupabaseConfigured() || !supabase) {
+  if (!isSupabaseConfigured()) {
     return { success: false, error: 'Database not configured' };
   }
 
   trackEvent('call_request_submit_started', { offer: data.offer });
 
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return { success: false, error: 'Database not configured' };
+  }
+
+  const edgeFunctionUrl = `${supabaseUrl}/functions/v1/submit-call-request`;
+  const idempotencyKey = generateIdempotencyKey();
   let lastError = 'Unknown error';
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt += 1) {
-    const { error } = await supabase.from('call_requests').insert({
-      offer: data.offer,
-      name: data.name,
-      business_name: data.businessName,
-      trade: data.trade,
-      city: data.city,
-      phone: data.phone,
-      email: data.email,
-      website: data.website || null,
-      team_size: data.teamSize || null,
-      primary_need: data.primaryNeed,
-      stripe_payment_url: data.stripePaymentUrl || null,
-      schedule_url: data.scheduleUrl || null,
-    });
+    try {
+      const response = await fetch(edgeFunctionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${supabaseAnonKey}`,
+          'x-idempotency-key': idempotencyKey,
+        },
+        body: JSON.stringify({
+          offer: data.offer,
+          name: data.name,
+          businessName: data.businessName,
+          trade: data.trade,
+          city: data.city,
+          phone: data.phone,
+          email: data.email,
+          website: data.website || undefined,
+          teamSize: data.teamSize || undefined,
+          primaryNeed: data.primaryNeed,
+          stripePaymentUrl: data.stripePaymentUrl || undefined,
+          scheduleUrl: data.scheduleUrl || undefined,
+        }),
+      });
 
-    if (!error) {
-      trackEvent('call_request_submit_succeeded', { offer: data.offer });
-      return { success: true };
-    }
+      if (response.ok) {
+        trackEvent('call_request_submit_succeeded', { offer: data.offer });
+        return { success: true };
+      }
 
-    lastError = error.message ?? 'Submission failed. Please try again.';
-    const errorCode = error.code ?? '';
-    if (errorCode.startsWith('23')) {
+      const responseData = await response.json().catch(() => ({}));
+      lastError = responseData.error || `Request failed with status ${response.status}`;
+
+      // Rate limited - don't retry immediately
+      if (response.status === 429) {
+        break;
+      }
+
+      // Server error - may retry
+      if (response.status >= 500) {
+        continue;
+      }
+
+      // Client error - don't retry
       break;
+    } catch (err) {
+      lastError = err instanceof Error ? err.message : 'Network error. Please try again.';
     }
   }
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { MapPin, ArrowRight, Search } from 'lucide-react';
 import BusinessCard from '../components/BusinessCard';
@@ -9,6 +9,7 @@ import { Business, businessServesCity } from '../business';
 import { getCategoryHeroFallbackImage, getCategoryHeroImage } from '../category-hero-images';
 import { useDirectoryData } from '../directory-data';
 import { getLucideIcon } from '../lib/lucideIconMap';
+import { buildBreadcrumbJsonLd, buildItemListJsonLd, toAbsoluteUrl } from '../lib/seo';
 import { createImageFallbackHandler } from '../supabase-images';
 
 const containerVariants = {
@@ -30,6 +31,28 @@ export default function CategoryPage() {
   const { cityId, categoryId } = useParams<{ cityId: string, categoryId: string }>();
   const { cities, categories, businesses, isLoading } = useDirectoryData();
   const [sortBy, setSortBy] = useState('Highest Rated');
+  const city = useMemo(() => cities.find(c => c.id === cityId), [cities, cityId]);
+  const category = useMemo(() => categories.find(c => c.id === categoryId), [categories, categoryId]);
+  const filteredBusinesses = useMemo(() => {
+    if (!city || !categoryId) {
+      return [] as Business[];
+    }
+
+    return businesses.filter(
+      (business) => business.categoryId === categoryId && businessServesCity(business, city.id, city.name)
+    ) as Business[];
+  }, [businesses, categoryId, city]);
+  const categoryBusinesses = useMemo(() => [...filteredBusinesses].sort((left, right) => {
+    if (sortBy === 'Most Reviewed') {
+      return (right.reviewCount ?? 0) - (left.reviewCount ?? 0);
+    }
+
+    if (sortBy === 'A-Z') {
+      return left.name.localeCompare(right.name);
+    }
+
+    return (right.rating ?? 0) - (left.rating ?? 0) || (right.reviewCount ?? 0) - (left.reviewCount ?? 0);
+  }), [filteredBusinesses, sortBy]);
 
   if (isLoading) {
     return (
@@ -42,28 +65,9 @@ export default function CategoryPage() {
     );
   }
   
-  const city = cities.find(c => c.id === cityId);
-  const category = categories.find(c => c.id === categoryId);
-
   if (!city || !category) {
     return <Navigate to="/" replace />;
   }
-
-  const filteredBusinesses = businesses.filter(
-    (business) => business.categoryId === categoryId && businessServesCity(business, city.id, city.name)
-  ) as Business[];
-
-  const categoryBusinesses = [...filteredBusinesses].sort((left, right) => {
-    if (sortBy === 'Most Reviewed') {
-      return (right.reviewCount ?? 0) - (left.reviewCount ?? 0);
-    }
-
-    if (sortBy === 'A-Z') {
-      return left.name.localeCompare(right.name);
-    }
-
-    return (right.rating ?? 0) - (left.rating ?? 0) || (right.reviewCount ?? 0) - (left.reviewCount ?? 0);
-  });
 
   const IconComponent = getLucideIcon(category.icon);
   const heroImage = getCategoryHeroImage({
@@ -95,17 +99,24 @@ export default function CategoryPage() {
             '@type': 'CollectionPage',
             name: `${category.name} in ${city.name}`,
             description: `Browse verified ${category.name.toLowerCase()} professionals in ${city.name}.`,
+            url: toAbsoluteUrl(`/${city.id}/${category.id}`),
           },
-          {
-            '@context': 'https://schema.org',
-            '@type': 'ItemList',
-            itemListElement: categoryBusinesses.slice(0, 10).map((business, index) => ({
-              '@type': 'ListItem',
-              position: index + 1,
-              url: `/${city.id}/${category.id}/${business.id}`,
+          buildBreadcrumbJsonLd([
+            { name: 'Home', path: '/' },
+            { name: city.name, path: `/${city.id}` },
+            { name: category.name, path: `/${city.id}/${category.id}` },
+          ]),
+          buildItemListJsonLd(
+            categoryBusinesses.slice(0, 12).map((business) => ({
               name: business.name,
+              path: `/${city.id}/${category.id}/${business.id}`,
             })),
-          },
+          ),
+        ]}
+        keywords={[
+          `${category.name} ${city.name}`,
+          `${city.name} ${category.name.toLowerCase()}`,
+          `verified ${category.name.toLowerCase()} ${city.name}`,
         ]}
       />
 

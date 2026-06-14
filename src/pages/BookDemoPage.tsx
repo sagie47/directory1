@@ -2,6 +2,7 @@ import { type ChangeEvent, type FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Check, Building2, Clock, AlertCircle, BarChart3 } from 'lucide-react';
 import { motion } from 'motion/react';
+import Seo from '../components/Seo';
 import SectionEyebrow from '../components/SectionEyebrow';
 import { submitDemoRequest } from '../lib/submissions';
 import {
@@ -158,6 +159,13 @@ export default function BookDemoPage() {
       transition={{ duration: 0.5 }}
       className="relative min-h-screen overflow-hidden bg-[#FAFAFA] py-16 font-sans text-zinc-900 selection:bg-indigo-200 selection:text-indigo-900 sm:py-20 lg:py-24"
     >
+      <Seo
+        title="Book a Demo | Never Miss a Lead"
+        description="Request a demo for the Never Miss a Lead service and share how your trade business handles inbound leads today."
+        path="/book-demo"
+        robots="noindex,nofollow"
+      />
+
       <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPgo8cmVjdCB3aWR0aD0iNCIgaGVpZ2h0PSI0IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPC9zdmc+')] opacity-[0.03] mix-blend-overlay pointer-events-none"></div>
 
       <div className="relative z-10 mx-auto max-w-[96rem] px-4 sm:px-6 lg:px-10">

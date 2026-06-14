@@ -1,20 +1,24 @@
-import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { type ChangeEvent, type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   AlertCircle,
   ArrowLeft,
   ArrowRight,
   Building2,
+  FileText,
   ExternalLink,
+  Paperclip,
   MapPin,
   Phone,
   Search,
   ShieldCheck,
   User,
+  X,
 } from 'lucide-react';
 
 import GoogleIcon from '@/src/components/GoogleIcon';
 import SectionEyebrow from '@/src/components/SectionEyebrow';
+import Seo from '@/src/components/Seo';
 import type { Business } from '@/src/business';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { useDirectoryData } from '@/src/directory-data';
@@ -57,6 +61,16 @@ const paidDirectoryPlans = DIRECTORY_PLAN_TIERS.filter(
   (tier) => tier.id === 'verified' || tier.id === 'verified-pro',
 );
 
+const CLAIM_EVIDENCE_BUCKET = 'claims';
+const MAX_CLAIM_EVIDENCE_FILES = 3;
+const MAX_CLAIM_EVIDENCE_BYTES = 10 * 1024 * 1024;
+const ALLOWED_CLAIM_EVIDENCE_TYPES = new Set([
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+]);
+
 export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
   const navigate = useNavigate();
   const { user, loading: authLoading, signInWithGoogle } = useAuth();
@@ -79,12 +93,12 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
     message: '',
   });
   const [evidenceFiles, setEvidenceFiles] = useState<File[]>([]);
-  const [uploadingEvidence, setUploadingEvidence] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const trackedClaimStarts = useRef(new Set<string>());
   const claimsAvailable = Boolean(supabase && isSupabaseConfigured());
+  const accountEmail = user?.email ?? (user?.user_metadata as { email?: string } | null | undefined)?.email ?? null;
   const selectedBusinessId = searchParams.get('businessId');
   const businessBgSrc = preferSupabaseImage('thumbnail_G74A6639.jpg', businessBg);
 
@@ -107,7 +121,14 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
   const targetedBusinessCategoryName = targetedBusiness ? categoryNames.get(targetedBusiness.categoryId) : undefined;
 
   useEffect(() => {
-    if (!user || directoryLoading || !selectedBusinessId) {
+    if (!user || directoryLoading) {
+      return;
+    }
+
+    if (!selectedBusinessId) {
+      // Keep the wizard in sync with the URL (e.g. browser back from step 2).
+      setSelectedBusiness(null);
+      setStep(1);
       return;
     }
 
@@ -188,13 +209,51 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
     setSearchParams({});
   }
 
+  function handleEvidenceSelection(event: ChangeEvent<HTMLInputElement>) {
+    const selectedFiles = Array.from(event.target.files ?? []) as File[];
+    event.target.value = '';
+
+    if (selectedFiles.length === 0) {
+      return;
+    }
+
+    setError(null);
+    const nextFiles = [...evidenceFiles];
+    let nextError: string | null = null;
+
+    for (const file of selectedFiles) {
+      if (nextFiles.length >= MAX_CLAIM_EVIDENCE_FILES) {
+        nextError = `You can upload up to ${MAX_CLAIM_EVIDENCE_FILES} evidence files per claim.`;
+        break;
+      }
+
+      if (!ALLOWED_CLAIM_EVIDENCE_TYPES.has(file.type)) {
+        nextError = 'Evidence must be a PDF, JPG, PNG, or WEBP file.';
+        continue;
+      }
+
+      if (file.size > MAX_CLAIM_EVIDENCE_BYTES) {
+        nextError = 'Each evidence file must be 10 MB or smaller.';
+        continue;
+      }
+
+      nextFiles.push(file);
+    }
+
+    setEvidenceFiles(nextFiles);
+    setError(nextError);
+  }
+
+  function handleRemoveEvidenceFile(indexToRemove: number) {
+    setEvidenceFiles((current) => current.filter((_, index) => index !== indexToRemove));
+  }
+
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     if (!user || !selectedBusiness || !supabase || !claimsAvailable) {
       return;
     }
 
-    const accountEmail = user.email ?? (user.user_metadata as { email?: string } | null | undefined)?.email ?? null;
     const trimmedClaimantName = claimData.claimantName.trim();
 
     if (!trimmedClaimantName) {
@@ -210,40 +269,61 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
     setError(null);
     setSubmitting(true);
 
+    const uploadedFilePaths: string[] = [];
+
+    const cleanupUploadedFiles = async () => {
+      if (uploadedFilePaths.length === 0) {
+        return true;
+      }
+
+      const filePathsToRemove = [...uploadedFilePaths];
+      uploadedFilePaths.length = 0;
+
+      try {
+        const { error: cleanupError } = await supabase.storage.from(CLAIM_EVIDENCE_BUCKET).remove(filePathsToRemove);
+        if (cleanupError) {
+          console.error('Failed to cleanup orphaned evidence files:', filePathsToRemove, cleanupError);
+          return false;
+        }
+      } catch (cleanupError) {
+        console.error('Failed to cleanup orphaned evidence files:', filePathsToRemove, cleanupError);
+        return false;
+      }
+
+      return true;
+    };
+
     try {
       let evidenceUrls: string[] = [];
 
-      // Upload evidence files if any
-      if (evidenceFiles.length > 0 && user) {
-        setUploadingEvidence(true);
-        const uploadPromises = evidenceFiles.map(async (file) => {
-          const fileExt = file.name.split('.').pop();
-          const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
-          const filePath = `${user.id}/${fileName}`;
+      if (evidenceFiles.length > 0) {
+        evidenceUrls = [];
 
-          const { data, error: uploadError } = await supabase.storage
-            .from('claims')
-            .upload(filePath, file, {
-              cacheControl: '3600',
-              upsert: false,
-            });
+        for (const file of evidenceFiles) {
+          const extension = file.name.includes('.') ? file.name.slice(file.name.lastIndexOf('.')).toLowerCase() : '';
+          const filePath = `${user.id}/${crypto.randomUUID()}${extension}`;
+          const { error: uploadError } = await supabase.storage.from(CLAIM_EVIDENCE_BUCKET).upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false,
+          });
 
           if (uploadError) {
-            throw new Error(`Failed to upload ${file.name}: ${uploadError.message}`);
+            console.error('Claim evidence upload failed:', uploadError);
+            if (uploadedFilePaths.length > 0) {
+              const cleanupSucceeded = await cleanupUploadedFiles();
+              if (!cleanupSucceeded) {
+                setError('Your evidence files could not be uploaded, and we could not remove files from this attempt. Please contact support before retrying.');
+                return;
+              }
+            }
+            setError('Your evidence files could not be uploaded. Please try again.');
+            return;
           }
 
-          // Get public URL
-          const { data: urlData } = supabase.storage
-            .from('claims')
-            .getPublicUrl(filePath);
+          uploadedFilePaths.push(filePath);
 
-          return urlData.publicUrl;
-        });
-
-        try {
-          evidenceUrls = await Promise.all(uploadPromises);
-        } finally {
-          setUploadingEvidence(false);
+          // Store internal storage path instead of public URL for security
+          evidenceUrls.push(filePath);
         }
       }
 
@@ -261,6 +341,14 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
         const msg = submitError.message ?? '';
         const code = submitError.code ?? '';
         console.error('Claim submission failed:', { code, msg, details: submitError.details, hint: submitError.hint });
+
+        if (uploadedFilePaths.length > 0) {
+          const cleanupSucceeded = await cleanupUploadedFiles();
+          if (!cleanupSucceeded) {
+            setError('Your claim could not be submitted, and we could not remove the uploaded evidence from this attempt. Please contact support before retrying.');
+            return;
+          }
+        }
 
         if (code === 'P1001' || msg.includes('pending claim')) {
           navigate('/claim/status');
@@ -288,7 +376,9 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
           return;
         }
 
-        if (code === 'P0001' || msg.toLowerCase().includes('not authenticated')) {
+        // P0001 alone is not specific: it is the default SQLSTATE for any unqualified
+        // `raise exception` in the claim RPC, so match on the message instead.
+        if (msg.toLowerCase().includes('not authenticated')) {
           setError('Your session expired. Please sign in again and resubmit your claim.');
           return;
         }
@@ -298,14 +388,34 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
       }
 
       if (!claimId) {
+        if (uploadedFilePaths.length > 0) {
+          const cleanupSucceeded = await cleanupUploadedFiles();
+          if (!cleanupSucceeded) {
+            setError('Your claim submission did not complete, and we could not remove the uploaded evidence from this attempt. Please contact support before retrying.');
+            return;
+          }
+        }
         setError('Your claim was submitted, but the confirmation id was not returned.');
         return;
       }
 
       onClaimComplete?.();
+      setEvidenceFiles([]);
       trackEvent('claim_submitted', { business_id: selectedBusiness.id });
       navigate(`/claim/status?submitted=1&businessId=${selectedBusiness.id}`);
-    } catch {
+    } catch (caughtError) {
+      console.error('Unexpected claim submit failure:', caughtError);
+      if (uploadedFilePaths.length > 0) {
+        const cleanupSucceeded = await cleanupUploadedFiles();
+        if (!cleanupSucceeded) {
+          setError('Your claim could not be submitted, and we could not remove the uploaded evidence from this attempt. Please contact support before retrying.');
+          return;
+        }
+
+        setError('Your claim could not be submitted. Any uploaded evidence from this attempt was removed. Please try again.');
+        return;
+      }
+
       setError('An unexpected error occurred. Please try again.');
     } finally {
       setSubmitting(false);
@@ -488,6 +598,18 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-zinc-900 font-sans selection:bg-indigo-200 selection:text-indigo-900">
+      <Seo
+        title="Claim Your Business Listing | Okanagan Trades"
+        description="Claim your Okanagan Trades listing to verify ownership, unlock updates, and manage your business profile."
+        path="/claim"
+        keywords={[
+          'claim business listing',
+          'claim okanagan trades profile',
+          'verify business ownership',
+          'contractor directory claim',
+        ]}
+      />
+
       <section className="border-b-2 border-zinc-900 bg-white px-4 py-10 sm:px-6 sm:py-12 lg:px-10 lg:py-14">
         <div className="mx-auto max-w-[96rem]">
           <SectionEyebrow
@@ -783,7 +905,7 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
                   <p className="mt-6 text-sm leading-6 text-zinc-600">
                     Claim notifications are sent to your signed-in account email:
                     {' '}
-                    <span className="font-medium text-zinc-900">{user.email ?? 'No account email available'}</span>
+                    <span className="font-medium text-zinc-900">{accountEmail ?? 'No account email available'}</span>
                   </p>
                   <div className="mt-8">
                     <label className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Verification notes</label>
@@ -796,29 +918,47 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
                     />
                   </div>
                   <div className="mt-8">
-                    <label className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Evidence files (optional)</label>
-                    <p className="mt-1 text-sm text-zinc-500">Upload images or PDFs to support your claim (max 10MB per file).</p>
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/jpeg,image/png,image/webp,application/pdf"
-                      onChange={(event) => {
-                        const files = event.target.files ? Array.from(event.target.files) : [];
-                        setEvidenceFiles(files);
-                      }}
-                      className="mt-3 w-full text-sm text-zinc-500 file:mr-4 file:border file:border-zinc-200 file:bg-zinc-50 file:px-4 file:py-2 file:text-xs file:font-bold file:uppercase file:tracking-wider file:text-zinc-700 file:transition-colors file:hover:border-zinc-900 file:hover:bg-zinc-100"
-                    />
-                    {evidenceFiles.length > 0 && (
-                      <ul className="mt-3 space-y-1">
+                    <div className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                      <Paperclip className="h-3.5 w-3.5" />
+                      Evidence upload
+                    </div>
+                    <p className="mt-3 text-sm leading-6 text-zinc-600">
+                      Upload optional proof like a business license, utility bill, storefront photo, or signed authorization letter.
+                    </p>
+                    <label className="mt-4 inline-flex cursor-pointer items-center gap-2 border border-zinc-200 bg-zinc-50 px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-700 transition-colors hover:border-zinc-900 hover:bg-white hover:text-zinc-950">
+                      <FileText className="h-4 w-4" strokeWidth={2.2} />
+                      Add evidence files
+                      <input
+                        type="file"
+                        accept=".pdf,image/jpeg,image/png,image/webp"
+                        multiple
+                        onChange={handleEvidenceSelection}
+                        className="sr-only"
+                      />
+                    </label>
+                    <p className="mt-3 text-xs leading-5 text-zinc-500">
+                      Up to {MAX_CLAIM_EVIDENCE_FILES} files. PDF, JPG, PNG, or WEBP. Maximum 10 MB each.
+                    </p>
+                    {evidenceFiles.length > 0 ? (
+                      <div className="mt-4 space-y-2">
                         {evidenceFiles.map((file, index) => (
-                          <li key={index} className="flex items-center gap-2 text-sm text-zinc-600">
-                            <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                            {file.name}
-                            <span className="text-zinc-400">({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
-                          </li>
+                          <div key={`${file.name}-${file.size}-${index}`} className="flex items-center justify-between gap-3 border border-zinc-200 bg-zinc-50 px-3 py-3 text-sm text-zinc-700">
+                            <div className="min-w-0">
+                              <p className="truncate font-medium text-zinc-900">{file.name}</p>
+                              <p className="text-xs text-zinc-500">{(file.size / (1024 * 1024)).toFixed(1)} MB</p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveEvidenceFile(index)}
+                              className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide text-zinc-500 transition-colors hover:text-rose-600"
+                            >
+                              <X className="h-3.5 w-3.5" strokeWidth={2.2} />
+                              Remove
+                            </button>
+                          </div>
                         ))}
-                      </ul>
-                    )}
+                      </div>
+                    ) : null}
                   </div>
                   <div className="mt-8 flex flex-col gap-4 border-t border-zinc-100 pt-6 sm:flex-row">
                     <button
@@ -831,11 +971,11 @@ export default function ClaimPage({ onClaimComplete }: ClaimPageProps) {
                     </button>
                     <button
                       type="submit"
-                      disabled={submitting || uploadingEvidence}
+                      disabled={submitting}
                       className="inline-flex flex-1 items-center justify-center gap-3 border-2 border-zinc-900 bg-zinc-900 px-6 py-4 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-white transition-all hover:border-orange-500 hover:bg-orange-500 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {submitting || uploadingEvidence ? 'Uploading evidence...' : 'Submit claim for review'}
-                      {!submitting && !uploadingEvidence ? <ArrowRight className="h-4 w-4" strokeWidth={2.6} /> : null}
+                      {submitting ? 'Submitting claim...' : 'Submit claim for review'}
+                      {!submitting ? <ArrowRight className="h-4 w-4" strokeWidth={2.6} /> : null}
                     </button>
                   </div>
                 </section>
