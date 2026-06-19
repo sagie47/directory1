@@ -21,6 +21,14 @@ const TradesPage = lazy(() => import('./pages/TradesPage'));
 const RegionsPage = lazy(() => import('./pages/RegionsPage'));
 const VerifiedPage = lazy(() => import('./pages/VerifiedPage'));
 const SearchPage = lazy(() => import('./pages/SearchPage'));
+const ClassifiedsPage = lazy(() => import('./pages/ClassifiedsPage'));
+const ClassifiedsPostPage = lazy(() => import('./pages/ClassifiedsPostPage'));
+const ClassifiedsSubmittedPage = lazy(() => import('./pages/ClassifiedsSubmittedPage'));
+const WorkersPage = lazy(() => import('./pages/WorkersPage'));
+const WorkerProfilePage = lazy(() => import('./pages/WorkerProfilePage'));
+const WorkerOnboardingPage = lazy(() => import('./pages/WorkerOnboardingPage'));
+const WorkerDashboardPage = lazy(() => import('./pages/WorkerDashboardPage'));
+const AdminWorkerProfilesPage = lazy(() => import('./pages/AdminWorkerProfilesPage'));
 const TermsPage = lazy(() => import('./pages/TermsPage'));
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
 const ContactPage = lazy(() => import('./pages/ContactPage'));
@@ -35,6 +43,7 @@ const LoginPage = lazy(() => import('./pages/LoginPage'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const UpdatePasswordPage = lazy(() => import('./pages/UpdatePasswordPage'));
 const AdminClaimsPage = lazy(() => import('./pages/AdminClaimsPage'));
+const AdminClassifiedsPage = lazy(() => import('./pages/AdminClassifiedsPage'));
 
 function ScrollToTop() {
   const location = useLocation();
@@ -77,6 +86,31 @@ function AnimatedRoutes() {
             <Route path="regions" element={<RegionsPage />} />
             <Route path="verified" element={<VerifiedPage />} />
             <Route path="search" element={<SearchPage />} />
+            <Route path="jobs" element={<ClassifiedsPage />} />
+            <Route path="jobs/post" element={<ClassifiedsPostPage />} />
+            <Route path="jobs/submitted" element={<ClassifiedsSubmittedPage />} />
+            <Route path="classifieds" element={<Navigate to="/jobs" replace />} />
+            <Route path="classifieds/post" element={<Navigate to="/jobs/post" replace />} />
+            <Route path="classifieds/submitted" element={<Navigate to="/jobs/submitted" replace />} />
+            <Route path="workers" element={<WorkersPage />} />
+            <Route path="workers/:workerId" element={<WorkerProfilePage />} />
+            <Route path="worker/start" element={<WorkerOnboardingPage />} />
+            <Route
+              path="worker/dashboard"
+              element={
+                <AuthGuard>
+                  <WorkerDashboardPage />
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="admin/workers"
+              element={
+                <AdminGuard>
+                  <AdminWorkerProfilesPage />
+                </AdminGuard>
+              }
+            />
             <Route
               path="claim/status"
               element={
@@ -98,6 +132,14 @@ function AnimatedRoutes() {
               element={
                 <AdminGuard>
                   <AdminClaimsPage />
+                </AdminGuard>
+              }
+            />
+            <Route
+              path="admin/classifieds"
+              element={
+                <AdminGuard>
+                  <AdminClassifiedsPage />
                 </AdminGuard>
               }
             />

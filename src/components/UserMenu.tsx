@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useId } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ChevronDown, User, LogOut, Building, ShieldCheck } from 'lucide-react';
+import { ChevronDown, User, LogOut, Building, ShieldCheck, UserRound } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface UserMenuProps {
@@ -104,6 +104,15 @@ export default function UserMenu({ mobile = false }: UserMenuProps) {
             </Link>
           )}
 
+          <Link
+            to="/worker/dashboard"
+            className="flex items-center gap-3 px-4 py-2.5 text-sm text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50 transition-colors"
+            onClick={() => setIsOpen(false)}
+          >
+            <UserRound className="h-4 w-4" strokeWidth={1.5} />
+            Worker Profile
+          </Link>
+
           {profile?.role === 'admin' && (
             <Link
               to="/admin/claims"
@@ -112,6 +121,17 @@ export default function UserMenu({ mobile = false }: UserMenuProps) {
             >
               <ShieldCheck className="h-4 w-4" strokeWidth={1.5} />
               Claims Admin
+            </Link>
+          )}
+
+          {profile?.role === 'admin' && (
+            <Link
+              to="/admin/workers"
+              className="flex items-center gap-3 px-4 py-2.5 text-sm text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50 transition-colors"
+              onClick={() => setIsOpen(false)}
+            >
+              <UserRound className="h-4 w-4" strokeWidth={1.5} />
+              Workers Admin
             </Link>
           )}
 
