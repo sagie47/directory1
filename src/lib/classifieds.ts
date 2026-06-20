@@ -113,6 +113,7 @@ export async function fetchApprovedClassifieds() {
   const { data, error } = await client
     .from('classifieds')
     .select('*')
+    .eq('kind', 'job')
     .eq('status', 'approved')
     .gt('expires_at', new Date().toISOString())
     .order('created_at', { ascending: false });

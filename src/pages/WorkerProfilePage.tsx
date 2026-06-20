@@ -69,7 +69,7 @@ export default function WorkerProfilePage() {
     );
   }
 
-  if (error || !worker || worker.status !== 'approved') {
+  if (error || !worker || worker.status !== 'approved' || !worker.open_to_work) {
     return (
       <div className="min-h-screen bg-[#FAFAFA] px-4 py-24 font-sans text-zinc-900">
         <Seo title="Worker not found | Okanagan Trades" description="This worker profile is unavailable." path="/workers" robots="noindex,follow" />

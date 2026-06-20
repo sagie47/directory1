@@ -94,6 +94,11 @@ export default function ClassifiedsPostPage() {
       return;
     }
 
+    if (formData.startDate && formData.endDate && new Date(formData.endDate) < new Date(formData.startDate)) {
+      setError('End date must be on or after the start date.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 

@@ -962,6 +962,8 @@ create table if not exists public.worker_profiles (
   years_experience integer check (years_experience is null or years_experience >= 0),
   bio text not null,
   photo_url text,
+  resume_path text,
+  open_to_work boolean not null default true,
   contact_name text not null,
   contact_email text,
   contact_phone text,
@@ -999,6 +1001,34 @@ begin
     return new;
   end if;
 
+  -- Allow a non-admin to flip the open_to_work visibility toggle without
+  -- re-entering moderation: only force re-review when public-facing content
+  -- actually changed.
+  if tg_op = 'update' and not (
+       new.display_name      is distinct from old.display_name
+    or new.headline          is distinct from old.headline
+    or new.city_id           is distinct from old.city_id
+    or new.category_id       is distinct from old.category_id
+    or new.availability      is distinct from old.availability
+    or new.service_areas     is distinct from old.service_areas
+    or new.skills            is distinct from old.skills
+    or new.rate_label        is distinct from old.rate_label
+    or new.years_experience  is distinct from old.years_experience
+    or new.bio               is distinct from old.bio
+    or new.photo_url         is distinct from old.photo_url
+    or new.resume_path       is distinct from old.resume_path
+    or new.contact_name      is distinct from old.contact_name
+    or new.contact_email     is distinct from old.contact_email
+    or new.contact_phone     is distinct from old.contact_phone
+  ) then
+    -- Only open_to_work (and/or system columns) changed: preserve review state.
+    new.status := old.status;
+    new.reviewed_by := old.reviewed_by;
+    new.reviewed_at := old.reviewed_at;
+    new.rejection_reason := old.rejection_reason;
+    return new;
+  end if;
+
   new.status := 'pending';
   new.reviewed_by := null;
   new.reviewed_at := null;
@@ -1020,7 +1050,7 @@ create policy "worker_profiles_select_public_approved"
 on public.worker_profiles
 for select
 to anon, authenticated
-using (status = 'approved');
+using (status = 'approved' and open_to_work);
 
 drop policy if exists "worker_profiles_select_self" on public.worker_profiles;
 create policy "worker_profiles_select_self"
@@ -1150,6 +1180,10 @@ on storage.objects
 for update
 to authenticated
 using (
+  bucket_id = 'worker-photos'
+  and (storage.foldername(name))[1] = auth.uid()::text
+)
+with check (
   bucket_id = 'worker-photos'
   and (storage.foldername(name))[1] = auth.uid()::text
 );

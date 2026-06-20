@@ -175,6 +175,8 @@ serve(async (req) => {
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${geminiApiKey}`;
 
   let modelText: string;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 25_000);
   try {
     const response = await fetch(endpoint, {
       method: 'POST',
@@ -183,11 +185,12 @@ serve(async (req) => {
         contents: [{ role: 'user', parts }],
         generationConfig: { responseMimeType: 'application/json', temperature: 0.2 },
       }),
+      signal: controller.signal,
     });
 
     if (!response.ok) {
-      const body = await response.text();
-      console.error('Gemini error', response.status, body.slice(0, 500));
+      // Log only the status — the response body can echo resume content (PII).
+      console.error('Gemini error status', response.status);
       return jsonResponse({ success: false, error: 'Could not read the resume right now.' }, 502);
     }
 
@@ -197,8 +200,11 @@ serve(async (req) => {
       throw new Error('Empty model response.');
     }
   } catch (error) {
-    console.error('Gemini request failed', error);
+    // Avoid logging the error object (may include request/response with PII).
+    console.error('Gemini request failed:', error instanceof Error ? error.name : 'unknown');
     return jsonResponse({ success: false, error: 'Could not read the resume right now.' }, 502);
+  } finally {
+    clearTimeout(timeout);
   }
 
   try {

@@ -33,6 +33,9 @@ const RESUME_STORE = 'resume';
 const RESUME_KEY = 'pending-resume';
 
 const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+// Guard before reading the file into memory / base64 (keeps the edge function's
+// ~6MB binary cap in sync and avoids freezing the browser on huge files).
+const MAX_RESUME_BYTES = 6 * 1024 * 1024;
 
 function emptyDraft(): ParsedResumeDraft {
   return {
@@ -94,6 +97,9 @@ export async function parseResume(
   try {
     if (input.file) {
       const file = input.file;
+      if (file.size > MAX_RESUME_BYTES) {
+        return { draft: emptyDraft(), error: 'That file is too large (max 6MB). Try a smaller PDF or paste your resume text.' };
+      }
       const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
       const isDocx = file.type === DOCX_MIME || file.name.toLowerCase().endsWith('.docx');
 
@@ -126,26 +132,30 @@ export async function parseResume(
 
     return { draft: { ...emptyDraft(), ...(data.draft as ParsedResumeDraft) } };
   } catch (caughtError) {
+    // Don't surface raw parser/exception text to users; log for debugging only.
+    console.error('Resume parse failed:', caughtError);
     return {
       draft: emptyDraft(),
-      error: caughtError instanceof Error ? caughtError.message : 'Something went wrong reading the resume.',
+      error: 'We could not read that resume. You can fill the form manually.',
     };
   }
 }
 
 // ---- Draft persistence across the sign-in redirect ----
 
+// Uses localStorage (not sessionStorage): a magic-link sign-in opens a NEW tab,
+// where sessionStorage would be empty and the draft lost.
 export function saveOnboardingDraft(draft: OnboardingDraft) {
   try {
-    window.sessionStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
+    window.localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
   } catch {
-    // sessionStorage may be unavailable (private mode); onboarding still works in-session.
+    // localStorage may be unavailable (private mode); onboarding still works in-session.
   }
 }
 
 export function loadOnboardingDraft(): OnboardingDraft | null {
   try {
-    const raw = window.sessionStorage.getItem(DRAFT_STORAGE_KEY);
+    const raw = window.localStorage.getItem(DRAFT_STORAGE_KEY);
     return raw ? (JSON.parse(raw) as OnboardingDraft) : null;
   } catch {
     return null;
@@ -154,7 +164,7 @@ export function loadOnboardingDraft(): OnboardingDraft | null {
 
 export function clearOnboardingDraft() {
   try {
-    window.sessionStorage.removeItem(DRAFT_STORAGE_KEY);
+    window.localStorage.removeItem(DRAFT_STORAGE_KEY);
   } catch {
     // ignore
   }

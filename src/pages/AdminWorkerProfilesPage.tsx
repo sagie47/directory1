@@ -107,8 +107,8 @@ function AdminWorkerCard({
                 try {
                   const url = await createResumeSignedUrl(worker.resume_path as string, 120);
                   window.open(url, '_blank', 'noopener,noreferrer');
-                } catch {
-                  /* ignore — signed URL failed */
+                } catch (caughtError) {
+                  window.alert(caughtError instanceof Error ? caughtError.message : 'Could not open the resume.');
                 }
               }}
               className="mt-2 inline-flex items-center gap-1 font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-700 underline underline-offset-4 transition-colors hover:text-orange-600 lg:justify-end"

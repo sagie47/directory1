@@ -62,6 +62,31 @@ function assertSupabase() {
   return supabase;
 }
 
+// crypto.randomUUID is only defined in secure contexts (HTTPS/localhost). Fall
+// back so uploads don't crash when testing over plain HTTP on a LAN/mobile IP.
+function safeUuid() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+}
+
+function assertUploadable(file: File, allowedMimes: string[], maxBytes: number, label: string) {
+  if (file.size > maxBytes) {
+    throw new Error(`${label} must be under ${Math.round(maxBytes / (1024 * 1024))}MB.`);
+  }
+  // Some browsers leave file.type empty; allow when unknown, otherwise enforce.
+  if (file.type && !allowedMimes.includes(file.type)) {
+    throw new Error(`Unsupported ${label.toLowerCase()} format.`);
+  }
+}
+
+const PHOTO_MIMES = ['image/jpeg', 'image/png', 'image/webp'];
+const RESUME_MIMES = [
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+];
+
 export async function fetchApprovedWorkerProfiles() {
   const client = assertSupabase();
   const { data, error } = await client
@@ -131,9 +156,9 @@ export async function upsertWorkerProfile(userId: string, input: WorkerProfileIn
         skills: input.skills ?? [],
         rate_label: optionalText(input.rateLabel),
         years_experience:
-          input.yearsExperience === undefined || input.yearsExperience === null || Number.isNaN(input.yearsExperience)
+          input.yearsExperience === undefined || input.yearsExperience === null || !Number.isFinite(input.yearsExperience)
             ? null
-            : input.yearsExperience,
+            : Math.max(0, Math.round(input.yearsExperience)),
         bio: input.bio.trim(),
         photo_url: optionalText(input.photoUrl),
         resume_path: optionalText(input.resumePath),
@@ -156,8 +181,9 @@ export async function upsertWorkerProfile(userId: string, input: WorkerProfileIn
 
 export async function uploadWorkerPhoto(userId: string, file: File) {
   const client = assertSupabase();
+  assertUploadable(file, PHOTO_MIMES, 5 * 1024 * 1024, 'Photo');
   const extension = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-  const filePath = `${userId}/${crypto.randomUUID()}.${extension}`;
+  const filePath = `${userId}/${safeUuid()}.${extension}`;
 
   const { error: uploadError } = await client.storage
     .from('worker-photos')
@@ -178,8 +204,9 @@ export async function uploadWorkerPhoto(userId: string, file: File) {
 // PATH (not a public URL — the bucket is private; admins read via signed URLs).
 export async function uploadResume(userId: string, file: File) {
   const client = assertSupabase();
+  assertUploadable(file, RESUME_MIMES, 10 * 1024 * 1024, 'Resume');
   const extension = file.name.split('.').pop()?.toLowerCase() || 'pdf';
-  const filePath = `${userId}/${crypto.randomUUID()}.${extension}`;
+  const filePath = `${userId}/${safeUuid()}.${extension}`;
 
   const { error: uploadError } = await client.storage
     .from('resumes')
