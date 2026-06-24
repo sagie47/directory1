@@ -22,7 +22,8 @@
     "generate:sitemap": "tsx scripts/generate-sitemap.ts",
     "report:weekly-ops": "tsx scripts/analytics/generate-weekly-operating-report.ts",
     "export:supabase-seed": "tsx scripts/export-supabase-seed.ts",
-    "sync:supabase": "tsx scripts/sync-supabase.ts"
+    "sync:supabase": "tsx scripts/sync-supabase.ts",
+    "evals:life-os": "tsx scripts/run-life-os-evals.ts"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",

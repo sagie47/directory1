@@ -1,0 +1,20 @@
+{
+  "generatedAt": "2026-04-15T21:52:53.433Z",
+  "topRecurringBlockers": [
+    "inbox-overload",
+    "proposal-fragmentation",
+    "calendar-friction"
+  ],
+  "capabilityUpgradeRecommendation": "constraint_resolution",
+  "promotedSkills": [
+    "pipeline-prioritization",
+    "habit-planning",
+    "follow-up-cadence"
+  ],
+  "decayedSkills": [
+    "meeting-prep",
+    "dependency-resolution",
+    "constraint-clarification"
+  ],
+  "campaignLoopTrend": "flat_or_declining"
+}
