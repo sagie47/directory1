@@ -13,6 +13,12 @@ export interface CallRequestData {
   website?: string;
   teamSize?: string;
   primaryNeed: string;
+  requestedDate?: string;
+  startTime?: string;
+  duration?: string;
+  workerCount?: string;
+  jobSite?: string;
+  safetyRequirements?: string;
   stripePaymentUrl?: string;
   scheduleUrl?: string;
 }
@@ -66,6 +72,12 @@ export async function submitCallRequest(data: CallRequestData): Promise<SubmitCa
           website: data.website || undefined,
           teamSize: data.teamSize || undefined,
           primaryNeed: data.primaryNeed,
+          requestedDate: data.requestedDate || undefined,
+          startTime: data.startTime || undefined,
+          duration: data.duration || undefined,
+          workerCount: data.workerCount || undefined,
+          jobSite: data.jobSite || undefined,
+          safetyRequirements: data.safetyRequirements || undefined,
           stripePaymentUrl: data.stripePaymentUrl || undefined,
           scheduleUrl: data.scheduleUrl || undefined,
         }),

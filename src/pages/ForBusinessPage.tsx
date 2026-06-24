@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Building2, Globe, Phone, TrendingUp, ShieldCheck, Sparkles, Workflow, Wrench, LayoutGrid, Zap } from 'lucide-react';
+import { ArrowRight, Building2, Globe, HardHat, Phone, TrendingUp, ShieldCheck, Sparkles, Workflow, Wrench, LayoutGrid, Zap } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useEffect } from 'react';
 
@@ -71,6 +71,20 @@ const offerLanes = [
     cta: 'Book a Strategy Call',
     href: '/managed-growth',
   },
+  {
+    icon: HardHat,
+    eyebrow: 'Day Labor',
+    title: 'On-Demand Day Labor',
+    pricing: SERVICE_OFFER_PRICING['day-labor'].startingPrice,
+    description: 'Request short-notice general labor support for site cleanup, material moves, and recurring crew gaps.',
+    bullets: [
+      'Short-notice general labor support',
+      'Job-site cleanup and material handling',
+      'Recurring or one-off crew requests',
+    ],
+    cta: 'Request Day Labor',
+    href: '/on-demand-day-labor',
+  },
 ];
 
 const operatingPrinciples = [
@@ -123,6 +137,7 @@ export default function ForBusinessPage() {
     if (href === '/never-miss-a-lead') return 'never-miss-a-lead';
     if (href === '/websites-for-trades') return 'website';
     if (href === '/managed-growth') return 'managed-growth';
+    if (href === '/on-demand-day-labor') return 'day-labor';
     if (href === '/claim') return 'claim';
     return 'unknown';
   };
@@ -154,6 +169,11 @@ export default function ForBusinessPage() {
       plan_category: 'service',
       source_page: '/for-business',
     });
+    trackPaidPlanIntentViewed({
+      plan_id: 'day-labor',
+      plan_category: 'service',
+      source_page: '/for-business',
+    });
   }, []);
 
   return (
@@ -166,7 +186,7 @@ export default function ForBusinessPage() {
     >
       <Seo
         title="For Business Owners | Okanagan Trades"
-        description="Explore claim, lead-capture, website, and managed growth options built for Okanagan trade businesses."
+        description="Explore claim, lead-capture, website, day labor, and managed growth options built for Okanagan trade businesses."
         path="/for-business"
       />
 
@@ -213,7 +233,7 @@ export default function ForBusinessPage() {
               transition={{ duration: 0.6, delay: 0.2 }}
               className="mb-10 max-w-2xl text-lg leading-relaxed text-balance text-zinc-300 drop-shadow-md sm:mb-12 sm:text-xl md:text-2xl lg:mb-16"
             >
-              Choose the lane that matches the bottleneck. Claim is for owner control. The paid lanes handle trust, lead capture, websites, and ongoing growth support directly.
+              Choose the lane that matches the bottleneck. Claim is for owner control. The paid lanes handle trust, lead capture, websites, day labor, and ongoing growth support directly.
             </motion.p>
 
             <motion.div 
@@ -322,7 +342,7 @@ export default function ForBusinessPage() {
               Business Lanes
             </SectionEyebrow>
             <h2 className="text-3xl font-bold uppercase tracking-tight text-zinc-900 sm:text-4xl md:text-6xl">
-              Four ways we help trade businesses.
+              Five ways we help trade businesses.
             </h2>
           </div>
 
@@ -367,7 +387,7 @@ export default function ForBusinessPage() {
                         cta_location: 'business_lane_card',
                       });
 
-                      if (laneOffer === 'never-miss-a-lead' || laneOffer === 'website' || laneOffer === 'managed-growth') {
+                      if (laneOffer === 'never-miss-a-lead' || laneOffer === 'website' || laneOffer === 'managed-growth' || laneOffer === 'day-labor') {
                         trackPaidPlanIntentClicked({
                           plan_id: laneOffer,
                           plan_category: 'service',

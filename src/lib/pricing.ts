@@ -4,7 +4,7 @@ export type DirectoryPlanId =
   | 'verified-pro'
   | 'performance-add-on';
 
-export type ServiceOfferId = 'never-miss-a-lead' | 'website' | 'managed-growth';
+export type ServiceOfferId = 'never-miss-a-lead' | 'website' | 'managed-growth' | 'day-labor';
 
 export interface DirectoryPlanTier {
   id: DirectoryPlanId;
@@ -64,6 +64,11 @@ export const SERVICE_OFFER_PRICING: Record<ServiceOfferId, ServiceOfferPricing> 
     id: 'managed-growth',
     name: 'Managed Growth',
     startingPrice: 'From $1,250/mo',
+  },
+  'day-labor': {
+    id: 'day-labor',
+    name: 'On-Demand Day Labor',
+    startingPrice: 'Request-based dispatch pricing',
   },
 };
 
