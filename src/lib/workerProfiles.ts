@@ -158,7 +158,7 @@ export async function upsertWorkerProfile(userId: string, input: WorkerProfileIn
         years_experience:
           input.yearsExperience === undefined || input.yearsExperience === null || !Number.isFinite(input.yearsExperience)
             ? null
-            : Math.max(0, Math.round(input.yearsExperience)),
+            : Math.min(70, Math.max(0, Math.round(input.yearsExperience))),
         bio: input.bio.trim(),
         photo_url: optionalText(input.photoUrl),
         resume_path: optionalText(input.resumePath),

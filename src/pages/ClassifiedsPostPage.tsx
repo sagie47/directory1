@@ -179,8 +179,9 @@ export default function ClassifiedsPostPage() {
           <form onSubmit={handleSubmit} className="border border-zinc-200 bg-white p-6 shadow-sm sm:p-8 lg:p-10">
             <div className="grid gap-6 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <label className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">Title *</label>
+                <label htmlFor="classified-title" className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">Title *</label>
                 <input
+                  id="classified-title"
                   type="text"
                   name="title"
                   value={formData.title}
@@ -193,29 +194,30 @@ export default function ClassifiedsPostPage() {
               </div>
 
               <div>
-                <label className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">City *</label>
-                <select name="cityId" value={formData.cityId} onChange={handleChange} required disabled={directoryLoading} className="w-full border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none focus:border-zinc-900 focus:bg-white disabled:opacity-60">
+                <label htmlFor="classified-city" className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">City *</label>
+                <select id="classified-city" name="cityId" value={formData.cityId} onChange={handleChange} required disabled={directoryLoading} className="w-full border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none focus:border-zinc-900 focus:bg-white disabled:opacity-60">
                   <option value="">Select city</option>
                   {cities.map((city) => <option key={city.id} value={city.id}>{city.name}</option>)}
                 </select>
               </div>
               <div>
-                <label className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">Trade</label>
-                <select name="categoryId" value={formData.categoryId} onChange={handleChange} disabled={directoryLoading} className="w-full border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none focus:border-zinc-900 focus:bg-white disabled:opacity-60">
+                <label htmlFor="classified-category" className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">Trade</label>
+                <select id="classified-category" name="categoryId" value={formData.categoryId} onChange={handleChange} disabled={directoryLoading} className="w-full border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none focus:border-zinc-900 focus:bg-white disabled:opacity-60">
                   <option value="">General labour</option>
                   {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
                 </select>
               </div>
 
               <div>
-                <label className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">Duration *</label>
-                <select name="durationType" value={formData.durationType} onChange={handleChange} required className="w-full border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none focus:border-zinc-900 focus:bg-white">
+                <label htmlFor="classified-duration" className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">Duration *</label>
+                <select id="classified-duration" name="durationType" value={formData.durationType} onChange={handleChange} required className="w-full border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none focus:border-zinc-900 focus:bg-white">
                   {durationOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                 </select>
               </div>
               <div>
-                <label className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">Company</label>
+                <label htmlFor="classified-organization" className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">Company</label>
                 <input
+                  id="classified-organization"
                   type="text"
                   name="organizationName"
                   value={formData.organizationName}
@@ -226,17 +228,18 @@ export default function ClassifiedsPostPage() {
               </div>
 
               <div>
-                <label className="mb-2 flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500"><CalendarDays className="h-3.5 w-3.5" />Start date</label>
-                <input type="date" name="startDate" value={formData.startDate} onChange={handleChange} className="w-full border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none transition-colors focus:border-zinc-900 focus:bg-white" />
+                <label htmlFor="classified-start-date" className="mb-2 flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500"><CalendarDays className="h-3.5 w-3.5" />Start date</label>
+                <input id="classified-start-date" type="date" name="startDate" value={formData.startDate} onChange={handleChange} className="w-full border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none transition-colors focus:border-zinc-900 focus:bg-white" />
               </div>
               <div>
-                <label className="mb-2 flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500"><CalendarDays className="h-3.5 w-3.5" />End date</label>
-                <input type="date" name="endDate" value={formData.endDate} onChange={handleChange} min={formData.startDate || undefined} className="w-full border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none transition-colors focus:border-zinc-900 focus:bg-white" />
+                <label htmlFor="classified-end-date" className="mb-2 flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500"><CalendarDays className="h-3.5 w-3.5" />End date</label>
+                <input id="classified-end-date" type="date" name="endDate" value={formData.endDate} onChange={handleChange} min={formData.startDate || undefined} className="w-full border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none transition-colors focus:border-zinc-900 focus:bg-white" />
               </div>
 
               <div className="sm:col-span-2">
-                <label className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">Compensation or rate</label>
+                <label htmlFor="classified-compensation" className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">Compensation or rate</label>
                 <input
+                  id="classified-compensation"
                   type="text"
                   name="compensationLabel"
                   value={formData.compensationLabel}
@@ -248,8 +251,9 @@ export default function ClassifiedsPostPage() {
               </div>
 
               <div className="sm:col-span-2">
-                <label className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">Description *</label>
+                <label htmlFor="classified-description" className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">Description *</label>
                 <textarea
+                  id="classified-description"
                   name="description"
                   value={formData.description}
                   onChange={handleChange}
@@ -262,16 +266,16 @@ export default function ClassifiedsPostPage() {
               </div>
 
               <div>
-                <label className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">Contact name *</label>
-                <input type="text" name="contactName" value={formData.contactName} onChange={handleChange} required className="w-full border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none transition-colors focus:border-zinc-900 focus:bg-white" placeholder="Name shown publicly" />
+                <label htmlFor="classified-contact-name" className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">Contact name *</label>
+                <input id="classified-contact-name" type="text" name="contactName" value={formData.contactName} onChange={handleChange} required className="w-full border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none transition-colors focus:border-zinc-900 focus:bg-white" placeholder="Name shown publicly" />
               </div>
               <div>
-                <label className="mb-2 flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500"><Phone className="h-3.5 w-3.5" />Phone</label>
-                <input type="tel" name="contactPhone" value={formData.contactPhone} onChange={handleChange} className="w-full border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none transition-colors focus:border-zinc-900 focus:bg-white" placeholder="Shown publicly after approval" />
+                <label htmlFor="classified-contact-phone" className="mb-2 flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500"><Phone className="h-3.5 w-3.5" />Phone</label>
+                <input id="classified-contact-phone" type="tel" name="contactPhone" value={formData.contactPhone} onChange={handleChange} className="w-full border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none transition-colors focus:border-zinc-900 focus:bg-white" placeholder="Shown publicly after approval" />
               </div>
               <div className="sm:col-span-2">
-                <label className="mb-2 flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500"><Mail className="h-3.5 w-3.5" />Email</label>
-                <input type="email" name="contactEmail" value={formData.contactEmail} onChange={handleChange} className="w-full border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none transition-colors focus:border-zinc-900 focus:bg-white" placeholder="Shown publicly after approval" />
+                <label htmlFor="classified-contact-email" className="mb-2 flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500"><Mail className="h-3.5 w-3.5" />Email</label>
+                <input id="classified-contact-email" type="email" name="contactEmail" value={formData.contactEmail} onChange={handleChange} className="w-full border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none transition-colors focus:border-zinc-900 focus:bg-white" placeholder="Shown publicly after approval" />
               </div>
             </div>
 

@@ -56,7 +56,9 @@ function kindLabel(value: Classified['kind']) {
 
 function formatDate(value: string | null) {
   if (!value) return null;
-  return new Date(`${value}T00:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 function dateRangeLabel(listing: Classified) {
@@ -304,10 +306,11 @@ export default function ClassifiedsPage() {
 
           <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(0,1fr)_repeat(3,minmax(10rem,14rem))]">
             <div>
-              <label className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">Search</label>
+              <label htmlFor="classifieds-search" className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">Search</label>
               <div className="relative">
                 <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
                 <input
+                  id="classifieds-search"
                   type="search"
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
@@ -317,22 +320,22 @@ export default function ClassifiedsPage() {
               </div>
             </div>
             <div>
-              <label className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">City</label>
-              <select value={cityFilter} onChange={(event) => setCityFilter(event.target.value)} className="w-full border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none focus:border-zinc-900 focus:bg-white">
+              <label htmlFor="classifieds-city-filter" className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">City</label>
+              <select id="classifieds-city-filter" value={cityFilter} onChange={(event) => setCityFilter(event.target.value)} className="w-full border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none focus:border-zinc-900 focus:bg-white">
                 <option value="">All cities</option>
                 {cities.map((city) => <option key={city.id} value={city.id}>{city.name}</option>)}
               </select>
             </div>
             <div>
-              <label className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">Trade</label>
-              <select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)} className="w-full border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none focus:border-zinc-900 focus:bg-white">
+              <label htmlFor="classifieds-category-filter" className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">Trade</label>
+              <select id="classifieds-category-filter" value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)} className="w-full border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none focus:border-zinc-900 focus:bg-white">
                 <option value="">All trades</option>
                 {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
               </select>
             </div>
             <div>
-              <label className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">Duration</label>
-              <select value={durationFilter} onChange={(event) => setDurationFilter(event.target.value as '' | ClassifiedDurationType)} className="w-full border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none focus:border-zinc-900 focus:bg-white">
+              <label htmlFor="classifieds-duration-filter" className="mb-2 block font-mono text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">Duration</label>
+              <select id="classifieds-duration-filter" value={durationFilter} onChange={(event) => setDurationFilter(event.target.value as '' | ClassifiedDurationType)} className="w-full border border-zinc-200 bg-zinc-50 px-4 py-4 text-base text-zinc-900 outline-none focus:border-zinc-900 focus:bg-white">
                 {durationOptions.map((option) => <option key={option.value || 'all'} value={option.value}>{option.label}</option>)}
               </select>
             </div>

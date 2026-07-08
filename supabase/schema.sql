@@ -172,6 +172,11 @@ create table if not exists public.classifieds (
   constraint classifieds_contact_method_check check (
     nullif(btrim(coalesce(contact_email, '')), '') is not null
     or nullif(btrim(coalesce(contact_phone, '')), '') is not null
+  ),
+  constraint classifieds_date_range_check check (
+    start_date is null
+    or end_date is null
+    or end_date >= start_date
   )
 );
 
@@ -208,6 +213,20 @@ begin
       add constraint business_claims_notification_retry_count_check
       check (notification_retry_count >= 0);
   end if;
+
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'classifieds_date_range_check'
+  ) then
+    alter table public.classifieds
+      add constraint classifieds_date_range_check
+      check (
+        start_date is null
+        or end_date is null
+        or end_date >= start_date
+      );
+  end if;
 end
 $$;
 
@@ -229,6 +248,9 @@ create index if not exists classifieds_city_id_idx on public.classifieds (city_i
 create index if not exists classifieds_category_id_idx on public.classifieds (category_id);
 create index if not exists classifieds_duration_type_idx on public.classifieds (duration_type);
 create index if not exists classifieds_created_at_idx on public.classifieds (created_at desc);
+create index if not exists classifieds_public_jobs_idx
+  on public.classifieds (status, expires_at, created_at desc)
+  where kind = 'job';
 
 create unique index if not exists business_claims_one_pending_per_user_business_idx
   on public.business_claims (user_id, business_id)
@@ -448,10 +470,12 @@ on public.classifieds
 for insert
 to anon, authenticated
 with check (
-  status = 'pending'
+  kind = 'job'
+  and status = 'pending'
   and reviewed_by is null
   and reviewed_at is null
   and rejection_reason is null
+  and expires_at > now()
   and (
     nullif(btrim(coalesce(contact_email, '')), '') is not null
     or nullif(btrim(coalesce(contact_phone, '')), '') is not null
@@ -765,6 +789,10 @@ begin
   set status = p_status,
       reviewed_by = auth.uid(),
       reviewed_at = now(),
+      expires_at = case
+        when p_status = 'approved' then now() + interval '45 days'
+        else expires_at
+      end,
       rejection_reason = case
         when p_status = 'rejected' then p_rejection_reason
         when p_status = 'approved' then null

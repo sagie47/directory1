@@ -73,7 +73,7 @@ export async function submitClassified(input: ClassifiedInput): Promise<Classifi
       return { success: false, error: 'Add an email or phone number so people can contact you.' };
     }
 
-    const { data, error } = await client
+    const { error } = await client
       .from('classifieds')
       .insert({
         kind: input.kind,
@@ -90,15 +90,13 @@ export async function submitClassified(input: ClassifiedInput): Promise<Classifi
         contact_name: input.contactName.trim(),
         contact_email: contactEmail,
         contact_phone: contactPhone,
-      })
-      .select('id')
-      .single();
+      });
 
     if (error) {
       return { success: false, error: error.message };
     }
 
-    return { success: true, id: data?.id };
+    return { success: true };
   } catch (error) {
     console.error('Classified submission failed:', error);
     return {

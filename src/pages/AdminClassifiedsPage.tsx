@@ -285,10 +285,10 @@ export default function AdminClassifiedsPage() {
         <section className="mt-8 border border-zinc-200 bg-white p-6 shadow-sm">
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
             <div>
-              <label className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Search classifieds</label>
+              <label htmlFor="admin-classifieds-search" className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Search classifieds</label>
               <div className="relative mt-3">
                 <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
-                <input type="text" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Title, contact, city, trade, notes" className="w-full border border-zinc-200 bg-zinc-50 px-11 py-4 text-base text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-900 focus:bg-white" />
+                <input id="admin-classifieds-search" type="text" value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Title, contact, city, trade, notes" className="w-full border border-zinc-200 bg-zinc-50 px-11 py-4 text-base text-zinc-900 outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-900 focus:bg-white" />
               </div>
             </div>
             <div className="flex flex-wrap gap-2">

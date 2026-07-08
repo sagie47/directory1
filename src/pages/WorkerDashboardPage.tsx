@@ -40,6 +40,9 @@ const availabilityOptions: Array<{ value: WorkerAvailability; label: string }> =
   { value: 'full_time', label: 'Full-time' },
 ];
 
+const PHOTO_MIMES = ['image/jpeg', 'image/png', 'image/webp'];
+const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+
 type WorkerFormState = {
   displayName: string;
   headline: string;
@@ -209,6 +212,17 @@ export default function WorkerDashboardPage() {
   async function handlePhotoChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file || !user) return;
+
+    if (file.size > MAX_PHOTO_BYTES) {
+      setError('Photo must be under 5MB.');
+      event.target.value = '';
+      return;
+    }
+    if (file.type && !PHOTO_MIMES.includes(file.type)) {
+      setError('Upload a JPEG, PNG, or WebP photo.');
+      event.target.value = '';
+      return;
+    }
 
     setUploading(true);
     setError(null);
