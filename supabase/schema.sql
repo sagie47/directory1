@@ -147,6 +147,39 @@ create table if not exists public.business_overrides (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.classifieds (
+  id uuid primary key default gen_random_uuid(),
+  kind text not null check (kind in ('job', 'worker')),
+  status text not null default 'pending' check (status in ('pending', 'approved', 'rejected', 'archived')),
+  title text not null,
+  description text not null,
+  city_id text not null references public.cities (id),
+  category_id text references public.categories (id),
+  duration_type text not null check (duration_type in ('on_demand', 'short_term', 'full_time')),
+  organization_name text,
+  compensation_label text,
+  start_date date,
+  end_date date,
+  contact_name text not null,
+  contact_email text,
+  contact_phone text,
+  reviewed_by uuid references public.profiles (id),
+  reviewed_at timestamptz,
+  rejection_reason text,
+  expires_at timestamptz not null default now() + interval '45 days',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint classifieds_contact_method_check check (
+    nullif(btrim(coalesce(contact_email, '')), '') is not null
+    or nullif(btrim(coalesce(contact_phone, '')), '') is not null
+  ),
+  constraint classifieds_date_range_check check (
+    start_date is null
+    or end_date is null
+    or end_date >= start_date
+  )
+);
+
 alter table public.business_overrides add column if not exists name text;
 alter table public.business_claims add column if not exists evidence_urls text[] not null default '{}';
 alter table public.business_claims add column if not exists notification_status text not null default 'pending';
@@ -180,6 +213,20 @@ begin
       add constraint business_claims_notification_retry_count_check
       check (notification_retry_count >= 0);
   end if;
+
+  if not exists (
+    select 1
+    from pg_constraint
+    where conname = 'classifieds_date_range_check'
+  ) then
+    alter table public.classifieds
+      add constraint classifieds_date_range_check
+      check (
+        start_date is null
+        or end_date is null
+        or end_date >= start_date
+      );
+  end if;
 end
 $$;
 
@@ -194,6 +241,16 @@ where notification_status = 'pending';
 create index if not exists business_claims_user_id_idx on public.business_claims (user_id);
 create index if not exists business_claims_business_id_idx on public.business_claims (business_id);
 create index if not exists business_claims_notification_status_idx on public.business_claims (notification_status);
+
+create index if not exists classifieds_status_idx on public.classifieds (status);
+create index if not exists classifieds_kind_idx on public.classifieds (kind);
+create index if not exists classifieds_city_id_idx on public.classifieds (city_id);
+create index if not exists classifieds_category_id_idx on public.classifieds (category_id);
+create index if not exists classifieds_duration_type_idx on public.classifieds (duration_type);
+create index if not exists classifieds_created_at_idx on public.classifieds (created_at desc);
+create index if not exists classifieds_public_jobs_idx
+  on public.classifieds (status, expires_at, created_at desc)
+  where kind = 'job';
 
 create unique index if not exists business_claims_one_pending_per_user_business_idx
   on public.business_claims (user_id, business_id)
@@ -218,6 +275,12 @@ execute function public.set_updated_at();
 drop trigger if exists business_overrides_set_updated_at on public.business_overrides;
 create trigger business_overrides_set_updated_at
 before update on public.business_overrides
+for each row
+execute function public.set_updated_at();
+
+drop trigger if exists classifieds_set_updated_at on public.classifieds;
+create trigger classifieds_set_updated_at
+before update on public.classifieds
 for each row
 execute function public.set_updated_at();
 
@@ -281,6 +344,7 @@ execute function public.protect_profile_admin_fields();
 alter table public.profiles enable row level security;
 alter table public.business_claims enable row level security;
 alter table public.business_overrides enable row level security;
+alter table public.classifieds enable row level security;
 
 drop policy if exists "profiles_select_self" on public.profiles;
 create policy "profiles_select_self"
@@ -392,6 +456,46 @@ using (
       and bc.status = 'approved'
   )
 );
+
+drop policy if exists "classifieds_select_public_approved" on public.classifieds;
+create policy "classifieds_select_public_approved"
+on public.classifieds
+for select
+to anon, authenticated
+using (status = 'approved' and expires_at > now());
+
+drop policy if exists "classifieds_insert_public_pending" on public.classifieds;
+create policy "classifieds_insert_public_pending"
+on public.classifieds
+for insert
+to anon, authenticated
+with check (
+  kind = 'job'
+  and status = 'pending'
+  and reviewed_by is null
+  and reviewed_at is null
+  and rejection_reason is null
+  and expires_at > now()
+  and (
+    nullif(btrim(coalesce(contact_email, '')), '') is not null
+    or nullif(btrim(coalesce(contact_phone, '')), '') is not null
+  )
+);
+
+drop policy if exists "classifieds_select_admin" on public.classifieds;
+create policy "classifieds_select_admin"
+on public.classifieds
+for select
+to authenticated
+using (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'));
+
+drop policy if exists "classifieds_update_admin" on public.classifieds;
+create policy "classifieds_update_admin"
+on public.classifieds
+for update
+to authenticated
+using (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'))
+with check (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'));
 
 create or replace function public.submit_business_claim(
   p_business_id text,
@@ -647,6 +751,69 @@ begin
 end;
 $$;
 
+create or replace function public.review_classified(
+  p_classified_id uuid,
+  p_status text,
+  p_rejection_reason text default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not exists (
+    select 1
+    from public.profiles
+    where id = auth.uid() and role = 'admin'
+  ) then
+    raise exception using
+      sqlstate = 'P1020',
+      message = 'Not authorized';
+  end if;
+
+  if p_status not in ('approved', 'rejected', 'archived') then
+    raise exception using
+      sqlstate = 'P1021',
+      message = 'Invalid status';
+  end if;
+
+  if p_status = 'rejected'
+     and nullif(btrim(coalesce(p_rejection_reason, '')), '') is null then
+    raise exception using
+      sqlstate = 'P1022',
+      message = 'Rejection reason required';
+  end if;
+
+  update public.classifieds
+  set status = p_status,
+      reviewed_by = auth.uid(),
+      reviewed_at = now(),
+      expires_at = case
+        when p_status = 'approved' then now() + interval '45 days'
+        else expires_at
+      end,
+      rejection_reason = case
+        when p_status = 'rejected' then p_rejection_reason
+        when p_status = 'approved' then null
+        else rejection_reason
+      end
+  where id = p_classified_id;
+
+  if not found then
+    raise exception using
+      sqlstate = 'P1023',
+      message = 'Classified not found';
+  end if;
+end;
+$$;
+
+grant execute on function public.review_classified(
+  uuid,
+  text,
+  text
+) to authenticated;
+
 create or replace view public.verified_businesses as
 select distinct business_id
 from public.business_claims
@@ -803,3 +970,336 @@ on public.call_requests
 for select
 to authenticated
 using (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'));
+
+-- =====================================================================
+-- Worker profiles: persistent, account-linked tradesperson profiles
+-- =====================================================================
+
+create table if not exists public.worker_profiles (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null unique references public.profiles (id) on delete cascade,
+  status text not null default 'pending' check (status in ('pending', 'approved', 'rejected', 'archived')),
+  display_name text not null,
+  headline text not null,
+  city_id text not null references public.cities (id),
+  category_id text references public.categories (id),
+  availability text not null check (availability in ('on_demand', 'short_term', 'full_time')),
+  service_areas text[] not null default '{}',
+  skills jsonb not null default '[]'::jsonb,
+  rate_label text,
+  years_experience integer check (years_experience is null or years_experience >= 0),
+  bio text not null,
+  photo_url text,
+  resume_path text,
+  open_to_work boolean not null default true,
+  contact_name text not null,
+  contact_email text,
+  contact_phone text,
+  reviewed_by uuid references public.profiles (id),
+  reviewed_at timestamptz,
+  rejection_reason text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint worker_profiles_contact_method_check check (
+    nullif(btrim(coalesce(contact_email, '')), '') is not null
+    or nullif(btrim(coalesce(contact_phone, '')), '') is not null
+  )
+);
+
+create index if not exists worker_profiles_status_idx on public.worker_profiles (status);
+create index if not exists worker_profiles_city_id_idx on public.worker_profiles (city_id);
+create index if not exists worker_profiles_category_id_idx on public.worker_profiles (category_id);
+create index if not exists worker_profiles_availability_idx on public.worker_profiles (availability);
+create index if not exists worker_profiles_created_at_idx on public.worker_profiles (created_at desc);
+
+drop trigger if exists worker_profiles_set_updated_at on public.worker_profiles;
+create trigger worker_profiles_set_updated_at
+before update on public.worker_profiles
+for each row
+execute function public.set_updated_at();
+
+-- Force every non-admin write back into the moderation queue so a worker
+-- cannot self-approve, and any edit re-enters review with cleared metadata.
+create or replace function public.enforce_worker_profile_moderation()
+returns trigger
+language plpgsql
+as $$
+begin
+  if exists (select 1 from public.profiles where id = auth.uid() and role = 'admin') then
+    return new;
+  end if;
+
+  -- Allow a non-admin to flip the open_to_work visibility toggle without
+  -- re-entering moderation: only force re-review when public-facing content
+  -- actually changed.
+  if tg_op = 'update' and not (
+       new.display_name      is distinct from old.display_name
+    or new.headline          is distinct from old.headline
+    or new.city_id           is distinct from old.city_id
+    or new.category_id       is distinct from old.category_id
+    or new.availability      is distinct from old.availability
+    or new.service_areas     is distinct from old.service_areas
+    or new.skills            is distinct from old.skills
+    or new.rate_label        is distinct from old.rate_label
+    or new.years_experience  is distinct from old.years_experience
+    or new.bio               is distinct from old.bio
+    or new.photo_url         is distinct from old.photo_url
+    or new.resume_path       is distinct from old.resume_path
+    or new.contact_name      is distinct from old.contact_name
+    or new.contact_email     is distinct from old.contact_email
+    or new.contact_phone     is distinct from old.contact_phone
+  ) then
+    -- Only open_to_work (and/or system columns) changed: preserve review state.
+    new.status := old.status;
+    new.reviewed_by := old.reviewed_by;
+    new.reviewed_at := old.reviewed_at;
+    new.rejection_reason := old.rejection_reason;
+    return new;
+  end if;
+
+  new.status := 'pending';
+  new.reviewed_by := null;
+  new.reviewed_at := null;
+  new.rejection_reason := null;
+  return new;
+end;
+$$;
+
+drop trigger if exists worker_profiles_enforce_moderation on public.worker_profiles;
+create trigger worker_profiles_enforce_moderation
+before insert or update on public.worker_profiles
+for each row
+execute function public.enforce_worker_profile_moderation();
+
+alter table public.worker_profiles enable row level security;
+
+drop policy if exists "worker_profiles_select_public_approved" on public.worker_profiles;
+create policy "worker_profiles_select_public_approved"
+on public.worker_profiles
+for select
+to anon, authenticated
+using (status = 'approved' and open_to_work);
+
+drop policy if exists "worker_profiles_select_self" on public.worker_profiles;
+create policy "worker_profiles_select_self"
+on public.worker_profiles
+for select
+to authenticated
+using (auth.uid() = user_id);
+
+drop policy if exists "worker_profiles_insert_self" on public.worker_profiles;
+create policy "worker_profiles_insert_self"
+on public.worker_profiles
+for insert
+to authenticated
+with check (auth.uid() = user_id);
+
+drop policy if exists "worker_profiles_update_self" on public.worker_profiles;
+create policy "worker_profiles_update_self"
+on public.worker_profiles
+for update
+to authenticated
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
+
+drop policy if exists "worker_profiles_select_admin" on public.worker_profiles;
+create policy "worker_profiles_select_admin"
+on public.worker_profiles
+for select
+to authenticated
+using (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'));
+
+drop policy if exists "worker_profiles_update_admin" on public.worker_profiles;
+create policy "worker_profiles_update_admin"
+on public.worker_profiles
+for update
+to authenticated
+using (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'))
+with check (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'));
+
+create or replace function public.review_worker_profile(
+  p_profile_id uuid,
+  p_status text,
+  p_rejection_reason text default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not exists (
+    select 1
+    from public.profiles
+    where id = auth.uid() and role = 'admin'
+  ) then
+    raise exception using
+      sqlstate = 'P1030',
+      message = 'Not authorized';
+  end if;
+
+  if p_status not in ('approved', 'rejected', 'archived') then
+    raise exception using
+      sqlstate = 'P1031',
+      message = 'Invalid status';
+  end if;
+
+  if p_status = 'rejected'
+     and nullif(btrim(coalesce(p_rejection_reason, '')), '') is null then
+    raise exception using
+      sqlstate = 'P1032',
+      message = 'Rejection reason required';
+  end if;
+
+  update public.worker_profiles
+  set status = p_status,
+      reviewed_by = auth.uid(),
+      reviewed_at = now(),
+      rejection_reason = case
+        when p_status = 'rejected' then p_rejection_reason
+        when p_status = 'approved' then null
+        else rejection_reason
+      end
+  where id = p_profile_id;
+
+  if not found then
+    raise exception using
+      sqlstate = 'P1033',
+      message = 'Worker profile not found';
+  end if;
+end;
+$$;
+
+grant execute on function public.review_worker_profile(
+  uuid,
+  text,
+  text
+) to authenticated;
+
+-- Public storage bucket for worker profile photos
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'worker-photos',
+  'worker-photos',
+  true,
+  5242880,
+  array['image/jpeg', 'image/png', 'image/webp']
+)
+on conflict (id) do update
+set
+  public = true,
+  file_size_limit = 5242880,
+  allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp'];
+
+-- Workers upload/replace/delete only inside their own {user_id}/ folder
+drop policy if exists "worker_photos_upload_own" on storage.objects;
+create policy "worker_photos_upload_own"
+on storage.objects
+for insert
+to authenticated
+with check (
+  bucket_id = 'worker-photos'
+  and (storage.foldername(name))[1] = auth.uid()::text
+);
+
+drop policy if exists "worker_photos_update_own" on storage.objects;
+create policy "worker_photos_update_own"
+on storage.objects
+for update
+to authenticated
+using (
+  bucket_id = 'worker-photos'
+  and (storage.foldername(name))[1] = auth.uid()::text
+)
+with check (
+  bucket_id = 'worker-photos'
+  and (storage.foldername(name))[1] = auth.uid()::text
+);
+
+drop policy if exists "worker_photos_delete_own" on storage.objects;
+create policy "worker_photos_delete_own"
+on storage.objects
+for delete
+to authenticated
+using (
+  bucket_id = 'worker-photos'
+  and (storage.foldername(name))[1] = auth.uid()::text
+);
+
+-- Anyone can read worker photos (public bucket)
+drop policy if exists "worker_photos_read_public" on storage.objects;
+create policy "worker_photos_read_public"
+on storage.objects
+for select
+to anon, authenticated
+using (bucket_id = 'worker-photos');
+
+-- =====================================================================
+-- Resume onboarding: raw resume storage + extra worker_profiles columns
+-- =====================================================================
+
+alter table public.worker_profiles add column if not exists resume_path text;
+alter table public.worker_profiles add column if not exists open_to_work boolean not null default true;
+
+create index if not exists worker_profiles_open_to_work_idx on public.worker_profiles (open_to_work);
+
+-- Private storage bucket for uploaded resumes (admin-readable for moderation)
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'resumes',
+  'resumes',
+  false,
+  10485760,
+  array[
+    'application/pdf',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  ]
+)
+on conflict (id) do update
+set
+  public = false,
+  file_size_limit = 10485760,
+  allowed_mime_types = array[
+    'application/pdf',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  ];
+
+drop policy if exists "resumes_upload_own" on storage.objects;
+create policy "resumes_upload_own"
+on storage.objects
+for insert
+to authenticated
+with check (
+  bucket_id = 'resumes'
+  and (storage.foldername(name))[1] = auth.uid()::text
+);
+
+drop policy if exists "resumes_read_own" on storage.objects;
+create policy "resumes_read_own"
+on storage.objects
+for select
+to authenticated
+using (
+  bucket_id = 'resumes'
+  and (storage.foldername(name))[1] = auth.uid()::text
+);
+
+drop policy if exists "resumes_delete_own" on storage.objects;
+create policy "resumes_delete_own"
+on storage.objects
+for delete
+to authenticated
+using (
+  bucket_id = 'resumes'
+  and (storage.foldername(name))[1] = auth.uid()::text
+);
+
+drop policy if exists "resumes_read_admin" on storage.objects;
+create policy "resumes_read_admin"
+on storage.objects
+for select
+to authenticated
+using (
+  bucket_id = 'resumes'
+  and exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
+);

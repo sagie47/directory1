@@ -10,6 +10,8 @@ const primaryLinks = [
   { to: '/trades', label: 'Trades' },
   { to: '/regions', label: 'Regions' },
   { to: '/verified', label: 'Verified' },
+  { to: '/jobs', label: 'Jobs' },
+  { to: '/workers', label: 'Workers' },
 ];
 
 type LayoutChromeContextValue = {
@@ -310,6 +312,9 @@ export default function Layout({ children }: { children: ReactNode }) {
               <h3 className="font-mono text-[10px] tracking-[0.15em] text-zinc-400 mb-4 uppercase font-semibold">For Business</h3>
               <ul className="space-y-3">
                 <li><Link to="/claim" className="font-sans text-sm text-zinc-600 hover:text-zinc-900 transition-colors">Claim Your Profile</Link></li>
+                <li><Link to="/jobs" className="font-sans text-sm text-zinc-600 hover:text-zinc-900 transition-colors">Jobs</Link></li>
+                <li><Link to="/jobs/post" className="font-sans text-sm text-zinc-600 hover:text-zinc-900 transition-colors">Post a Job</Link></li>
+                <li><Link to="/workers" className="font-sans text-sm text-zinc-600 hover:text-zinc-900 transition-colors">Workers</Link></li>
                 <li><Link to="/never-miss-a-lead" className="font-sans text-sm text-zinc-600 hover:text-zinc-900 transition-colors">Lead Capture System</Link></li>
                 <li><Link to="/websites-for-trades" className="font-sans text-sm text-zinc-600 hover:text-zinc-900 transition-colors">Websites for Trades</Link></li>
                 <li><Link to="/managed-growth" className="font-sans text-sm text-zinc-600 hover:text-zinc-900 transition-colors">Managed Growth</Link></li>
