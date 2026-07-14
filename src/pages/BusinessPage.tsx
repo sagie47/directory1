@@ -21,6 +21,7 @@ import GalleryLightbox from '../components/GalleryLightbox';
 import Seo from '../components/Seo';
 import { useAuth } from '../contexts/AuthContext';
 import { allowSeedFallbackOnError } from '../directory-data';
+import { getClaimStateForBusiness, type ClaimState, type UserBusinessClaim } from '../lib/claimState';
 import { loadSeedDataFromJson } from '../lib/seedData';
 import { buildBreadcrumbJsonLd, toAbsoluteUrl } from '../lib/seo';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
@@ -190,6 +191,7 @@ export default function BusinessPage() {
   const [verificationLookupWarning, setVerificationLookupWarning] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [claimState, setClaimState] = useState<ClaimState>('claimable');
   const [isOwner, setIsOwner] = useState(false);
   const [ownerCheckError, setOwnerCheckError] = useState<string | null>(null);
   const [visibleMobileReviewCount, setVisibleMobileReviewCount] = useState(INITIAL_MOBILE_REVIEW_COUNT);
@@ -219,6 +221,7 @@ export default function BusinessPage() {
       setCategory(null);
       setVerificationState('unverified');
       setVerificationLookupWarning(null);
+      setClaimState('claimable');
       setIsOwner(false);
 
       if (!supabase || !isSupabaseConfigured()) {
@@ -418,9 +421,49 @@ export default function BusinessPage() {
   }, [businessId]);
 
   useEffect(() => {
+    if (!business || user) {
+      return;
+    }
+
+    if (verificationState === 'verified') {
+      setClaimState('claimed_by_other');
+      return;
+    }
+
+    if (verificationState === 'unknown') {
+      setClaimState('verification_unknown');
+      return;
+    }
+
+    setClaimState('claimable');
+  }, [business, user, verificationState]);
+
+  useEffect(() => {
     let isActive = true;
 
-    if (!business || !user || !supabase || !isSupabaseConfigured()) {
+    if (!business) {
+      setClaimState('claimable');
+      setIsOwner(false);
+      setOwnerCheckError(null);
+      return () => {
+        isActive = false;
+      };
+    }
+
+    if (!user) {
+      setIsOwner(false);
+      setOwnerCheckError(null);
+      return () => {
+        isActive = false;
+      };
+    }
+
+    if (!supabase || !isSupabaseConfigured()) {
+      if (verificationState === 'verified' || verificationState === 'unknown') {
+        setClaimState('verification_unknown');
+      } else {
+        setClaimState('claimable');
+      }
       setIsOwner(false);
       setOwnerCheckError(null);
       return () => {
@@ -432,23 +475,34 @@ export default function BusinessPage() {
       try {
         const { data, error } = await supabase
           .from('business_claims')
-          .select('id')
+          .select('business_id, status')
           .eq('business_id', business.id)
           .eq('user_id', user.id)
-          .eq('status', 'approved')
-          .maybeSingle();
+          .in('status', ['pending', 'approved']);
 
         if (error) {
           throw error;
         }
 
         if (isActive) {
-          setIsOwner(!!data);
+          const nextClaimState = getClaimStateForBusiness({
+            businessId: business.id,
+            userClaims: (data ?? []) as UserBusinessClaim[],
+            verifiedBusinessIds: verificationState === 'verified' ? new Set([business.id]) : new Set<string>(),
+            verifiedLookupDegraded: verificationState === 'unknown',
+          });
+          setClaimState(nextClaimState);
+          setIsOwner(nextClaimState === 'approved_by_me');
           setOwnerCheckError(null);
         }
       } catch (error: unknown) {
         console.error('[business-page] Failed to verify ownership.', error);
         if (isActive) {
+          if (verificationState === 'verified' || verificationState === 'unknown') {
+            setClaimState('verification_unknown');
+          } else {
+            setClaimState('claimable');
+          }
           setIsOwner(false);
           setOwnerCheckError('Could not verify owner access right now.');
         }
@@ -460,7 +514,7 @@ export default function BusinessPage() {
     return () => {
       isActive = false;
     };
-  }, [business, user]);
+  }, [business, user, verificationState]);
 
   useEffect(() => {
     if (!business) {
@@ -1015,7 +1069,7 @@ export default function BusinessPage() {
               </div>
             </section>
 
-            {verificationState === 'unverified' && (
+            {claimState === 'claimable' && verificationState === 'unverified' && (
               <div className="mt-8 p-8 border border-zinc-200 rounded-sm bg-zinc-50 shadow-sm">
                 <div className="bg-white p-6 rounded-xl border border-zinc-200 shadow-sm">
                   <AlertCircle className="w-5 h-5 text-zinc-500 mb-4" />
@@ -1038,7 +1092,29 @@ export default function BusinessPage() {
               </div>
             )}
 
-            {verificationState === 'unknown' && (
+            {claimState === 'pending_by_me' && (
+              <div className="mt-8 p-8 border border-amber-200 rounded-sm bg-amber-50 shadow-sm">
+                <div className="bg-white p-6 rounded-xl border border-amber-100 shadow-sm">
+                  <AlertCircle className="w-5 h-5 text-amber-500 mb-4" />
+                  <h4 className="font-black text-sm text-zinc-900 uppercase tracking-widest mb-2">Your claim is already in review</h4>
+                  <p className="text-sm text-zinc-600 mb-6 font-medium leading-relaxed">
+                    You already submitted an ownership request for this listing. The next step is checking the claim status page instead of starting a second claim.
+                  </p>
+                  <div className="space-y-3">
+                    <Link to="/claim/status" className="inline-flex items-center justify-between w-full bg-zinc-900 text-white rounded-lg shadow-sm px-4 py-3 font-sans text-xs font-semibold tracking-wide hover:bg-orange-500 hover:-translate-y-0.5 hover:shadow-md transition-all">
+                      <span>View claim status</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </Link>
+                    <Link to={paidLane.href} className="inline-flex items-center justify-between w-full border border-zinc-200 bg-white text-zinc-900 rounded-lg shadow-sm px-4 py-3 font-sans text-xs font-semibold tracking-wide hover:border-zinc-300 hover:bg-zinc-50 hover:-translate-y-0.5 hover:shadow-md transition-all">
+                      <span>{paidLane.cta}</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {claimState === 'verification_unknown' && (
               <div className="mt-8 p-8 border border-amber-200 rounded-sm bg-amber-50 shadow-sm">
                 <div className="bg-white p-6 rounded-xl border border-amber-100 shadow-sm">
                   <AlertCircle className="w-5 h-5 text-amber-500 mb-4" />
@@ -1047,17 +1123,10 @@ export default function BusinessPage() {
                     {verificationLookupWarning ?? 'We loaded the listing, but could not confirm whether verified ownership is available for this business right now.'}
                   </p>
                   <div className="space-y-3">
-                    {isOwner ? (
-                      <Link to="/owner/dashboard" className="inline-flex items-center justify-between w-full bg-orange-500 text-white rounded-lg shadow-sm px-4 py-3 font-sans text-xs font-semibold tracking-wide hover:bg-orange-600 hover:-translate-y-0.5 hover:shadow-md transition-all">
-                        <span>Owner Dashboard</span>
-                        <ArrowRight className="w-3 h-3" />
-                      </Link>
-                    ) : (
-                      <Link to={claimEntryPath} className="inline-flex items-center justify-between w-full bg-zinc-900 text-white rounded-lg shadow-sm px-4 py-3 font-sans text-xs font-semibold tracking-wide hover:bg-orange-500 hover:-translate-y-0.5 hover:shadow-md transition-all">
-                        <span>Claim Business</span>
-                        <ArrowRight className="w-3 h-3" />
-                      </Link>
-                    )}
+                    <Link to="/contact" className="inline-flex items-center justify-between w-full bg-zinc-900 text-white rounded-lg shadow-sm px-4 py-3 font-sans text-xs font-semibold tracking-wide hover:bg-orange-500 hover:-translate-y-0.5 hover:shadow-md transition-all">
+                      <span>Contact Support</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </Link>
                     <Link to={paidLane.href} className="inline-flex items-center justify-between w-full border border-zinc-200 bg-white text-zinc-900 rounded-lg shadow-sm px-4 py-3 font-sans text-xs font-semibold tracking-wide hover:border-zinc-300 hover:bg-zinc-50 hover:-translate-y-0.5 hover:shadow-md transition-all">
                       <span>{paidLane.cta}</span>
                       <ArrowRight className="w-3 h-3" />
@@ -1070,42 +1139,44 @@ export default function BusinessPage() {
               </div>
             )}
 
-            {verificationState === 'verified' && (
+            {claimState === 'approved_by_me' && (
               <div className="mt-8 p-8 border border-orange-200 rounded-sm bg-orange-50 shadow-sm">
                 <div className="bg-white p-6 rounded-xl border border-orange-100 shadow-sm">
                   <CheckCircle className="w-5 h-5 text-orange-500 mb-4" />
                   <h4 className="font-black text-sm text-zinc-900 uppercase tracking-widest mb-2">Verified Business</h4>
-                  {isOwner ? (
-                    <>
-                      <p className="text-sm text-zinc-600 mb-6 font-medium leading-relaxed">You are the verified owner of this business. Use the dashboard to manage the listing, or go straight into a paid lane if the bigger issue is leads, trust, or growth execution.</p>
-                      <div className="space-y-3">
-                        <Link to="/owner/dashboard" className="inline-flex items-center justify-between w-full bg-orange-500 text-white rounded-lg shadow-sm px-4 py-3 font-sans text-xs font-semibold tracking-wide hover:bg-orange-600 hover:-translate-y-0.5 hover:shadow-md transition-all">
-                          <span>Owner Dashboard</span>
-                          <ArrowRight className="w-3 h-3" />
-                        </Link>
-                        <Link to={paidLane.href} className="inline-flex items-center justify-between w-full border border-zinc-200 bg-white text-zinc-900 rounded-lg shadow-sm px-4 py-3 font-sans text-xs font-semibold tracking-wide hover:border-zinc-300 hover:bg-zinc-50 hover:-translate-y-0.5 hover:shadow-md transition-all">
-                          <span>{paidLane.cta}</span>
-                          <ArrowRight className="w-3 h-3" />
-                        </Link>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-sm text-zinc-600 mb-6 font-medium leading-relaxed">
-                        This business has been verified as legitimately operated. If you need ownership help, contact support. If you are looking for direct website or growth help, you can go straight into a paid lane.
-                      </p>
-                      <div className="space-y-3">
-                        <Link to={paidLane.href} className="inline-flex items-center justify-between w-full bg-zinc-900 text-white rounded-lg shadow-sm px-4 py-3 font-sans text-xs font-semibold tracking-wide hover:bg-orange-500 hover:-translate-y-0.5 hover:shadow-md transition-all">
-                          <span>{paidLane.cta}</span>
-                          <ArrowRight className="w-3 h-3" />
-                        </Link>
-                        <Link to="/contact" className="inline-flex items-center justify-between w-full border border-zinc-200 bg-white text-zinc-900 rounded-lg shadow-sm px-4 py-3 font-sans text-xs font-semibold tracking-wide hover:border-zinc-300 hover:bg-zinc-50 hover:-translate-y-0.5 hover:shadow-md transition-all">
-                          <span>Contact Support</span>
-                          <ArrowRight className="w-3 h-3" />
-                        </Link>
-                      </div>
-                    </>
-                  )}
+                  <p className="text-sm text-zinc-600 mb-6 font-medium leading-relaxed">You are the verified owner of this business. Use the dashboard to manage the listing, or go straight into a paid lane if the bigger issue is leads, trust, or growth execution.</p>
+                  <div className="space-y-3">
+                    <Link to="/owner/dashboard" className="inline-flex items-center justify-between w-full bg-orange-500 text-white rounded-lg shadow-sm px-4 py-3 font-sans text-xs font-semibold tracking-wide hover:bg-orange-600 hover:-translate-y-0.5 hover:shadow-md transition-all">
+                      <span>Owner Dashboard</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </Link>
+                    <Link to={paidLane.href} className="inline-flex items-center justify-between w-full border border-zinc-200 bg-white text-zinc-900 rounded-lg shadow-sm px-4 py-3 font-sans text-xs font-semibold tracking-wide hover:border-zinc-300 hover:bg-zinc-50 hover:-translate-y-0.5 hover:shadow-md transition-all">
+                      <span>{paidLane.cta}</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {claimState === 'claimed_by_other' && (
+              <div className="mt-8 p-8 border border-orange-200 rounded-sm bg-orange-50 shadow-sm">
+                <div className="bg-white p-6 rounded-xl border border-orange-100 shadow-sm">
+                  <CheckCircle className="w-5 h-5 text-orange-500 mb-4" />
+                  <h4 className="font-black text-sm text-zinc-900 uppercase tracking-widest mb-2">Verified Business</h4>
+                  <p className="text-sm text-zinc-600 mb-6 font-medium leading-relaxed">
+                    This business already has an approved owner attached to it. If you need ownership help, contact support. If you are looking for direct website or growth help, you can go straight into a paid lane.
+                  </p>
+                  <div className="space-y-3">
+                    <Link to={paidLane.href} className="inline-flex items-center justify-between w-full bg-zinc-900 text-white rounded-lg shadow-sm px-4 py-3 font-sans text-xs font-semibold tracking-wide hover:bg-orange-500 hover:-translate-y-0.5 hover:shadow-md transition-all">
+                      <span>{paidLane.cta}</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </Link>
+                    <Link to="/contact" className="inline-flex items-center justify-between w-full border border-zinc-200 bg-white text-zinc-900 rounded-lg shadow-sm px-4 py-3 font-sans text-xs font-semibold tracking-wide hover:border-zinc-300 hover:bg-zinc-50 hover:-translate-y-0.5 hover:shadow-md transition-all">
+                      <span>Contact Support</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </Link>
+                  </div>
                 </div>
               </div>
             )}
