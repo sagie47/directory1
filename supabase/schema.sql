@@ -147,6 +147,34 @@ create table if not exists public.business_overrides (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.classifieds (
+  id uuid primary key default gen_random_uuid(),
+  kind text not null check (kind in ('job', 'worker')),
+  status text not null default 'pending' check (status in ('pending', 'approved', 'rejected', 'archived')),
+  title text not null,
+  description text not null,
+  city_id text not null references public.cities (id),
+  category_id text references public.categories (id),
+  duration_type text not null check (duration_type in ('on_demand', 'short_term', 'full_time')),
+  organization_name text,
+  compensation_label text,
+  start_date date,
+  end_date date,
+  contact_name text not null,
+  contact_email text,
+  contact_phone text,
+  reviewed_by uuid references public.profiles (id),
+  reviewed_at timestamptz,
+  rejection_reason text,
+  expires_at timestamptz not null default now() + interval '45 days',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint classifieds_contact_method_check check (
+    nullif(btrim(coalesce(contact_email, '')), '') is not null
+    or nullif(btrim(coalesce(contact_phone, '')), '') is not null
+  )
+);
+
 alter table public.business_overrides add column if not exists name text;
 alter table public.business_claims add column if not exists evidence_urls text[] not null default '{}';
 alter table public.business_claims add column if not exists notification_status text not null default 'pending';
@@ -195,6 +223,13 @@ create index if not exists business_claims_user_id_idx on public.business_claims
 create index if not exists business_claims_business_id_idx on public.business_claims (business_id);
 create index if not exists business_claims_notification_status_idx on public.business_claims (notification_status);
 
+create index if not exists classifieds_status_idx on public.classifieds (status);
+create index if not exists classifieds_kind_idx on public.classifieds (kind);
+create index if not exists classifieds_city_id_idx on public.classifieds (city_id);
+create index if not exists classifieds_category_id_idx on public.classifieds (category_id);
+create index if not exists classifieds_duration_type_idx on public.classifieds (duration_type);
+create index if not exists classifieds_created_at_idx on public.classifieds (created_at desc);
+
 create unique index if not exists business_claims_one_pending_per_user_business_idx
   on public.business_claims (user_id, business_id)
   where status = 'pending';
@@ -218,6 +253,12 @@ execute function public.set_updated_at();
 drop trigger if exists business_overrides_set_updated_at on public.business_overrides;
 create trigger business_overrides_set_updated_at
 before update on public.business_overrides
+for each row
+execute function public.set_updated_at();
+
+drop trigger if exists classifieds_set_updated_at on public.classifieds;
+create trigger classifieds_set_updated_at
+before update on public.classifieds
 for each row
 execute function public.set_updated_at();
 
@@ -281,6 +322,7 @@ execute function public.protect_profile_admin_fields();
 alter table public.profiles enable row level security;
 alter table public.business_claims enable row level security;
 alter table public.business_overrides enable row level security;
+alter table public.classifieds enable row level security;
 
 drop policy if exists "profiles_select_self" on public.profiles;
 create policy "profiles_select_self"
@@ -392,6 +434,44 @@ using (
       and bc.status = 'approved'
   )
 );
+
+drop policy if exists "classifieds_select_public_approved" on public.classifieds;
+create policy "classifieds_select_public_approved"
+on public.classifieds
+for select
+to anon, authenticated
+using (status = 'approved' and expires_at > now());
+
+drop policy if exists "classifieds_insert_public_pending" on public.classifieds;
+create policy "classifieds_insert_public_pending"
+on public.classifieds
+for insert
+to anon, authenticated
+with check (
+  status = 'pending'
+  and reviewed_by is null
+  and reviewed_at is null
+  and rejection_reason is null
+  and (
+    nullif(btrim(coalesce(contact_email, '')), '') is not null
+    or nullif(btrim(coalesce(contact_phone, '')), '') is not null
+  )
+);
+
+drop policy if exists "classifieds_select_admin" on public.classifieds;
+create policy "classifieds_select_admin"
+on public.classifieds
+for select
+to authenticated
+using (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'));
+
+drop policy if exists "classifieds_update_admin" on public.classifieds;
+create policy "classifieds_update_admin"
+on public.classifieds
+for update
+to authenticated
+using (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'))
+with check (exists (select 1 from public.profiles where id = auth.uid() and role = 'admin'));
 
 create or replace function public.submit_business_claim(
   p_business_id text,
@@ -646,6 +726,65 @@ begin
   end if;
 end;
 $$;
+
+create or replace function public.review_classified(
+  p_classified_id uuid,
+  p_status text,
+  p_rejection_reason text default null
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not exists (
+    select 1
+    from public.profiles
+    where id = auth.uid() and role = 'admin'
+  ) then
+    raise exception using
+      sqlstate = 'P1020',
+      message = 'Not authorized';
+  end if;
+
+  if p_status not in ('approved', 'rejected', 'archived') then
+    raise exception using
+      sqlstate = 'P1021',
+      message = 'Invalid status';
+  end if;
+
+  if p_status = 'rejected'
+     and nullif(btrim(coalesce(p_rejection_reason, '')), '') is null then
+    raise exception using
+      sqlstate = 'P1022',
+      message = 'Rejection reason required';
+  end if;
+
+  update public.classifieds
+  set status = p_status,
+      reviewed_by = auth.uid(),
+      reviewed_at = now(),
+      rejection_reason = case
+        when p_status = 'rejected' then p_rejection_reason
+        when p_status = 'approved' then null
+        else rejection_reason
+      end
+  where id = p_classified_id;
+
+  if not found then
+    raise exception using
+      sqlstate = 'P1023',
+      message = 'Classified not found';
+  end if;
+end;
+$$;
+
+grant execute on function public.review_classified(
+  uuid,
+  text,
+  text
+) to authenticated;
 
 create or replace view public.verified_businesses as
 select distinct business_id

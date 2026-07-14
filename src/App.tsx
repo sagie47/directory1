@@ -21,6 +21,9 @@ const TradesPage = lazy(() => import('./pages/TradesPage'));
 const RegionsPage = lazy(() => import('./pages/RegionsPage'));
 const VerifiedPage = lazy(() => import('./pages/VerifiedPage'));
 const SearchPage = lazy(() => import('./pages/SearchPage'));
+const ClassifiedsPage = lazy(() => import('./pages/ClassifiedsPage'));
+const ClassifiedsPostPage = lazy(() => import('./pages/ClassifiedsPostPage'));
+const ClassifiedsSubmittedPage = lazy(() => import('./pages/ClassifiedsSubmittedPage'));
 const TermsPage = lazy(() => import('./pages/TermsPage'));
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
 const ContactPage = lazy(() => import('./pages/ContactPage'));
@@ -36,6 +39,7 @@ const LoginPage = lazy(() => import('./pages/LoginPage'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const UpdatePasswordPage = lazy(() => import('./pages/UpdatePasswordPage'));
 const AdminClaimsPage = lazy(() => import('./pages/AdminClaimsPage'));
+const AdminClassifiedsPage = lazy(() => import('./pages/AdminClassifiedsPage'));
 
 function ScrollToTop() {
   const location = useLocation();
@@ -78,6 +82,9 @@ function AnimatedRoutes() {
             <Route path="regions" element={<RegionsPage />} />
             <Route path="verified" element={<VerifiedPage />} />
             <Route path="search" element={<SearchPage />} />
+            <Route path="classifieds" element={<ClassifiedsPage />} />
+            <Route path="classifieds/post" element={<ClassifiedsPostPage />} />
+            <Route path="classifieds/submitted" element={<ClassifiedsSubmittedPage />} />
             <Route
               path="claim/status"
               element={
@@ -99,6 +106,14 @@ function AnimatedRoutes() {
               element={
                 <AdminGuard>
                   <AdminClaimsPage />
+                </AdminGuard>
+              }
+            />
+            <Route
+              path="admin/classifieds"
+              element={
+                <AdminGuard>
+                  <AdminClassifiedsPage />
                 </AdminGuard>
               }
             />

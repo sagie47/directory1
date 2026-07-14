@@ -11,6 +11,8 @@ const ROOT_ROUTES = [
   '/trades',
   '/regions',
   '/verified',
+  '/classifieds',
+  '/classifieds/post',
   '/for-business',
   '/claim',
   '/claim-business',
